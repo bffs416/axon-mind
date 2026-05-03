@@ -667,8 +667,19 @@ $('add-routine-btn').onclick = () => {
   $('routine-modal-title').textContent = '🔒 Nueva Rutina';
   $('routine-name').value = ''; 
   $('routine-emoji').value = '🎯'; // Default emoji
-  $('routine-time').value = '06:00'; 
-  $('routine-hours').value = '1'; $('routine-minutes').value = '0';
+  
+  // Calcular hora sugerida (cascada) basada en la última rutina
+  let defaultTime = '06:00';
+  if (routines && routines.length > 0) {
+    const sorted = [...routines].sort((a,b) => a.time.localeCompare(b.time));
+    const last = sorted[sorted.length - 1];
+    const timeToMin = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+    const minToTime = (m) => { const h = Math.floor(m/60).toString().padStart(2,'0'), mm = (m%60).toString().padStart(2,'0'); return `${h}:${mm}`; };
+    defaultTime = minToTime(timeToMin(last.time) + last.duration);
+  }
+  
+  $('routine-time').value = defaultTime; 
+  $('routine-hours').value = '0'; $('routine-minutes').value = '30';
   document.querySelectorAll('.day-check input').forEach(cb => cb.checked = false);
   $('routine-modal').style.display = 'flex';
 };
