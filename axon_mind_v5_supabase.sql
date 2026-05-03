@@ -34,7 +34,15 @@ CREATE TABLE IF NOT EXISTS public.daily_journal (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Permitir acceso público a las tablas (Si no tienes autenticación con usuarios)
-ALTER TABLE public.inbox DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.vault_docs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.daily_journal DISABLE ROW LEVEL SECURITY;
+-- Habilitar RLS explícitamente pero permitir todo (Método más confiable en Supabase)
+ALTER TABLE public.inbox ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all for inbox" ON public.inbox;
+CREATE POLICY "Allow all for inbox" ON public.inbox FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.vault_docs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all for vault" ON public.vault_docs;
+CREATE POLICY "Allow all for vault" ON public.vault_docs FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE public.daily_journal ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all for journal" ON public.daily_journal;
+CREATE POLICY "Allow all for journal" ON public.daily_journal FOR ALL USING (true) WITH CHECK (true);
