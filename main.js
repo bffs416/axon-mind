@@ -684,9 +684,10 @@ window.editRoutine = (id) => {
   $('routine-modal').style.display = 'flex';
 };
 
-window.removeRoutine = (id) => {
-  const idx = routines.findIndex(r => r.id === id);
-  if (idx > -1) { routines.splice(idx, 1); localStorage.setItem('axon_routines', JSON.stringify(routines)); renderRoutines(); renderPlanner(); }
+window.deleteRoutine = (id) => {
+  if (!window.confirm('¿Eliminar esta rutina?')) return;
+  const idx = routines.findIndex(r => String(r.id) === String(id));
+  if (idx > -1) { routines.splice(idx, 1); localStorage.setItem('axon_routines', JSON.stringify(routines)); renderRoutines(); renderPlanner(); showToast('✅ Rutina eliminada'); }
 };
 
 window.selectRoutineDays = (mode) => {
@@ -815,7 +816,7 @@ window.removePlanBlock = (id) => {
 };
 
 window.clearCalendarDay = async (dateStr) => {
-  if (!confirm(`¿Quieres limpiar todos los bloques de Axon Mind del día ${dateStr} en tu Google Calendar?`)) return;
+  if (!window.confirm(`¿Quieres limpiar todos los bloques de Axon Mind del día ${dateStr} en tu Google Calendar?`)) return;
   
   calStatus.textContent = 'Cleaning day...';
   try {
