@@ -602,6 +602,16 @@ window.removeRoutine = (id) => {
   if (idx > -1) { routines.splice(idx, 1); localStorage.setItem('axon_routines', JSON.stringify(routines)); renderRoutines(); renderPlanner(); }
 };
 
+window.selectRoutineDays = (mode) => {
+  const checkboxes = document.querySelectorAll('#routine-days-container input');
+  checkboxes.forEach(cb => {
+    const val = parseInt(cb.value);
+    if (mode === 'all') cb.checked = true;
+    else if (mode === 'none') cb.checked = false;
+    else if (mode === 'weekdays') cb.checked = (val >= 1 && val <= 5);
+  });
+};
+
 // ==================== WEEKLY PLANNER ====================
 function getWeekDays() {
   const today = new Date();

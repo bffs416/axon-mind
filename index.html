@@ -164,13 +164,20 @@
                         <option value="🎯">🎯 Otro</option>
                     </select>
                     <div class="days-picker">
-                        <label class="day-check"><input type="checkbox" value="1"><span>L</span></label>
-                        <label class="day-check"><input type="checkbox" value="2"><span>M</span></label>
-                        <label class="day-check"><input type="checkbox" value="3"><span>X</span></label>
-                        <label class="day-check"><input type="checkbox" value="4"><span>J</span></label>
-                        <label class="day-check"><input type="checkbox" value="5"><span>V</span></label>
-                        <label class="day-check"><input type="checkbox" value="6"><span>S</span></label>
-                        <label class="day-check"><input type="checkbox" value="0"><span>D</span></label>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem; width: 100%;">
+                            <button type="button" class="btn-mini" onclick="window.selectRoutineDays('all')" style="flex:1; background: var(--border); font-size: 0.7rem; padding: 0.3rem;">Todos</button>
+                            <button type="button" class="btn-mini" onclick="window.selectRoutineDays('weekdays')" style="flex:1; background: var(--border); font-size: 0.7rem; padding: 0.3rem;">L a V</button>
+                            <button type="button" class="btn-mini" onclick="window.selectRoutineDays('none')" style="flex:1; background: var(--border); font-size: 0.7rem; padding: 0.3rem;">Limpiar</button>
+                        </div>
+                        <div id="routine-days-container" style="display: flex; gap: 0.5rem; justify-content: center;">
+                            <label class="day-check"><input type="checkbox" value="1"><span>L</span></label>
+                            <label class="day-check"><input type="checkbox" value="2"><span>M</span></label>
+                            <label class="day-check"><input type="checkbox" value="3"><span>X</span></label>
+                            <label class="day-check"><input type="checkbox" value="4"><span>J</span></label>
+                            <label class="day-check"><input type="checkbox" value="5"><span>V</span></label>
+                            <label class="day-check"><input type="checkbox" value="6"><span>S</span></label>
+                            <label class="day-check"><input type="checkbox" value="0"><span>D</span></label>
+                        </div>
                     </div>
                     <div style="display:flex;gap:0.5rem">
                         <div style="flex:1"><label class="input-label">Hora</label><input type="time" id="routine-time" class="plan-time-input" value="06:00"></div>
