@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axon Pomodoro v3 | Productividad Multipotencial</title>
+    <meta name="description" content="Sistema de productividad diseñado para mentes multipotenciales. Pomodoro + Google Calendar + Gamificación.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+    <div id="app">
+        <header>
+            <div class="logo"><span class="accent">AXON</span> FLOW</div>
+            <div class="header-right">
+                <div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span> días</div>
+                <div class="status-badge"><i data-lucide="calendar"></i> <span id="calendar-status">Standby</span></div>
+            </div>
+        </header>
+
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-view="focus"><i data-lucide="play"></i> Focus</button>
+            <button class="tab-btn" data-view="plan"><i data-lucide="calendar"></i> Planificar</button>
+            <button class="tab-btn" data-view="vault"><i data-lucide="brain"></i> Cerebro</button>
+            <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
+            <div style="flex:1"></div>
+            <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
+        </nav>
+
+        <main>
+            <!-- ========== VISTA FOCUS ========== -->
+            <section id="view-focus" class="view active">
+                <div class="timer-section">
+                    <div class="timer-container">
+                        <svg class="progress-ring" width="280" height="280">
+                            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.05)" stroke-width="6" fill="transparent" r="130" cx="140" cy="140"/>
+                            <circle class="progress-ring__circle" stroke="var(--primary)" stroke-width="6" stroke-linecap="round" fill="transparent" r="130" cx="140" cy="140"/>
+                        </svg>
+                        <div class="timer-display">
+                            <span id="timer-minutes">25</span>:<span id="timer-seconds">00</span>
+                        </div>
+                    </div>
+                    <div class="active-task-container" id="active-task-display">
+                        <div class="active-task-emoji" id="active-task-emoji">🎯</div>
+                        <div class="active-task-content">
+                            <div class="active-task-status" id="active-task-status">Selecciona una tarea</div>
+                            <div class="active-task-title" id="active-task-title">Enfoque de trabajo</div>
+                        </div>
+                    </div>
+                    <div class="session-dots" id="session-dots">
+                        <div class="session-dot"></div>
+                        <div class="session-dot"></div>
+                        <div class="session-dot"></div>
+                        <div class="session-dot"></div>
+                    </div>
+                    <div class="timer-controls">
+                        <button id="start-btn" class="btn-primary"><i data-lucide="play"></i> Iniciar</button>
+                        <button id="pause-btn" class="btn-secondary" disabled><i data-lucide="pause"></i></button>
+                        <button id="reset-btn" class="btn-ghost"><i data-lucide="rotate-ccw"></i></button>
+                    </div>
+                    <div class="timer-modes">
+                        <button class="mode-btn active" data-mode="pomodoro">Pomodoro</button>
+                        <button class="mode-btn" data-mode="shortBreak">Break</button>
+                        <button class="mode-btn" data-mode="longBreak">Descanso Largo</button>
+                    </div>
+                </div>
+
+                <div class="tasks-section">
+                    <div class="section-header" style="flex-wrap: wrap; gap: 0.5rem; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <h2><i data-lucide="list-todo"></i> Mis Proyectos</h2>
+                            <button id="add-task-btn" class="btn-icon"><i data-lucide="plus"></i></button>
+                        </div>
+                        
+                        <!-- Quick Actions Toolbar -->
+                        <div class="quick-actions" style="display: flex; justify-content: space-between; width: 100%; background: rgba(0,0,0,0.2); padding: 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                            <button id="roulette-btn" class="btn-ghost" onclick="rouletteTask()" style="flex: 1; color: var(--warning); font-size: 0.85rem; padding: 0.4rem;">🎲 Ruleta</button>
+                            <div style="width: 1px; background: var(--border); margin: 0.2rem 0;"></div>
+                            <button id="sos-btn" class="btn-ghost" onclick="window.enterSOSMode()" style="flex: 1; color: var(--danger); font-size: 0.85rem; padding: 0.4rem;">🆘 SOS</button>
+                            <div style="width: 1px; background: var(--border); margin: 0.2rem 0;"></div>
+                            <button id="toggle-freezer-btn" class="btn-ghost" onclick="toggleFreezerView()" style="flex: 1; color: #60a5fa; font-size: 0.85rem; padding: 0.4rem;">❄️ Nevera</button>
+                        </div>
+                        
+                        <div class="energy-filters" style="width: 100%; display: flex; gap: 0.5rem; margin-top: 0.5rem; overflow-x: auto; padding-bottom: 0.2rem;">
+                            <button class="energy-filter active" data-energy="all">Todas</button>
+                            <button class="energy-filter energy-high-btn" data-energy="high">⚡ Alta</button>
+                            <button class="energy-filter energy-medium-btn" data-energy="medium">🔋 Media</button>
+                            <button class="energy-filter energy-low-btn" data-energy="low">🪫 Baja</button>
+                        </div>
+                    </div>
+                    <div id="task-list" class="task-list"></div>
+                </div>
+            </section>
+
+            <!-- ========== VISTA PLANIFICADOR ========== -->
+            <section id="view-plan" class="view">
+                <div class="plan-header">
+                    <h2>📅 Planifica tu Semana</h2>
+                    <p class="plan-subtitle">Asigna bloques de enfoque y súbelos todos a Google Calendar</p>
+                    <button id="sync-all-btn" class="btn-primary btn-sync-all"><i data-lucide="upload-cloud"></i> Subir Todo a Calendar</button>
+                </div>
+                <!-- Rutinas Inamovibles -->
+                <div class="routines-section">
+                    <div class="section-header">
+                        <h3>🔒 Rutinas Inamovibles</h3>
+                        <button id="add-routine-btn" class="btn-icon"><i data-lucide="plus"></i></button>
+                    </div>
+                    <div id="routines-list" class="routines-list"></div>
+                </div>
+
+                <div id="week-grid" class="week-grid"></div>
+            </section>
+
+            <!-- ========== MODAL DIARIO (CIERRE COGNITIVO) ========== -->
+    <div id="journal-modal" class="modal">
+        <div class="modal-content">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+                <h2>📔 Cierre Cognitivo del Día</h2>
+                <button class="btn-icon" onclick="$('journal-modal').style.display='none'"><i data-lucide="x"></i></button>
+            </div>
+            <p style="color:var(--text-dim); margin-bottom:1.5rem">Tómate un momento para descargar tu cerebro antes de descansar. Tu yo de mañana te lo agradecerá.</p>
+            
+            <div class="form-group">
+                <label>¿Cómo te sentiste hoy?</label>
+                <div class="mood-selector" style="display:flex; gap:1rem; justify-content:center; margin:1rem 0;">
+                    <button class="mood-btn" data-mood="happy" style="font-size:2rem; background:none; border:none; cursor:pointer;">😊</button>
+                    <button class="mood-btn" data-mood="neutral" style="font-size:2rem; background:none; border:none; cursor:pointer;">😐</button>
+                    <button class="mood-btn" data-mood="sad" style="font-size:2rem; background:none; border:none; cursor:pointer;">😔</button>
+                    <button class="mood-btn" data-mood="angry" style="font-size:2rem; background:none; border:none; cursor:pointer;">😤</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>¿Qué te hizo enojar o te frustró?</label>
+                <textarea id="journal-frustrations" placeholder="Sácalo de tu cabeza aquí..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>¿De qué te sientes orgulloso hoy?</label>
+                <textarea id="journal-wins" placeholder="Tus logros multipotenciales..."></textarea>
+            </div>
+
+            <button class="btn-primary" style="width:100%" onclick="saveDailyJournal()">✅ Guardar y Cerrar Jornada</button>
+        </div>
+    </div>
+
+    <!-- ========== FAB RÁPIDO ========== -->
+            <div id="routine-modal" class="modal">
+                <div class="modal-content modal-sm">
+                    <h3>🔒 Nueva Rutina</h3>
+                    <input type="text" id="routine-name" placeholder="Ej: Ejercicio, Leer, Familia...">
+                    <select id="routine-emoji" class="plan-select">
+                        <option value="💪">💪 Ejercicio</option>
+                        <option value="📖">📖 Leer</option>
+                        <option value="👨‍👩‍👧">👨‍👩‍👧 Familia</option>
+                        <option value="🧘">🧘 Meditación</option>
+                        <option value="🎸">🎸 Hobby</option>
+                        <option value="🤝">🤝 Amigos</option>
+                        <option value="🛌">🛌 Descanso</option>
+                        <option value="📝">📝 Planificación</option>
+                        <option value="🎯">🎯 Otro</option>
+                    </select>
+                    <div class="days-picker">
+                        <label class="day-check"><input type="checkbox" value="1"><span>L</span></label>
+                        <label class="day-check"><input type="checkbox" value="2"><span>M</span></label>
+                        <label class="day-check"><input type="checkbox" value="3"><span>X</span></label>
+                        <label class="day-check"><input type="checkbox" value="4"><span>J</span></label>
+                        <label class="day-check"><input type="checkbox" value="5"><span>V</span></label>
+                        <label class="day-check"><input type="checkbox" value="6"><span>S</span></label>
+                        <label class="day-check"><input type="checkbox" value="0"><span>D</span></label>
+                    </div>
+                    <div style="display:flex;gap:0.5rem">
+                        <div style="flex:1"><label class="input-label">Hora</label><input type="time" id="routine-time" class="plan-time-input" value="06:00"></div>
+                        <div style="flex:1"><label class="input-label">Duración (min)</label><input type="number" id="routine-duration" class="plan-time-input" value="60" min="5" max="240"></div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="close-routine-modal" class="btn-ghost">Cancelar</button>
+                        <button id="save-routine" class="btn-primary">Guardar Rutina</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== VISTA ESTADÍSTICAS ========== -->
+            <section id="view-stats" class="view">
+                <div class="stats-grid">
+                    <div class="stat-card stat-primary">
+                        <div class="stat-number" id="stat-total-pomodoros">0</div>
+                        <div class="stat-label">Pomodoros Totales</div>
+                    </div>
+                    <div class="stat-card stat-accent">
+                        <div class="stat-number" id="stat-streak">0</div>
+                        <div class="stat-label">Racha Actual (días)</div>
+                    </div>
+                    <div class="stat-card stat-success">
+                        <div class="stat-number" id="stat-completion">0%</div>
+                        <div class="stat-label">Tasa de Completado</div>
+                    </div>
+                    <div class="stat-card stat-warm">
+                        <div class="stat-number" id="stat-focus-hours">0h</div>
+                        <div class="stat-label">Horas de Enfoque</div>
+                    </div>
+                </div>
+                <div class="chart-section">
+                    <h3>Últimos 7 días</h3>
+                    <div id="weekly-chart" class="weekly-chart"></div>
+                </div>
+                <div class="recent-sessions">
+                    <h3>Sesiones Recientes</h3>
+                    <div id="sessions-list" class="sessions-list"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ========== CEREBRO / VAULT ========== -->
+      <section id="view-vault" class="view">
+        <div class="plan-header">
+          <h2>Tu Cerebro</h2>
+          <button class="btn btn-primary" onclick="openVaultModal()">+ Nuevo Documento</button>
+        </div>
+        
+        <div class="inbox-section">
+            <h3 style="margin-bottom: 1rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="zap"></i> Bandeja de Entrada (Captura Rápida)</h3>
+            <div id="inbox-list" class="inbox-list">
+                <!-- Inbox items will be injected here -->
+            </div>
+        </div>
+
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="book-open"></i> Documentos del Vault</h3>
+                <div class="vault-grid" id="vault-list">
+          <!-- Vault docs will be injected here -->
+        </div>
+      </section>
+
+      <!-- ========== MODAL RESUMEN MULTIPOTENCIAL ========== -->
+    <div id="stats-summary-modal" class="modal">
+        <div class="modal-content">
+            <div style="text-align:center">
+                <div style="font-size:4rem; margin-bottom:1rem">🏆</div>
+                <h2 style="margin-bottom:0.5rem">¡Increíble Jornada Polímata!</h2>
+                <p style="color:var(--text-dim); margin-bottom:2rem">Has navegado exitosamente entre varios mundos hoy.</p>
+                
+                <div id="multipotential-summary-content" style="background:rgba(255,255,255,0.03); padding:1.5rem; border-radius:var(--radius); margin-bottom:2rem; text-align:left;">
+                    <!-- Se inyecta por JS -->
+                </div>
+
+                <button class="btn-primary" style="width:100%" onclick="$('stats-summary-modal').style.display='none'">¡Seguir Brillando! ✨</button>
+            </div>
+        </div>
+    </div>
+
+      <!-- ========== MODALES ========== -->
+        <div id="task-modal" class="modal">
+            <div class="modal-content">
+                <h3>✨ Nuevo Proyecto</h3>
+                <input type="text" id="new-task-title" placeholder="Nombre del proyecto">
+                <textarea id="new-task-desc" placeholder="Descripción: ¿Cuál es el siguiente paso ridículamente fácil?"></textarea>
+                
+                <div style="margin: 1rem 0;">
+                    <label class="input-label">Nivel de Energía Requerido</label>
+                    <select id="new-task-energy" class="plan-select" style="width: 100%; padding: 0.8rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                        <option value="high">⚡ Alta (Requiere foco intenso)</option>
+                        <option value="medium" selected>🔋 Media (Trabajo normal)</option>
+                        <option value="low">🪫 Baja (Modo autopiloto)</option>
+                    </select>
+                </div>
+
+                <div class="modal-steps-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem">
+                        <h4 style="margin:0">Pasos del proyecto</h4>
+                        <button class="btn-mini" onclick="window.sliceWithAI()" style="background:var(--accent); color:black; font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem; font-weight:700">🔪 IA: Rebanar</button>
+                    </div>
+                    <div id="modal-steps-list"></div>
+                    <div class="step-input-group">
+                        <input type="text" id="step-input" placeholder="Añadir un paso...">
+                        <button id="add-step-to-list" class="btn-secondary">+</button>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="close-modal" class="btn-ghost">Cancelar</button>
+                    <button id="save-task" class="btn-primary">Crear Proyecto</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="schedule-modal" class="modal">
+            <div class="modal-content modal-sm">
+                <h3>📅 Agendar Recordatorio</h3>
+                <p id="schedule-task-name" class="schedule-name"></p>
+                <div class="time-picker">
+                    <input type="datetime-local" id="schedule-time">
+                </div>
+                <div class="modal-actions">
+                    <button id="close-schedule-modal" class="btn-ghost">Cancelar</button>
+                    <button id="confirm-schedule" class="btn-primary">Agendar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="plan-block-modal" class="modal">
+            <div class="modal-content modal-sm">
+                <h3>📌 Agregar Bloque</h3>
+                <p id="plan-block-day-label" class="schedule-name"></p>
+                <select id="plan-task-select" class="plan-select"></select>
+                <input type="time" id="plan-block-time" class="plan-time-input">
+                <div class="modal-actions">
+                    <button id="close-plan-modal" class="btn-ghost">Cancelar</button>
+                    <button id="save-plan-block" class="btn-primary">Agregar</button>
+                </div>
+            </div>
+        </div>
+
+    <!-- Modal Cerebro / Vault -->
+    <div id="vault-modal" class="modal">
+      <div class="modal-content">
+        <h3>Nuevo Documento</h3>
+        <input type="text" id="vault-title" placeholder="Título (Ej. Letra de Canción)...">
+        <textarea id="vault-content" placeholder="Escribe aquí tu inspiración..." rows="8"></textarea>
+        <input type="text" id="vault-image" placeholder="URL de imagen (Opcional)">
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeVaultModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveVaultDoc()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Capture Modal (Inbox) -->
+    <div id="quick-capture-modal" class="modal">
+      <div class="modal-content modal-sm">
+        <h3 style="color: var(--primary);">⚡ Captura Rápida</h3>
+        <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">Usa Ctrl+Espacio en cualquier momento</p>
+        <textarea id="inbox-content" placeholder="Escribe tu idea rápidamente..." rows="4"></textarea>
+        <div class="modal-actions" style="justify-content: space-between;">
+          <button class="btn btn-outline" onclick="closeQuickCapture()">Cerrar</button>
+          <button class="btn btn-primary" onclick="saveInbox()">Guardar ⚡</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button id="quick-capture-fab" class="fab" onclick="openQuickCapture()">⚡</button>
+
+    <div id="motivation-toast" class="motivation-toast">¡Genial!</div>
+    
+    <!-- ========== SOS ZEN MODE OVERLAY ========== -->
+    <div id="sos-overlay" class="sos-overlay" style="display:none">
+        <div class="sos-content">
+            <div class="sos-label">🆘 MODO SOS ACTIVADO</div>
+            <h1 id="sos-task-title">Título de la tarea</h1>
+            <p id="sos-task-desc">Enfócate solo en esto por ahora.</p>
+            <div class="sos-timer-display" id="sos-timer-display">25:00</div>
+            <div class="sos-controls">
+                <button onclick="window.exitSOSMode()" class="btn btn-outline" style="color: white; border-color: white;">🚪 Salir de SOS</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="/main.js"></script>
+</body>
+</html>
