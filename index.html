@@ -195,66 +195,70 @@
                 <div class="modal-content modal-sm">
                     <h3 id="routine-modal-title">🔒 Nueva Rutina</h3>
                     <input type="hidden" id="routine-id">
-                    <div style="display:flex; gap:0.5rem; margin-bottom: 0.5rem;">
-                        <input type="text" id="routine-emoji" placeholder="🎯" maxlength="2" style="width: 4rem; text-align: center; font-size: 1.2rem;" class="plan-select">
-                        <input type="text" id="routine-name" placeholder="Ej: Impresión 3D, Dibujo, Manga..." style="flex:1;" class="plan-select" list="routine-suggestions">
+                    
+                    <div class="form-row" style="display:flex; gap:0.5rem; margin-bottom: 0.8rem;">
+                        <input type="text" id="routine-emoji" placeholder="🎯" maxlength="2" style="width: 3.5rem; text-align: center; font-size: 1.2rem;" class="plan-select">
+                        <input type="text" id="routine-name" placeholder="Nombre de la rutina..." style="flex:1;" class="plan-select" list="routine-suggestions">
                     </div>
-                    <datalist id="routine-suggestions">
-                        <option value="Trabajo">
-                        <option value="Hobby">
-                        <option value="Ejercicio">
-                        <option value="Familia">
-                        <option value="Descanso">
-                        <option value="Impresión 3D">
-                        <option value="Corte Láser">
-                        <option value="Manga">
-                    <div class="quick-emojis" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 1rem; justify-content: center;">
+
+                    <div class="quick-emojis" style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom: 1rem; justify-content: center;">
                         <span onclick="$('routine-emoji').value='💼'">💼</span>
-                        <span onclick="$('routine-emoji').value='🖨️'">🖨️</span>
                         <span onclick="$('routine-emoji').value='⚡'">⚡</span>
-                        <span onclick="$('routine-emoji').value='🎨'">🎨</span>
-                        <span onclick="$('routine-emoji').value='📚'">📚</span>
-                        <span onclick="$('routine-emoji').value='🧵'">🧵</span>
-                        <span onclick="$('routine-emoji').value='💪'">💪</span>
                         <span onclick="$('routine-emoji').value='🧘'">🧘</span>
-                        <span onclick="$('routine-emoji').value='🎸'">🎸</span>
                         <span onclick="$('routine-emoji').value='🛌'">🛌</span>
                         <span onclick="$('routine-emoji').value='🎯'">🎯</span>
-                        <span onclick="$('routine-emoji').value='🔥'">🔥</span>
+                        <span onclick="$('routine-emoji').value='💪'">💪</span>
                     </div>
-                    <style>
-                        .quick-emojis span { cursor: pointer; font-size: 1.4rem; padding: 5px; border-radius: 5px; transition: 0.2s; }
-                        .quick-emojis span:hover { background: rgba(255,255,255,0.1); transform: scale(1.2); }
-                    </style>
-                        <div class="days-shortcut-group">
-                            <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('all')">Todos los días</button>
-                            <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('weekdays')">Lunes a Viernes</button>
-                            <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('none')">Limpiar</button>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="input-label">🕒 Inicio</label>
+                            <input type="time" id="routine-time" class="plan-time-input" value="06:00">
                         </div>
-                        <div id="routine-days-container" class="days-grid">
-                            <label class="day-check"><input type="checkbox" value="1"><span>L</span></label>
-                            <label class="day-check"><input type="checkbox" value="2"><span>M</span></label>
-                            <label class="day-check"><input type="checkbox" value="3"><span>X</span></label>
-                            <label class="day-check"><input type="checkbox" value="4"><span>J</span></label>
-                            <label class="day-check"><input type="checkbox" value="5"><span>V</span></label>
-                            <label class="day-check"><input type="checkbox" value="6"><span>S</span></label>
-                            <label class="day-check"><input type="checkbox" value="0"><span>D</span></label>
+                        <div>
+                            <label class="input-label">⏳ Duración</label>
+                            <div style="display:flex; gap:0.2rem; align-items:center;">
+                                <input type="number" id="routine-hours" value="1" min="0" max="23" style="width:100%" class="plan-select">
+                                <span style="font-size:0.7rem; color:var(--text-dim)">h</span>
+                                <input type="number" id="routine-minutes" value="0" min="0" max="59" style="width:100%" class="plan-select">
+                                <span style="font-size:0.7rem; color:var(--text-dim)">m</span>
+                            </div>
                         </div>
                     </div>
-                    <div style="display:flex;gap:0.5rem; align-items: flex-end;">
-                        <div style="flex:1.2"><label class="input-label">Inicio</label><input type="time" id="routine-time" class="plan-time-input" value="06:00"></div>
-                        <div style="flex:1"><label class="input-label">Horas</label><input type="number" id="routine-hours" class="plan-time-input" value="1" min="0" max="23"></div>
-                        <div style="flex:1"><label class="input-label">Min</label><input type="number" id="routine-minutes" class="plan-time-input" value="0" min="0" max="59"></div>
+
+                    <div class="days-shortcut-group" style="display:flex; gap:0.3rem; margin-bottom: 0.8rem; flex-wrap: wrap; justify-content: center;">
+                        <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('all')">Todos</button>
+                        <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('weekdays')">L-V</button>
+                        <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('weekend')">S-D</button>
+                        <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('none')" style="color:var(--danger)">Limpiar</button>
                     </div>
-                    <div class="modal-actions">
-                        <button id="close-routine-modal" class="btn-ghost">Cancelar</button>
-                        <button id="save-routine" class="btn-primary">Guardar Rutina</button>
+
+                    <div id="routine-days-container" class="days-grid" style="display:flex; justify-content:center; gap:0.3rem; margin-bottom:1.5rem;">
+                        <label class="day-check"><input type="checkbox" value="1"><span>L</span></label>
+                        <label class="day-check"><input type="checkbox" value="2"><span>M</span></label>
+                        <label class="day-check"><input type="checkbox" value="3"><span>X</span></label>
+                        <label class="day-check"><input type="checkbox" value="4"><span>J</span></label>
+                        <label class="day-check"><input type="checkbox" value="5"><span>V</span></label>
+                        <label class="day-check"><input type="checkbox" value="6"><span>S</span></label>
+                        <label class="day-check"><input type="checkbox" value="0"><span>D</span></label>
+                    </div>
+
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-outline" style="flex:1" id="close-routine-modal">Cancelar</button>
+                        <button class="btn btn-primary" id="save-routine" style="flex:2">Guardar Rutina</button>
                     </div>
                 </div>
             </div>
 
             <!-- ========== VISTA ESTADÍSTICAS ========== -->
             <section id="view-stats" class="view">
+                <div class="stats-header-actions" style="margin-bottom: 1.5rem; display: flex; justify-content: center;">
+                    <div class="profile-selector">
+                        <button class="profile-btn active" data-profile="Pipe">👨 Pipe</button>
+                        <button class="profile-btn" data-profile="Tati">👩 Tati</button>
+                    </div>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-card stat-primary">
                         <div class="stat-number" id="stat-total-pomodoros">0</div>
@@ -273,12 +277,28 @@
                         <div class="stat-label">Horas de Enfoque</div>
                     </div>
                 </div>
+
+                <div class="journal-stats-container">
+                    <div class="chart-section journal-metrics">
+                        <h3>🧠 Métricas de Bienestar (Últimos 7 días)</h3>
+                        <div id="journal-metrics-chart" class="journal-metrics-grid">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
                 <div class="chart-section">
-                    <h3>Últimos 7 días</h3>
+                    <h3>📊 Actividad de Pomodoros</h3>
                     <div id="weekly-chart" class="weekly-chart"></div>
                 </div>
+
                 <div class="recent-sessions">
-                    <h3>Sesiones Recientes</h3>
+                    <h3>📝 Reflexiones Recientes</h3>
+                    <div id="journal-list" class="journal-list"></div>
+                </div>
+
+                <div class="recent-sessions">
+                    <h3>🕒 Sesiones Recientes</h3>
                     <div id="sessions-list" class="sessions-list"></div>
                 </div>
             </section>

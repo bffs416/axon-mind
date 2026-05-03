@@ -361,10 +361,23 @@ button { cursor: pointer; border: none; font-family: var(--font); }
 }
 .btn-sync-all svg { width: 18px; height: 18px; }
 
-.week-grid { display: flex; flex-direction: column; gap: 1rem; }
+.week-grid { 
+    display: flex; 
+    flex-direction: row; 
+    gap: 1rem; 
+    overflow-x: auto; 
+    padding-bottom: 1rem; 
+}
+.week-grid::-webkit-scrollbar { height: 8px; }
+.week-grid::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
+.week-grid::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 4px; }
+.week-grid::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.5); }
+
 .day-column {
     background: var(--bg-card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 1rem; overflow: hidden;
+    min-width: 280px;
+    flex-shrink: 0;
 }
 .day-header {
     display: flex; justify-content: space-between; align-items: center;
@@ -438,9 +451,23 @@ button { cursor: pointer; border: none; font-family: var(--font); }
 .day-check input { display: none; }
 .day-check span {
     display: flex; align-items: center; justify-content: center;
-    width: 36px; height: 36px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 50%;
     background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-    font-size: 0.8rem; font-weight: 600; color: var(--text-dim); transition: 0.2s;
+    font-size: 0.75rem; font-weight: 600; color: var(--text-dim); transition: 0.2s;
+}
+.btn-shortcut {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-shortcut:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--text);
 }
 .day-check input:checked + span {
     background: var(--primary); color: white; border-color: var(--primary);
@@ -553,6 +580,93 @@ input[type="datetime-local"], input[type="time"] {
 .timer-alarm { animation: alarmPulse 0.5s ease 6; }
 
 /* ========== RESPONSIVE ========== */
+/* === STATS ENHANCEMENTS === */
+.profile-selector {
+  display: flex;
+  background: var(--bg-card);
+  padding: 0.4rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  gap: 0.5rem;
+}
+.profile-btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+.profile-btn.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.journal-metrics-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  overflow-x: auto;
+}
+.metric-day-column {
+  flex: 1;
+  min-width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.metric-bar-stack {
+  height: 120px;
+  width: 25px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+.metric-segment {
+  width: 100%;
+  transition: height 0.5s ease;
+}
+.segment-energy { background: #f59e0b; }
+.segment-focus { background: #3b82f6; }
+.segment-stress { background: #ef4444; }
+
+.journal-list {
+  display: grid;
+  gap: 1rem;
+}
+.journal-card {
+  background: var(--bg-card);
+  padding: 1rem;
+  border-radius: 12px;
+  border-left: 4px solid var(--primary);
+}
+.journal-card h5 {
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  justify-content: space-between;
+}
+.journal-card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0.3rem 0;
+}
+.metric-badge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  margin-right: 0.3rem;
+}
+
 @media (max-width: 600px) {
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .timer-display { font-size: 3rem; }

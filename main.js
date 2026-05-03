@@ -37,9 +37,22 @@ const activeTaskEmoji = $('active-task-emoji'), activeTaskTitle = $('active-task
 const taskModal = $('task-modal');
 const vaultModal = $('vault-modal');
 const quickCaptureModal = $('quick-capture-modal');
-const viewBtns = document.querySelectorAll('.nav-btn, .tab-btn');
+const viewBtns = document.querySelectorAll('.tab-btn');
 const views = document.querySelectorAll('.view');
 
+viewBtns.forEach(btn => {
+  btn.onclick = () => {
+    const viewId = btn.getAttribute('data-view');
+    viewBtns.forEach(b => b.classList.remove('active'));
+    views.forEach(v => v.classList.remove('active'));
+    
+    btn.classList.add('active');
+    const targetView = $('view-' + viewId);
+    if (targetView) targetView.classList.add('active');
+    
+    if (viewId === 'stats') loadStats();
+  };
+});
 const initIcons = () => createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X } });
 
 // ==================== AUDIO ALARM ====================
@@ -568,16 +581,34 @@ $('close-schedule-modal').onclick = () => $('schedule-modal').style.display = 'n
 // ==================== ROUTINES ====================
 const routines = JSON.parse(localStorage.getItem('axon_routines') || '[]');
 
+window.selectRoutineDays = (type) => {
+  const checkboxes = document.querySelectorAll('#routine-days-container input');
+  checkboxes.forEach(cb => {
+    const val = parseInt(cb.value);
+    if (type === 'all') cb.checked = true;
+    else if (type === 'weekdays') cb.checked = (val >= 1 && val <= 5);
+    else if (type === 'weekend') cb.checked = (val === 6 || val === 0);
+    else if (type === 'none') cb.checked = false;
+  });
+};
+
+function renderDayChipsShort(days) {
+  const dayNames = ['D','L','M','X','J','V','S'];
+  if (days.length === 7) return "Diario";
+  if (days.length === 5 && !days.includes(0) && !days.includes(6)) return "L-V";
+  return days.sort().map(d => dayNames[d]).join('');
+}
+
 function renderRoutines() {
-  const dayLabels = ['D','L','M','X','J','V','S'];
-  $('routines-list').innerHTML = routines.map(r => `<div class="routine-chip">
-    <span>${r.emoji} ${r.name}</span>
-    <span class="routine-chip-days">${r.days.map(d => dayLabels[d]).join('')} ${r.time} (${r.duration}min)</span>
-    <div style="display:flex; gap:0.4rem;">
-      <button class="routine-chip-edit" onclick="window.editRoutine('${r.id}')" title="Editar">✏️</button>
-      <button class="routine-chip-remove" onclick="window.removeRoutine('${r.id}')">✕</button>
+  $('routines-list').innerHTML = routines.map(r => `
+    <div class="routine-chip" style="padding: 0.3rem 0.6rem;">
+      <span class="routine-emoji">${r.emoji}</span>
+      <span class="routine-name" style="font-weight:600; margin: 0 0.3rem;">${r.name}</span>
+      <span class="routine-chip-days" style="opacity:0.6; font-size:0.7rem;">${renderDayChipsShort(r.days)} ${r.time}</span>
+      <button class="routine-chip-edit" style="margin-left:0.3rem" onclick="window.editRoutine('${r.id}')">✏️</button>
+      <button class="routine-chip-remove" onclick="window.deleteRoutine('${r.id}')">✕</button>
     </div>
-  </div>`).join('') || '<p style="color:var(--text-muted);font-size:0.8rem">Aún no tienes rutinas. ¡Agrega tus pilares!</p>';
+  `).join('') || '<p style="color:var(--text-muted);font-size:0.8rem">Aún no tienes rutinas. ¡Agrega tus pilares!</p>';
   
   updateRoutineSuggestions();
 }
@@ -601,7 +632,9 @@ $('add-routine-btn').onclick = () => {
   document.querySelectorAll('.day-check input').forEach(cb => cb.checked = false);
   $('routine-modal').style.display = 'flex';
 };
-$('close-routine-modal').onclick = () => $('routine-modal').style.display = 'none';
+if ($('close-routine-modal')) {
+  $('close-routine-modal').onclick = () => $('routine-modal').style.display = 'none';
+}
 
 $('save-routine').onclick = () => {
   const name = $('routine-name').value; if (!name) return;
@@ -1000,7 +1033,20 @@ window.convertVaultToTask = (docId) => {
 };
 
 // ==================== STATS ====================
+// ==================== STATS ====================
+let selectedProfile = 'Pipe';
+
+document.querySelectorAll('.profile-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.profile-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedProfile = btn.dataset.profile;
+    loadStats();
+  };
+});
+
 async function loadStats() {
+  // 1. Fetch Focus Sessions
   const { data: sessions } = await supabase.from('focus_sessions').select('*').order('created_at', { ascending: false }).limit(100);
   if (!sessions) return;
 
@@ -1022,6 +1068,8 @@ async function loadStats() {
   $('streak-count').textContent = streak;
 
   const last7 = Array.from({length:7}, (_,i) => { const d = new Date(); d.setDate(d.getDate()-6+i); return d; });
+  
+  // Render Pomodoro Chart
   const chartData = last7.map(d => {
     const key = d.toDateString();
     return { label: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()], count: completed.filter(s => new Date(s.started_at).toDateString()===key).length };
@@ -1033,6 +1081,54 @@ async function loadStats() {
     <div class="chart-bar-label">${d.label}</div>
   </div>`).join('');
 
+  // 2. Fetch Journal Metrics
+  const { data: journals } = await supabase.from('daily_journal')
+    .select('*')
+    .eq('profile', selectedProfile)
+    .order('created_at', { ascending: false })
+    .limit(7);
+
+  if (journals) {
+    // Render Wellness Bars
+    const journalData = last7.map(d => {
+      const entry = journals.find(j => new Date(j.created_at).toDateString() === d.toDateString());
+      return { 
+        label: ['D','L','M','X','J','V','S'][d.getDay()], 
+        energy: entry ? entry.energy_level * 20 : 0,
+        focus: entry ? entry.focus_level * 20 : 0,
+        stress: entry ? entry.stress_level * 20 : 0
+      };
+    });
+
+    $('journal-metrics-chart').innerHTML = journalData.map(d => `
+      <div class="metric-day-column">
+        <div class="metric-bar-stack">
+          <div class="metric-segment segment-energy" style="height:${d.energy}%" title="Energía"></div>
+          <div class="metric-segment segment-focus" style="height:${d.focus}%" title="Enfoque"></div>
+          <div class="metric-segment segment-stress" style="height:${d.stress}%" title="Estrés"></div>
+        </div>
+        <div class="chart-bar-label">${d.label}</div>
+      </div>
+    `).join('');
+
+    // Render Reflections
+    $('journal-list').innerHTML = journals.map(j => `
+      <div class="journal-card">
+        <h5><span>${j.mood} ${new Date(j.created_at).toLocaleDateString()}</span> <span>👤 ${j.profile}</span></h5>
+        <div style="margin-bottom:0.5rem">
+          <span class="metric-badge">🔋 E:${j.energy_level}</span>
+          <span class="metric-badge">🧠 F:${j.focus_level}</span>
+          <span class="metric-badge">🔥 S:${j.stress_level}</span>
+          <span class="metric-badge">😴 ${j.sleep_hours}h</span>
+        </div>
+        <p><strong>Victoria:</strong> ${j.wins || '---'}</p>
+        <p><strong>Lección:</strong> ${j.life_lesson || '---'}</p>
+        <p><strong>Frustración:</strong> ${j.frustrations || '---'}</p>
+      </div>
+    `).join('') || '<p>Aún no hay reflexiones para este perfil.</p>';
+  }
+
+  // 3. Render Session List
   $('sessions-list').innerHTML = sessions.slice(0,8).map(s => `<div class="session-item">
     <span class="session-title">${s.task_title}</span>
     <div class="session-meta">
