@@ -195,24 +195,37 @@
                 <div class="modal-content modal-sm">
                     <h3 id="routine-modal-title">🔒 Nueva Rutina</h3>
                     <input type="hidden" id="routine-id">
-                    <input type="text" id="routine-name" placeholder="Ej: Ejercicio, Leer, Familia...">
-                    <select id="routine-emoji" class="plan-select">
-                        <option value="💼">💼 Trabajo / Enfoque</option>
-                        <option value="🖨️">🖨️ Impresión 3D</option>
-                        <option value="⚡">⚡ Corte Láser</option>
-                        <option value="🎨">🎨 Dibujar / Arte</option>
-                        <option value="📚">📚 Manga / Lectura</option>
-                        <option value="🧵">🧵 Máquina de Coser</option>
-                        <option value="✂️">✂️ Cameo 4</option>
-                        <option value="💪">💪 Ejercicio</option>
-                        <option value="🧘">🧘 Meditación</option>
-                        <option value="🎸">🎸 Hobby / Música</option>
-                        <option value="👨‍👩‍👧">👨‍👩‍👧 Familia / Amigos</option>
-                        <option value="🛌">🛌 Descanso</option>
-                        <option value="📝">📝 Planificación</option>
-                        <option value="🎯">🎯 Otro</option>
-                    </select>
-                    <div class="days-picker" style="margin: 1.5rem 0;">
+                    <div style="display:flex; gap:0.5rem; margin-bottom: 0.5rem;">
+                        <input type="text" id="routine-emoji" placeholder="🎯" maxlength="2" style="width: 4rem; text-align: center; font-size: 1.2rem;" class="plan-select">
+                        <input type="text" id="routine-name" placeholder="Ej: Impresión 3D, Dibujo, Manga..." style="flex:1;" class="plan-select" list="routine-suggestions">
+                    </div>
+                    <datalist id="routine-suggestions">
+                        <option value="Trabajo">
+                        <option value="Hobby">
+                        <option value="Ejercicio">
+                        <option value="Familia">
+                        <option value="Descanso">
+                        <option value="Impresión 3D">
+                        <option value="Corte Láser">
+                        <option value="Manga">
+                    <div class="quick-emojis" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 1rem; justify-content: center;">
+                        <span onclick="$('routine-emoji').value='💼'">💼</span>
+                        <span onclick="$('routine-emoji').value='🖨️'">🖨️</span>
+                        <span onclick="$('routine-emoji').value='⚡'">⚡</span>
+                        <span onclick="$('routine-emoji').value='🎨'">🎨</span>
+                        <span onclick="$('routine-emoji').value='📚'">📚</span>
+                        <span onclick="$('routine-emoji').value='🧵'">🧵</span>
+                        <span onclick="$('routine-emoji').value='💪'">💪</span>
+                        <span onclick="$('routine-emoji').value='🧘'">🧘</span>
+                        <span onclick="$('routine-emoji').value='🎸'">🎸</span>
+                        <span onclick="$('routine-emoji').value='🛌'">🛌</span>
+                        <span onclick="$('routine-emoji').value='🎯'">🎯</span>
+                        <span onclick="$('routine-emoji').value='🔥'">🔥</span>
+                    </div>
+                    <style>
+                        .quick-emojis span { cursor: pointer; font-size: 1.4rem; padding: 5px; border-radius: 5px; transition: 0.2s; }
+                        .quick-emojis span:hover { background: rgba(255,255,255,0.1); transform: scale(1.2); }
+                    </style>
                         <div class="days-shortcut-group">
                             <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('all')">Todos los días</button>
                             <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('weekdays')">Lunes a Viernes</button>
@@ -360,7 +373,8 @@
             <div class="modal-content modal-sm">
                 <h3>📌 Agregar Bloque</h3>
                 <p id="plan-block-day-label" class="schedule-name"></p>
-                <select id="plan-task-select" class="plan-select"></select>
+                <input type="text" id="plan-task-input" class="plan-select" placeholder="¿Qué vas a hacer?" list="plan-task-suggestions">
+                <datalist id="plan-task-suggestions"></datalist>
                 <input type="time" id="plan-block-time" class="plan-time-input">
                 <div class="modal-actions">
                     <button id="close-plan-modal" class="btn-ghost">Cancelar</button>

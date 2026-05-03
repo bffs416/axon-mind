@@ -578,12 +578,25 @@ function renderRoutines() {
       <button class="routine-chip-remove" onclick="window.removeRoutine('${r.id}')">✕</button>
     </div>
   </div>`).join('') || '<p style="color:var(--text-muted);font-size:0.8rem">Aún no tienes rutinas. ¡Agrega tus pilares!</p>';
+  
+  updateRoutineSuggestions();
+}
+
+function updateRoutineSuggestions() {
+  const categories = [...new Set(routines.map(r => r.name))];
+  const list = $('routine-suggestions');
+  if (list) {
+    list.innerHTML = categories.map(c => `<option value="${c}">`).join('') + 
+      '<option value="Trabajo"><option value="Hobby"><option value="Ejercicio"><option value="Familia"><option value="Descanso">';
+  }
 }
 
 $('add-routine-btn').onclick = () => {
   $('routine-id').value = '';
   $('routine-modal-title').textContent = '🔒 Nueva Rutina';
-  $('routine-name').value = ''; $('routine-time').value = '06:00'; 
+  $('routine-name').value = ''; 
+  $('routine-emoji').value = '🎯'; // Default emoji
+  $('routine-time').value = '06:00'; 
   $('routine-hours').value = '1'; $('routine-minutes').value = '0';
   document.querySelectorAll('.day-check input').forEach(cb => cb.checked = false);
   $('routine-modal').style.display = 'flex';
@@ -592,7 +605,9 @@ $('close-routine-modal').onclick = () => $('routine-modal').style.display = 'non
 
 $('save-routine').onclick = () => {
   const name = $('routine-name').value; if (!name) return;
-  const emoji = $('routine-emoji').value;
+  let emoji = $('routine-emoji').value || '🎯';
+  // Si pusieron más de un carácter (y no es un emoji compuesto), truncar o dejar solo el primer emoji
+  if (emoji.length > 4) emoji = emoji.substring(0, 2); 
   const days = [...document.querySelectorAll('.day-check input:checked')].map(cb => parseInt(cb.value));
   if (!days.length) { showToast("⚠️ Selecciona al menos un día"); return; }
   
@@ -674,40 +689,86 @@ function getRoutineBlocksForDay(date) {
 
 function renderPlanner() {
   const days = getWeekDays(), today = new Date().toDateString();
+  const timeToMin = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+  const minToTime = (m) => { const h = Math.floor(m/60).toString().padStart(2,'0'), mm = (m%60).toString().padStart(2,'0'); return `${h}:${mm}`; };
+
   $('week-grid').innerHTML = days.map((d,i) => {
     const dateStr = d.toISOString().slice(0,10);
     const routineBlocks = getRoutineBlocksForDay(d);
-    const workBlocks = weekPlan.filter(b => b.day === dateStr);
+    const workBlocks = weekPlan.filter(b => b.day === dateStr).map(b => ({...b, duration: b.duration || 30})); // Default 30min for manual
     const allBlocks = [...routineBlocks, ...workBlocks].sort((a,b) => a.time.localeCompare(b.time));
     const isToday = d.toDateString() === today;
+
+    let blocksHtml = '';
+    let lastEndMin = null;
+
+    if (allBlocks.length === 0) {
+      blocksHtml = '<p style="color:var(--text-muted);font-size:0.8rem;padding:0.3rem 0">Sin bloques</p>';
+    } else {
+      allBlocks.forEach(b => {
+        const startMin = timeToMin(b.time);
+        
+        // Calcular espacio libre antes de este bloque
+        if (lastEndMin !== null && startMin > lastEndMin + 5) {
+          const gap = startMin - lastEndMin;
+          const h = Math.floor(gap/60), m = gap%60;
+          const gapLabel = h > 0 ? `${h}h ${m}m` : `${m}m`;
+          blocksHtml += `<div class="plan-block free">
+            <div class="plan-block-info">
+              <span class="plan-block-time">${minToTime(lastEndMin)}</span>
+              <span class="plan-block-title">☕ Libre: ${gapLabel}</span>
+            </div>
+          </div>`;
+        }
+
+        blocksHtml += `<div class="plan-block ${b.isRoutine?'routine':''} ${b.synced?'synced':''}">
+          <div class="plan-block-info">
+            <span class="plan-block-time">${b.time}</span>
+            <span class="plan-block-title">${b.taskTitle}${b.duration ? ` (${b.duration}min)`:''}</span>
+          </div>
+          ${b.isRoutine ? '<span class="plan-block-lock">🔒</span>' : b.synced ? '<span class="plan-block-synced-icon">✓</span>' : `<button class="plan-block-remove" onclick="window.removePlanBlock('${b.id}')">✕</button>`}
+        </div>`;
+
+        lastEndMin = startMin + (b.duration || 30);
+      });
+
+      // Espacio libre al final del día (hasta las 10 PM por ejemplo, o simplemente dejarlo así)
+    }
+
     return `<div class="day-column">
       <div class="day-header">
         <span class="day-name ${isToday?'day-today':''}">${dayNames[i]} ${isToday?'(Hoy)':''}</span>
         <span class="day-date">${d.getDate()}/${d.getMonth()+1}</span>
-        <button class="day-add-btn" onclick="window.addPlanBlock('${dateStr}','${dayNames[i]} ${d.getDate()}/${d.getMonth()+1}')">+ Bloque</button>
+        <div style="display:flex; gap:0.3rem;">
+          <button class="day-add-btn" style="background:var(--danger); opacity:0.6;" onclick="window.clearCalendarDay('${dateStr}')" title="Limpiar este día en Calendar">🗑️</button>
+          <button class="day-add-btn" onclick="window.addPlanBlock('${dateStr}','${dayNames[i]} ${d.getDate()}/${d.getMonth()+1}')">+ Bloque</button>
+        </div>
       </div>
-      <div class="plan-blocks">${allBlocks.map(b => `<div class="plan-block ${b.isRoutine?'routine':''} ${b.synced?'synced':''}">
-        <div class="plan-block-info"><span class="plan-block-time">${b.time}</span><span class="plan-block-title">${b.taskTitle}${b.duration && b.duration !== 25 ? ` (${b.duration}min)`:''}</span></div>
-        ${b.isRoutine ? '<span class="plan-block-lock">🔒</span>' : b.synced ? '<span class="plan-block-synced-icon">✓</span>' : `<button class="plan-block-remove" onclick="window.removePlanBlock('${b.id}')">✕</button>`}
-      </div>`).join('') || '<p style="color:var(--text-muted);font-size:0.8rem;padding:0.3rem 0">Sin bloques</p>'}</div>
+      <div class="plan-blocks">${blocksHtml}</div>
     </div>`;
   }).join('');
 }
 
 window.addPlanBlock = (dateStr, label) => {
   $('plan-block-day-label').textContent = label;
-  const sel = $('plan-task-select');
-  sel.innerHTML = allTasks.filter(t=>t.status!=='done').map(t => {
-    const opts = [`<option value="${t.title}">${t.title}</option>`];
-    (t.steps||[]).filter(s=>!s.done).forEach(s => opts.push(`<option value="${t.title}: ${s.text}">↳ ${s.text}</option>`));
-    return opts.join('');
+  const datalist = $('plan-task-suggestions');
+  const input = $('plan-task-input');
+  
+  // Sugerir tareas actuales
+  datalist.innerHTML = allTasks.filter(t=>t.status!=='done').map(t => {
+    let opts = `<option value="${t.title}">`;
+    (t.steps||[]).filter(s=>!s.done).forEach(s => opts += `<option value="${t.title}: ${s.text}">`);
+    return opts;
   }).join('');
+
+  input.value = '';
   $('plan-block-time').value = '09:00';
   $('plan-block-modal').style.display = 'flex';
+
   $('save-plan-block').onclick = () => {
-    const title = sel.value, time = $('plan-block-time').value;
+    const title = input.value, time = $('plan-block-time').value;
     if(!title||!time) return;
-    weekPlan.push({ id: Date.now().toString(), day: dateStr, time, taskTitle: title, synced: false });
+    weekPlan.push({ id: Date.now().toString(), day: dateStr, time, taskTitle: title, synced: false, duration: 30 });
     localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
     $('plan-block-modal').style.display = 'none';
     renderPlanner();
@@ -720,42 +781,95 @@ window.removePlanBlock = (id) => {
   if(idx>-1) { weekPlan.splice(idx,1); localStorage.setItem('axon_week_plan',JSON.stringify(weekPlan)); renderPlanner(); }
 };
 
+window.clearCalendarDay = async (dateStr) => {
+  if (!confirm(`¿Quieres limpiar todos los bloques de Axon Mind del día ${dateStr} en tu Google Calendar?`)) return;
+  
+  calStatus.textContent = 'Cleaning day...';
+  try {
+    const url = new URL(N8N_URL);
+    await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clear_day', day: dateStr })
+    });
+
+    // Reset local sync state for this day
+    weekPlan.forEach(b => { if (b.day === dateStr) b.synced = false; });
+    localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+
+    let syncedRoutineIds = JSON.parse(sessionStorage.getItem('synced_routines') || '[]');
+    syncedRoutineIds = syncedRoutineIds.filter(id => !id.includes(dateStr));
+    sessionStorage.setItem('synced_routines', JSON.stringify(syncedRoutineIds));
+
+    showToast(`🗑️ Día ${dateStr} limpiado. Puedes volver a sincronizar.`);
+    calStatus.textContent = 'Day cleared';
+    renderPlanner();
+  } catch (e) {
+    showToast("⚠️ No se pudo limpiar el calendario");
+    console.error(e);
+  }
+};
+
 $('sync-all-btn').onclick = async () => {
-  // Gather work blocks + routine blocks for the week
   const days = getWeekDays();
   const allRoutineBlocks = days.flatMap(d => getRoutineBlocksForDay(d).map(b => ({...b, day: d.toISOString().slice(0,10)})));
   const unsyncedWork = weekPlan.filter(b => !b.synced);
-  // Only sync routines that haven't been synced this session
   const syncedRoutineIds = JSON.parse(sessionStorage.getItem('synced_routines') || '[]');
   const unsyncedRoutines = allRoutineBlocks.filter(b => !syncedRoutineIds.includes(b.id));
-  const allUnsunced = [...unsyncedWork, ...unsyncedRoutines];
+  const allUnsynced = [...unsyncedWork, ...unsyncedRoutines];
 
-  if (!allUnsunced.length) { showToast("✅ Todo ya está sincronizado"); return; }
+  if (!allUnsynced.length) { showToast("✅ Todo ya está sincronizado"); return; }
+  
   calStatus.textContent = 'Syncing...';
   let count = 0;
-  for (const block of allUnsunced) {
+  let failed = [];
+
+  for (const block of allUnsynced) {
     const start = new Date(`${block.day}T${block.time}:00`);
-    const dur = block.duration || 25;
-    const end = new Date(start.getTime() + dur*60000);
-    const url = new URL(N8N_URL);
-    url.searchParams.append('startTime', start.toISOString());
-    url.searchParams.append('endTime', end.toISOString());
-    url.searchParams.append('taskId', block.taskTitle);
+    const dur = block.duration || 30;
+    const end = new Date(start.getTime() + dur * 60000);
+    
     try {
-      await fetch(url.toString(), { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ taskId: block.taskTitle, status:'scheduled', startTime: start.toISOString(), endTime: end.toISOString() })
+      const url = new URL(N8N_URL);
+      const res = await fetch(url.toString(), { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          taskId: block.taskTitle, 
+          status: 'scheduled', 
+          startTime: start.toISOString(), 
+          endTime: end.toISOString(),
+          duration: dur
+        })
       });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       if (block.isRoutine) syncedRoutineIds.push(block.id);
       else block.synced = true;
       count++;
-    } catch(e) {}
+      
+      // Pequeña pausa para evitar rate-limits
+      await new Promise(r => setTimeout(r, 500));
+    } catch (e) {
+      console.error("Sync error:", e);
+      failed.push(block.taskTitle);
+    }
   }
+
   localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
   sessionStorage.setItem('synced_routines', JSON.stringify(syncedRoutineIds));
-  calStatus.textContent = 'All Synced!';
+  
+  if (failed.length > 0) {
+    calStatus.textContent = 'Sync partial';
+    showToast(`⚠️ Error en: ${failed.join(', ')}`, 5000);
+  } else {
+    calStatus.textContent = 'All Synced!';
+    fireConfetti();
+    showToast(`📅 ¡${count} bloques subidos a Calendar!`);
+  }
+  
   renderPlanner();
-  fireConfetti();
-  showToast(`📅 ¡${count} bloques subidos a Calendar!`);
 };
 
 // ==================== AXON MIND (VAULT & INBOX) ====================
