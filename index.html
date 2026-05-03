@@ -163,13 +163,13 @@
                         <option value="📝">📝 Planificación</option>
                         <option value="🎯">🎯 Otro</option>
                     </select>
-                    <div class="days-picker">
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem; width: 100%;">
-                            <button type="button" class="btn-mini" onclick="window.selectRoutineDays('all')" style="flex:1; background: var(--border); font-size: 0.7rem; padding: 0.3rem;">Todos</button>
-                            <button type="button" class="btn-mini" onclick="window.selectRoutineDays('weekdays')" style="flex:1; background: var(--border); font-size: 0.7rem; padding: 0.3rem;">L a V</button>
-                            <button type="button" class="btn-mini" onclick="window.selectRoutineDays('none')" style="flex:1; background: var(--border); font-size: 0.7rem; padding: 0.3rem;">Limpiar</button>
+                    <div class="days-picker" style="margin: 1.5rem 0;">
+                        <div class="days-shortcut-group">
+                            <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('all')">Todos los días</button>
+                            <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('weekdays')">Lunes a Viernes</button>
+                            <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('none')">Limpiar</button>
                         </div>
-                        <div id="routine-days-container" style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <div id="routine-days-container" class="days-grid">
                             <label class="day-check"><input type="checkbox" value="1"><span>L</span></label>
                             <label class="day-check"><input type="checkbox" value="2"><span>M</span></label>
                             <label class="day-check"><input type="checkbox" value="3"><span>X</span></label>
