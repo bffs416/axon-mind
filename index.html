@@ -395,7 +395,18 @@
                 <p id="plan-block-day-label" class="schedule-name"></p>
                 <input type="text" id="plan-task-input" class="plan-select" placeholder="¿Qué vas a hacer?" list="plan-task-suggestions">
                 <datalist id="plan-task-suggestions"></datalist>
-                <input type="time" id="plan-block-time" class="plan-time-input">
+                
+                <div style="display:flex; gap:0.5rem; margin-top:0.5rem; margin-bottom: 0.5rem;">
+                    <div style="flex:1">
+                        <label class="input-label" style="font-size:0.8rem">Hora</label>
+                        <input type="time" id="plan-block-time" class="plan-time-input" style="width:100%; margin-top:0">
+                    </div>
+                    <div style="flex:1">
+                        <label class="input-label" style="font-size:0.8rem">Duración (min)</label>
+                        <input type="number" id="plan-block-duration" class="plan-select" value="30" min="5" style="width:100%">
+                    </div>
+                </div>
+
                 <div class="modal-actions">
                     <button id="close-plan-modal" class="btn-ghost">Cancelar</button>
                     <button id="save-plan-block" class="btn-primary">Agregar</button>

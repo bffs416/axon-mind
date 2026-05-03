@@ -836,13 +836,32 @@ window.addPlanBlock = (dateStr, label) => {
   }).join('');
 
   input.value = '';
-  $('plan-block-time').value = '09:00';
+  
+  // Calcular hora sugerida (cascada)
+  const timeToMin = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+  const minToTime = (m) => { const h = Math.floor(m/60).toString().padStart(2,'0'), mm = (m%60).toString().padStart(2,'0'); return `${h}:${mm}`; };
+  
+  const dayDate = new Date(dateStr + "T12:00:00");
+  const routineBlocks = getRoutineBlocksForDay(dayDate);
+  const workBlocks = weekPlan.filter(b => b.day === dateStr).map(b => ({...b, duration: b.duration || 30}));
+  const allBlocks = [...routineBlocks, ...workBlocks].sort((a,b) => a.time.localeCompare(b.time));
+  
+  let defaultTime = '09:00';
+  if(allBlocks.length > 0) {
+      const lastBlock = allBlocks[allBlocks.length - 1];
+      const endMin = timeToMin(lastBlock.time) + (lastBlock.duration || 30);
+      defaultTime = minToTime(endMin);
+  }
+
+  $('plan-block-time').value = defaultTime;
+  $('plan-block-duration').value = '30';
   $('plan-block-modal').style.display = 'flex';
 
   $('save-plan-block').onclick = () => {
     const title = input.value, time = $('plan-block-time').value;
+    const duration = parseInt($('plan-block-duration').value) || 30;
     if(!title||!time) return;
-    weekPlan.push({ id: Date.now().toString(), day: dateStr, time, taskTitle: title, synced: false, duration: 30 });
+    weekPlan.push({ id: Date.now().toString(), day: dateStr, time, taskTitle: title, synced: false, duration });
     localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
     $('plan-block-modal').style.display = 'none';
     renderPlanner();
