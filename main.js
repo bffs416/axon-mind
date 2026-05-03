@@ -394,6 +394,46 @@ window.toggleTask = async (id, st) => {
 };
 window.reschedule = (id, title) => { window.openSchedule(title); };
 
+window.deleteTask = async (id) => {
+  if (!window.confirm('¿Eliminar esta tarea permanentemente?')) return;
+  try {
+    await supabase.from('tasks').delete().eq('id', id);
+    showToast('🗑️ Tarea eliminada');
+    fetchTasks(); loadStats();
+  } catch (e) {
+    console.error('Error eliminando tarea:', e);
+    showToast('⚠️ Error al eliminar');
+  }
+};
+
+window.editTask = async (id) => {
+  const task = allTasks.find(t => t.id === id);
+  if (!task) return;
+  $('new-task-title').value = task.title;
+  $('new-task-desc').value = task.description || '';
+  $('new-task-energy').value = task.energy_level || 'medium';
+  currentStepsInModal = task.steps || [];
+  $('modal-steps-list').innerHTML = currentStepsInModal.map(s => `<div class="step-item"><i data-lucide="circle" style="width:12px"></i> ${s.text}</div>`).join('');
+  taskModal.style.display = 'flex';
+  initIcons();
+
+  // Override save to update instead of insert
+  $('save-task').onclick = async () => {
+    const title = $('new-task-title').value; if (!title) return;
+    const energy = $('new-task-energy').value;
+    await supabase.from('tasks').update({ title, description: $('new-task-desc').value, energy_level: energy, steps: currentStepsInModal }).eq('id', id);
+    $('task-modal').style.display = 'none';
+    // Restore original save behavior
+    $('save-task').onclick = async () => {
+      const t = $('new-task-title').value; if (!t) return;
+      await supabase.from('tasks').insert([{ title: t, description: $('new-task-desc').value, energy_level: $('new-task-energy').value, status: 'todo', steps: currentStepsInModal }]);
+      $('task-modal').style.display = 'none'; fetchTasks();
+    };
+    fetchTasks();
+    showToast('✅ Tarea actualizada');
+  };
+};
+
 window.toggleFreezeTask = async (id, currentStatus) => {
   const newStatus = currentStatus === 'frozen' ? 'todo' : 'frozen';
   try {
