@@ -150,15 +150,21 @@
     <!-- ========== FAB RÁPIDO ========== -->
             <div id="routine-modal" class="modal">
                 <div class="modal-content modal-sm">
-                    <h3>🔒 Nueva Rutina</h3>
+                    <h3 id="routine-modal-title">🔒 Nueva Rutina</h3>
+                    <input type="hidden" id="routine-id">
                     <input type="text" id="routine-name" placeholder="Ej: Ejercicio, Leer, Familia...">
                     <select id="routine-emoji" class="plan-select">
+                        <option value="💼">💼 Trabajo / Enfoque</option>
+                        <option value="🖨️">🖨️ Impresión 3D</option>
+                        <option value="⚡">⚡ Corte Láser</option>
+                        <option value="🎨">🎨 Dibujar / Arte</option>
+                        <option value="📚">📚 Manga / Lectura</option>
+                        <option value="🧵">🧵 Máquina de Coser</option>
+                        <option value="✂️">✂️ Cameo 4</option>
                         <option value="💪">💪 Ejercicio</option>
-                        <option value="📖">📖 Leer</option>
-                        <option value="👨‍👩‍👧">👨‍👩‍👧 Familia</option>
                         <option value="🧘">🧘 Meditación</option>
-                        <option value="🎸">🎸 Hobby</option>
-                        <option value="🤝">🤝 Amigos</option>
+                        <option value="🎸">🎸 Hobby / Música</option>
+                        <option value="👨‍👩‍👧">👨‍👩‍👧 Familia / Amigos</option>
                         <option value="🛌">🛌 Descanso</option>
                         <option value="📝">📝 Planificación</option>
                         <option value="🎯">🎯 Otro</option>
@@ -179,9 +185,10 @@
                             <label class="day-check"><input type="checkbox" value="0"><span>D</span></label>
                         </div>
                     </div>
-                    <div style="display:flex;gap:0.5rem">
-                        <div style="flex:1"><label class="input-label">Hora</label><input type="time" id="routine-time" class="plan-time-input" value="06:00"></div>
-                        <div style="flex:1"><label class="input-label">Duración (min)</label><input type="number" id="routine-duration" class="plan-time-input" value="60" min="5" max="240"></div>
+                    <div style="display:flex;gap:0.5rem; align-items: flex-end;">
+                        <div style="flex:1.2"><label class="input-label">Inicio</label><input type="time" id="routine-time" class="plan-time-input" value="06:00"></div>
+                        <div style="flex:1"><label class="input-label">Horas</label><input type="number" id="routine-hours" class="plan-time-input" value="1" min="0" max="23"></div>
+                        <div style="flex:1"><label class="input-label">Min</label><input type="number" id="routine-minutes" class="plan-time-input" value="0" min="0" max="59"></div>
                     </div>
                     <div class="modal-actions">
                         <button id="close-routine-modal" class="btn-ghost">Cancelar</button>

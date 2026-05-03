@@ -573,12 +573,18 @@ function renderRoutines() {
   $('routines-list').innerHTML = routines.map(r => `<div class="routine-chip">
     <span>${r.emoji} ${r.name}</span>
     <span class="routine-chip-days">${r.days.map(d => dayLabels[d]).join('')} ${r.time} (${r.duration}min)</span>
-    <button class="routine-chip-remove" onclick="window.removeRoutine('${r.id}')">✕</button>
+    <div style="display:flex; gap:0.4rem;">
+      <button class="routine-chip-edit" onclick="window.editRoutine('${r.id}')" title="Editar">✏️</button>
+      <button class="routine-chip-remove" onclick="window.removeRoutine('${r.id}')">✕</button>
+    </div>
   </div>`).join('') || '<p style="color:var(--text-muted);font-size:0.8rem">Aún no tienes rutinas. ¡Agrega tus pilares!</p>';
 }
 
 $('add-routine-btn').onclick = () => {
-  $('routine-name').value = ''; $('routine-time').value = '06:00'; $('routine-duration').value = '60';
+  $('routine-id').value = '';
+  $('routine-modal-title').textContent = '🔒 Nueva Rutina';
+  $('routine-name').value = ''; $('routine-time').value = '06:00'; 
+  $('routine-hours').value = '1'; $('routine-minutes').value = '0';
   document.querySelectorAll('.day-check input').forEach(cb => cb.checked = false);
   $('routine-modal').style.display = 'flex';
 };
@@ -589,12 +595,45 @@ $('save-routine').onclick = () => {
   const emoji = $('routine-emoji').value;
   const days = [...document.querySelectorAll('.day-check input:checked')].map(cb => parseInt(cb.value));
   if (!days.length) { showToast("⚠️ Selecciona al menos un día"); return; }
-  const time = $('routine-time').value, duration = parseInt($('routine-duration').value) || 60;
-  routines.push({ id: Date.now().toString(), name, emoji, days, time, duration });
+  
+  const time = $('routine-time').value;
+  const h = parseInt($('routine-hours').value) || 0;
+  const m = parseInt($('routine-minutes').value) || 0;
+  const duration = (h * 60) + m;
+  
+  if (duration <= 0) { showToast("⚠️ La duración debe ser mayor a 0"); return; }
+
+  const id = $('routine-id').value;
+  if (id) {
+    const idx = routines.findIndex(r => r.id === id);
+    if (idx > -1) routines[idx] = { ...routines[idx], name, emoji, days, time, duration };
+  } else {
+    routines.push({ id: Date.now().toString(), name, emoji, days, time, duration });
+  }
+
   localStorage.setItem('axon_routines', JSON.stringify(routines));
   $('routine-modal').style.display = 'none';
   renderRoutines(); renderPlanner();
-  showToast(`🔒 Rutina "${name}" creada. ¡Es inamovible!`);
+  showToast(id ? `✅ Rutina actualizada` : `🔒 Rutina "${name}" creada`);
+};
+
+window.editRoutine = (id) => {
+  const r = routines.find(rout => rout.id === id);
+  if (!r) return;
+  
+  $('routine-id').value = r.id;
+  $('routine-modal-title').textContent = '✏️ Editar Rutina';
+  $('routine-name').value = r.name;
+  $('routine-emoji').value = r.emoji;
+  $('routine-time').value = r.time;
+  $('routine-hours').value = Math.floor(r.duration / 60);
+  $('routine-minutes').value = r.duration % 60;
+  
+  document.querySelectorAll('.day-check input').forEach(cb => {
+    cb.checked = r.days.includes(parseInt(cb.value));
+  });
+  
+  $('routine-modal').style.display = 'flex';
 };
 
 window.removeRoutine = (id) => {

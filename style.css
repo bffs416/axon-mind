@@ -415,8 +415,21 @@ button { cursor: pointer; border: none; font-family: var(--font); }
     border-radius: 2rem; padding: 0.4rem 0.8rem; font-size: 0.8rem; color: #5eead4;
 }
 .routine-chip-days { font-size: 0.7rem; color: var(--text-dim); }
-.routine-chip-remove { background: transparent; color: var(--text-dim); cursor: pointer; padding: 0 2px; font-size: 0.9rem; }
+.routine-chip-remove, .routine-chip-edit {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
 .routine-chip-remove:hover { color: var(--danger); }
+.routine-chip-edit:hover { color: var(--primary); }
 
 .days-picker {
     display: flex; gap: 0.4rem; justify-content: center; margin: 1rem 0;
