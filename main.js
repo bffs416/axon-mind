@@ -949,6 +949,51 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ==================== DIARIO DE PAREJA ====================
+let selectedMood = '😊';
+document.querySelectorAll('.mood-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.mood-btn').forEach(b => b.style.transform = 'scale(1)');
+    btn.style.transform = 'scale(1.3)';
+    selectedMood = btn.textContent;
+  };
+});
+
+window.saveDailyJournal = async () => {
+  const profile = $('journal-profile').value;
+  const energy = $('journal-energy').value;
+  const focus = $('journal-focus').value;
+  const stress = $('journal-stress').value;
+  const sleep = $('journal-sleep').value;
+  
+  const wins = $('journal-wins').value;
+  const family = $('journal-family').value;
+  const lesson = $('journal-lesson').value;
+  const frustrations = $('journal-frustrations').value;
+
+  const entry = {
+    profile, energy_level: energy, focus_level: focus, stress_level: stress,
+    sleep_hours: sleep, mood: selectedMood,
+    wins, family_impact: family, life_lesson: lesson, frustrations
+  };
+
+  try {
+    const { error } = await supabase.from('daily_journal').insert([entry]);
+    if (error) throw error;
+    showToast("✅ ¡Cierre Cognitivo Guardado en la Nube! Descansa.");
+  } catch (e) {
+    console.warn("Supabase Error saving journal:", e);
+    const localJournals = JSON.parse(localStorage.getItem('axon_journals') || '[]');
+    localJournals.push({...entry, id: Date.now(), created_at: new Date().toISOString()});
+    localStorage.setItem('axon_journals', JSON.stringify(localJournals));
+    showToast("✅ Cierre Guardado (Local). Descansa.");
+  }
+
+  $('journal-modal').style.display = 'none';
+  $('journal-wins').value = ''; $('journal-family').value = ''; 
+  $('journal-lesson').value = ''; $('journal-frustrations').value = '';
+};
+
 // ==================== INIT ====================
 if (Notification.permission === 'default') Notification.requestPermission();
 fetchTasks(); updateDisplay(); renderRoutines(); renderPlanner(); loadStats(); initIcons();

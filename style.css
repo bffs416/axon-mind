@@ -726,6 +726,21 @@ body.immersive-mode .active-task-container {
     flex-wrap: wrap;
 }
 
+.plan-time-input {
+    background: var(--bg-card-hover);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.journal-slider {
+    width: 100%;
+    margin: 0.5rem 0;
+    accent-color: var(--primary);
+}
+
 .btn-shortcut {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border);

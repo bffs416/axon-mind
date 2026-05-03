@@ -116,15 +116,46 @@
 
             <!-- ========== MODAL DIARIO (CIERRE COGNITIVO) ========== -->
     <div id="journal-modal" class="modal">
-        <div class="modal-content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
-                <h2>📔 Cierre Cognitivo del Día</h2>
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <h2>📔 Diario de Pareja</h2>
                 <button class="btn-icon" onclick="$('journal-modal').style.display='none'"><i data-lucide="x"></i></button>
             </div>
-            <p style="color:var(--text-dim); margin-bottom:1.5rem">Tómate un momento para descargar tu cerebro antes de descansar. Tu yo de mañana te lo agradecerá.</p>
             
+            <div class="form-group" style="background: var(--bg-card); padding: 1rem; border-radius: 8px;">
+                <label>¿Quién escribe hoy?</label>
+                <select id="journal-profile" class="plan-select" style="margin-top: 0.5rem; width: 100%;">
+                    <option value="Tati">👱‍♀️ Tati</option>
+                    <option value="Pipe">👨 Pipe</option>
+                </select>
+            </div>
+
+            <h4 style="margin: 1.5rem 0 1rem; color: var(--primary);">Métricas del Día (1 al 5)</h4>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label>🔋 Energía Física</label>
+                    <input type="range" id="journal-energy" min="1" max="5" value="3" class="journal-slider">
+                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1 (Agotado)</span><span>5 (A tope)</span></div>
+                </div>
+                <div class="form-group">
+                    <label>🧠 Enfoque/Claridad</label>
+                    <input type="range" id="journal-focus" min="1" max="5" value="3" class="journal-slider">
+                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1 (Niebla)</span><span>5 (Láser)</span></div>
+                </div>
+                <div class="form-group">
+                    <label>🌪️ Nivel de Estrés</label>
+                    <input type="range" id="journal-stress" min="1" max="5" value="3" class="journal-slider">
+                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1 (Zen)</span><span>5 (Caos)</span></div>
+                </div>
+                <div class="form-group">
+                    <label>🛌 Horas de Sueño</label>
+                    <input type="number" id="journal-sleep" min="0" max="24" step="0.5" value="7" style="width:100%; padding:0.5rem; background:var(--bg-card-hover); border:1px solid var(--border); border-radius:4px; color:white;">
+                </div>
+            </div>
+
             <div class="form-group">
-                <label>¿Cómo te sentiste hoy?</label>
+                <label>¿Emoción principal?</label>
                 <div class="mood-selector" style="display:flex; gap:1rem; justify-content:center; margin:1rem 0;">
                     <button class="mood-btn" data-mood="happy" style="font-size:2rem; background:none; border:none; cursor:pointer;">😊</button>
                     <button class="mood-btn" data-mood="neutral" style="font-size:2rem; background:none; border:none; cursor:pointer;">😐</button>
@@ -133,17 +164,29 @@
                 </div>
             </div>
 
+            <h4 style="margin: 1.5rem 0 1rem; color: var(--primary);">Reflexión Profunda</h4>
+
             <div class="form-group">
-                <label>¿Qué te hizo enojar o te frustró?</label>
-                <textarea id="journal-frustrations" placeholder="Sácalo de tu cabeza aquí..."></textarea>
+                <label>🏆 Gratitud: ¿De qué te sientes orgulloso hoy?</label>
+                <textarea id="journal-wins" placeholder="Pequeños o grandes logros..." rows="2"></textarea>
             </div>
 
             <div class="form-group">
-                <label>¿De qué te sientes orgulloso hoy?</label>
-                <textarea id="journal-wins" placeholder="Tus logros multipotenciales..."></textarea>
+                <label>❤️ Propósito: ¿Cómo impactaste a la familia o al mundo hoy?</label>
+                <textarea id="journal-family" placeholder="Una sonrisa, un favor, construir algo..." rows="2"></textarea>
             </div>
 
-            <button class="btn-primary" style="width:100%" onclick="saveDailyJournal()">✅ Guardar y Cerrar Jornada</button>
+            <div class="form-group">
+                <label>🌱 Crecimiento: Si vivieras hoy de nuevo, ¿qué harías diferente?</label>
+                <textarea id="journal-lesson" placeholder="Aprendizaje del día..." rows="2"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>🗑️ Descarga Mental: ¿Qué te robó la paz o qué necesitas soltar?</label>
+                <textarea id="journal-frustrations" placeholder="Escríbelo aquí para que no te acompañe a dormir..." rows="3"></textarea>
+            </div>
+
+            <button class="btn-primary" style="width:100%; padding: 1rem; font-size: 1.1rem; margin-top: 1rem;" onclick="saveDailyJournal()">✅ Guardar Cierre Cognitivo</button>
         </div>
     </div>
 
