@@ -986,7 +986,7 @@ window.saveDailyJournal = async () => {
     const localJournals = JSON.parse(localStorage.getItem('axon_journals') || '[]');
     localJournals.push({...entry, id: Date.now(), created_at: new Date().toISOString()});
     localStorage.setItem('axon_journals', JSON.stringify(localJournals));
-    showToast("✅ Cierre Guardado (Local). Descansa.");
+    showToast(`Error Nube: ${e.message || 'Desconocido'}. Guardado Local.`);
   }
 
   $('journal-modal').style.display = 'none';
