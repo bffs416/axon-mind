@@ -961,10 +961,10 @@ document.querySelectorAll('.mood-btn').forEach(btn => {
 
 window.saveDailyJournal = async () => {
   const profile = $('journal-profile').value;
-  const energy = $('journal-energy').value;
-  const focus = $('journal-focus').value;
-  const stress = $('journal-stress').value;
-  const sleep = $('journal-sleep').value;
+  const energy = parseInt($('journal-energy').value) || 3;
+  const focus = parseInt($('journal-focus').value) || 3;
+  const stress = parseInt($('journal-stress').value) || 3;
+  const sleep = parseFloat($('journal-sleep').value) || 7;
   
   const wins = $('journal-wins').value;
   const family = $('journal-family').value;
