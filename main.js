@@ -496,6 +496,7 @@ window.editTask = async (id) => {
   $('new-task-energy').value = task.energy_level || 'medium';
   currentStepsInModal = JSON.parse(JSON.stringify(task.steps || [])); // Deep copy para evitar mutar el original antes de guardar
   renderModalSteps();
+  $('save-task').textContent = 'Actualizar Proyecto';
   taskModal.style.display = 'flex';
 
   // Override save to update instead of insert
@@ -508,6 +509,7 @@ window.editTask = async (id) => {
       showToast("Error al actualizar: " + error.message);
       return;
     }
+    $('save-task').textContent = 'Crear Proyecto';
     $('task-modal').style.display = 'none';
     // Restore original save behavior
     $('save-task').onclick = createProject;
@@ -778,6 +780,7 @@ window.removeModalStep = (index) => {
 
 $('close-modal').onclick = () => {
   $('task-modal').style.display = 'none';
+  $('save-task').textContent = 'Crear Proyecto';
   $('save-task').onclick = createProject;
 };
 $('add-step-to-list').onclick = () => {
