@@ -416,15 +416,23 @@ async function fetchTasks() {
                   if(s.assignee === 'Pipe') sAssignee = '👨 ';
                   else if(s.assignee === 'Tati') sAssignee = '👩 ';
                   else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
-                  let sDuration = s.duration ? `<span style="font-size: 0.8em; background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; margin-left: 5px;">⏱️ ${s.duration}m</span>` : '';
+                  let sDuration = s.duration ? `<span style="font-size: 0.8em; opacity: 0.6; margin-left: 5px;">⏱️ ${s.duration}m</span>` : '';
                   
                   const isAction = s.text.includes('🎨') || s.text.includes('🚀');
                   const displayStyle = isAction 
-                    ? 'display: inline-flex; width: auto; margin-right: 10px; margin-bottom: 5px; opacity: 0.9; font-size: 0.85em; background: var(--bg-deep); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); cursor:pointer;' 
-                    : 'margin-top: 5px; font-weight: 500; display: block;';
+                    ? 'display: inline-flex; align-items: center; width: auto; margin-right: 10px; margin-bottom: 5px; opacity: 0.9; font-size: 0.85em; background: var(--bg-card); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); cursor:pointer; gap: 8px;' 
+                    : 'margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;';
 
-                  return `<div class="step-item ${s.done?'done':''}" style="${displayStyle}" onclick="event.stopPropagation();window.toggleStep('${task.id}',${i})">
-                      <span style="display: flex; align-items: center;">${sAssignee}${s.text} ${sDuration}</span>
+                  return `<div class="step-item ${s.done?'done':''}" style="${displayStyle}" onclick="window.toggleStep('${task.id}',${i})">
+                      <div class="action-btns" style="display: flex; gap: 4px;">
+                        <button class="btn-mini" onclick="event.stopPropagation();window.focusStep('${task.id}','${task.title.replace(/'/g,"\\'")+': '+s.text.replace(/'/g,"\\'")}')" title="Iniciar Pomodoro">
+                          <i data-lucide="play" style="width:10px"></i>
+                        </button>
+                        <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}')" title="Agendar">
+                          <i data-lucide="calendar" style="width:10px"></i>
+                        </button>
+                      </div>
+                      <span style="display: flex; align-items: center;">${sAssignee}${s.text}${sDuration}</span>
                     </div>`;
                 }).join('');
                 
