@@ -829,12 +829,23 @@ window.selectRoutineDays = (mode) => {
 // ==================== WEEKLY PLANNER ====================
 function getWeekDays() {
   const today = new Date();
-  const day = today.getDay();
-  // Si hoy es domingo (0), la semana a planificar empieza mañana lunes (+1).
-  // Si es otro día, empieza el lunes de esta semana.
-  const diff = today.getDate() - day + (day === 0 ? 1 : 1);
+  // Forzamos mediodía para evitar problemas de saltos de día por zona horaria o horario de verano
+  const base = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0);
+  const day = base.getDay(); // 0=Dom, 1=Lun...
+  
+  // Si hoy es Domingo (0), queremos que la planificación empiece mañana Lunes (+1)
+  // Si es cualquier otro día, queremos el Lunes de esta misma semana
+  let monday = new Date(base);
+  if (day === 0) {
+    monday.setDate(base.getDate() + 1);
+  } else {
+    monday.setDate(base.getDate() - (day - 1));
+  }
+  
   return Array.from({length:7}, (_,i) => {
-    const d = new Date(today); d.setDate(diff+i); return d;
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
   });
 }
 const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
@@ -998,10 +1009,16 @@ $('sync-all-btn').onclick = async () => {
   let failed = [];
 
   for (const block of allUnsynced) {
-    const start = new Date(`${block.day}T${block.time}:00`);
+    // Creamos la fecha pero NO usamos toISOString() directo para evitar el desfase de UTC
+    const datePart = block.day; // YYYY-MM-DD
+    const timePart = block.time; // HH:mm
     const dur = block.duration || 30;
-    const end = new Date(start.getTime() + dur * 60000);
     
+    // Calculamos fin en minutos
+    const startTotalMin = timeToMin(timePart);
+    const endTotalMin = startTotalMin + dur;
+    const endTimePart = minToTime(endTotalMin);
+
     try {
       const url = new URL(N8N_URL);
       const res = await fetch(url.toString(), { 
@@ -1010,9 +1027,12 @@ $('sync-all-btn').onclick = async () => {
         body: JSON.stringify({ 
           taskId: block.taskTitle, 
           status: 'scheduled', 
-          startTime: start.toISOString(), 
-          endTime: end.toISOString(),
-          duration: dur
+          // Enviamos como string local + timezone para que n8n/Google no lo muevan
+          startTime: `${datePart} ${timePart}:00`, 
+          endTime: `${datePart} ${endTimePart}:00`,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          duration: dur,
+          isRoutine: block.isRoutine
         })
       });
 
