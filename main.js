@@ -416,7 +416,7 @@ async function fetchTasks() {
                   if(s.assignee === 'Pipe') sAssignee = '👨 ';
                   else if(s.assignee === 'Tati') sAssignee = '👩 ';
                   else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
-                  let sDuration = s.duration ? `<span style="font-size: 0.8em; opacity: 0.6; margin-left: 5px;">⏱️ ${s.duration}m</span>` : '';
+                  let sDuration = s.duration ? `<span style="font-size: 0.8em; opacity: 0.6; margin-left: 5px;">⏱️ ${formatDuration(s.duration)}</span>` : '';
                   
                   const isAction = s.text.includes('🎨') || s.text.includes('🚀');
                   const displayStyle = isAction 
@@ -820,7 +820,7 @@ $('save-task').onclick = createProject;
 window.openSchedule = (title, duration = 25) => {
   taskToSchedule = title; 
   window.currentScheduleDuration = duration; // Guardamos la duración para usarla al confirmar
-  $('schedule-task-name').textContent = `${title} (${duration}m)`;
+  $('schedule-task-name').textContent = `${title} (${formatDuration(duration)})`;
   const now = new Date(); now.setMinutes(now.getMinutes()+5);
   $('schedule-time').value = new Date(now - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
   $('schedule-modal').style.display = 'flex';
@@ -832,7 +832,7 @@ $('confirm-schedule').onclick = async () => {
   selectedTaskTitle = taskToSchedule;
   await syncCalendar('scheduled', start.toISOString(), end.toISOString());
   $('schedule-modal').style.display = 'none';
-  showToast(`📅 ¡Agendado (${dur}m)! Tu teléfono te avisará.`);
+  showToast(`📅 ¡Agendado (${formatDuration(dur)})! Tu teléfono te avisará.`);
 };
 $('close-schedule-modal').onclick = () => $('schedule-modal').style.display = 'none';
 
