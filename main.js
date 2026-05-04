@@ -1038,6 +1038,47 @@ $('sync-all-btn').onclick = async () => {
   renderPlanner();
 };
 
+window.exportTemplate = () => {
+  const data = { routines, weekPlan };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `axon_plantilla_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("💾 Plantilla descargada con éxito");
+};
+
+window.importTemplate = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.routines) {
+        routines.length = 0;
+        routines.push(...data.routines);
+        localStorage.setItem('axon_routines', JSON.stringify(routines));
+      }
+      if (data.weekPlan) {
+        weekPlan.length = 0;
+        weekPlan.push(...data.weekPlan);
+        localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+      }
+      renderRoutines();
+      renderPlanner();
+      showToast("⬆️ Plantilla cargada con éxito");
+    } catch (err) {
+      showToast("⚠️ Error al leer la plantilla");
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // reset
+};
+
 // ==================== AXON MIND (VAULT & INBOX) ====================
 let inboxDocs = JSON.parse(localStorage.getItem('axon_inbox_docs') || '[]');
 let vaultDocs = JSON.parse(localStorage.getItem('axon_vault_docs') || '[]');

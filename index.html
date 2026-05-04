@@ -105,6 +105,11 @@
                 <div class="plan-header">
                     <h2>📅 Planifica tu Semana</h2>
                     <p class="plan-subtitle">Asigna bloques de enfoque y súbelos todos a Google Calendar</p>
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
+                        <button id="export-template-btn" class="btn-secondary" onclick="window.exportTemplate()"><i data-lucide="download"></i> Guardar Backup</button>
+                        <button id="import-template-btn" class="btn-secondary" onclick="document.getElementById('import-template-file').click()"><i data-lucide="upload"></i> Cargar Backup</button>
+                        <input type="file" id="import-template-file" style="display:none" accept=".json" onchange="window.importTemplate(event)">
+                    </div>
                     <button id="sync-all-btn" class="btn-primary btn-sync-all"><i data-lucide="upload-cloud"></i> Subir Todo a Calendar</button>
                 </div>
                 <!-- Rutinas Inamovibles -->
