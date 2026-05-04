@@ -16,6 +16,11 @@
         <header>
             <div class="logo"><span class="accent">AXON</span> FLOW</div>
             <div class="header-right">
+                <div class="theme-switcher">
+                    <button onclick="setTheme('dark')" title="Deep Night">🌑</button>
+                    <button onclick="setTheme('twilight')" title="Twilight">🌗</button>
+                    <button onclick="setTheme('light')" title="Morning Glow">☀️</button>
+                </div>
                 <div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span> días</div>
                 <div class="status-badge"><i data-lucide="calendar"></i> <span id="calendar-status">Standby</span></div>
             </div>
@@ -36,7 +41,7 @@
                 <div class="timer-section">
                     <div class="timer-container">
                         <svg class="progress-ring" width="280" height="280">
-                            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.05)" stroke-width="6" fill="transparent" r="130" cx="140" cy="140"/>
+                            <circle class="progress-ring__circle-bg" stroke="var(--ring-bg)" stroke-width="6" fill="transparent" r="130" cx="140" cy="140"/>
                             <circle class="progress-ring__circle" stroke="var(--primary)" stroke-width="6" stroke-linecap="round" fill="transparent" r="130" cx="140" cy="140"/>
                         </svg>
                         <div class="timer-display">
@@ -355,7 +360,12 @@
             <div class="modal-content">
                 <h3>✨ Nuevo Proyecto</h3>
                 <input type="text" id="new-task-title" placeholder="Nombre del proyecto">
-                <textarea id="new-task-desc" placeholder="Descripción: ¿Cuál es el siguiente paso ridículamente fácil?"></textarea>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1rem; margin-bottom: 0.3rem;">
+                  <label class="input-label" style="margin:0">Descripción o Idea bruta</label>
+                  <button class="btn-mini" onclick="window.suggestWithAI(event)" style="background:rgba(14,165,233,0.1); color:var(--primary); border:1px solid var(--primary); padding:2px 8px; font-size:0.7em; cursor:pointer;">💡 Sugerir con IA</button>
+                </div>
+                <textarea id="new-task-desc" placeholder="Pega aquí tu idea de Grok o lo que tengas en mente..."></textarea>
                 
                 <div style="margin: 1rem 0;">
                     <label class="input-label">Nivel de Energía Requerido</label>
@@ -369,7 +379,14 @@
                 <div class="modal-steps-section">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem">
                         <h4 style="margin:0">Pasos del proyecto</h4>
-                        <button class="btn-mini" onclick="window.sliceWithAI()" style="background:var(--accent); color:black; font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem; font-weight:700">🔪 IA: Rebanar</button>
+                        <div style="display:flex; gap:0.3rem;">
+                            <button class="btn-mini" onclick="toggleJsonImport()" style="background:var(--bg-card); color:var(--text); font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem;">📄 JSON</button>
+                            <button class="btn-mini" onclick="window.sliceWithAI()" style="background:var(--accent); color:black; font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem; font-weight:700">🔪 IA: Rebanar</button>
+                        </div>
+                    </div>
+                    <div id="json-import-container" style="display:none; margin-bottom:1rem;">
+                        <textarea id="json-import-input" placeholder='Pega tu JSON aquí... ej: [{"text": "Tarea 1"}]' style="width:100%; height:100px; font-family:monospace; font-size:0.75rem; background:var(--bg-deep); color:var(--success); border:1px solid var(--success);"></textarea>
+                        <button onclick="processJsonImport()" class="btn-primary" style="width:100%; margin-top:0.5rem; font-size:0.8rem; padding:0.4rem;">Confirmar Importación</button>
                     </div>
                     <div id="modal-steps-list"></div>
                     <div class="step-input-group" style="display: flex; gap: 0.5rem;">

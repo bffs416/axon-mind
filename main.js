@@ -5,6 +5,17 @@ const supabase = createClient('https://blwaxxacneipoaufpiag.supabase.co', 'eyJhb
 const N8N_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/pomodoro-sync';
 const SLICER_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-slicer';
 
+// ==================== THEME MANAGEMENT ====================
+window.setTheme = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('axon_theme', theme);
+    console.log(`Axon Theme set to: ${theme}`);
+};
+
+// Initialize theme
+const savedTheme = localStorage.getItem('axon_theme') || 'dark';
+window.setTheme(savedTheme);
+
 // ==================== STATE ====================
 let timeLeft = 25 * 60, timerId = null, currentMode = 'pomodoro', pomodoroStartTime = null;
 let selectedTaskId = null, selectedTaskTitle = "Sesión de Trabajo", currentStepsInModal = [];
@@ -225,7 +236,7 @@ async function startTimer() {
         switchMode('pomodoro');
       }
 
-      syncCalendar('free');
+      // syncCalendar('free'); // Desactivado para no saturar el calendario
       fetchTasks(); loadStats();
       startBtn.disabled = false; pauseBtn.disabled = true;
     }
@@ -326,6 +337,13 @@ async function fetchTasks() {
       });
   }
 
+  // --- SORT BY STATUS (Done at the bottom) ---
+  filteredTasks.sort((a, b) => {
+    if (a.status === 'done' && b.status !== 'done') return 1;
+    if (a.status !== 'done' && b.status === 'done') return -1;
+    return 0;
+  });
+
   taskList.innerHTML = filteredTasks.map(task => {
     const steps = task.steps || [], done = steps.filter(s=>s.done).length;
     const prog = steps.length ? (done/steps.length)*100 : (task.status==='done'?100:0);
@@ -364,20 +382,56 @@ async function fetchTasks() {
             <button class="task-check" onclick="event.stopPropagation();window.toggleTask('${task.id}','${task.status}')"><i data-lucide="${task.status==='done'?'check':'circle'}"></i></button>
           </div>
         </div>
-        ${steps.length ? `<div class="progress-bar-container"><div class="progress-bar-fill" style="width:${prog}%"></div></div>
-          <div class="steps-container">${steps.map((s,i)=> {
-            let sAssignee = '';
-            if(s.assignee === 'Pipe') sAssignee = '👨 ';
-            else if(s.assignee === 'Tati') sAssignee = '👩 ';
-            else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
-            let sDuration = s.duration ? `<span style="font-size: 0.8em; background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; margin-left: 5px;">⏱️ ${s.duration}m</span>` : '';
-            return `<div class="step-item ${s.done?'done':''}">
-            <div class="action-btns">
-              <button class="btn-mini" onclick="event.stopPropagation();window.focusStep('${task.id}','${task.title.replace(/'/g,"\\'")+': '+s.text.replace(/'/g,"\\'")}')"><i data-lucide="play" style="width:12px"></i></button>
-              <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}')"><i data-lucide="calendar" style="width:12px"></i></button>
-            </div>
-            <span onclick="event.stopPropagation();window.toggleStep('${task.id}',${i})">${sAssignee}${s.text} ${sDuration}</span>
-          </div>`}).join('')}</div>` : ''}
+        ${(() => {
+          if (!steps.length) return '';
+          
+          // --- AGRUPAR PASOS POR HEADER ---
+          const groups = [];
+          let currentGroup = null;
+          
+          steps.forEach((s, i) => {
+            const stepWithIdx = { ...s, originalIndex: i };
+            if (s.isHeader || !currentGroup) {
+              currentGroup = { header: s.isHeader ? stepWithIdx : null, actions: [] };
+              groups.push(currentGroup);
+              if (!s.isHeader) currentGroup.actions.push(stepWithIdx);
+            } else {
+              currentGroup.actions.push(stepWithIdx);
+            }
+          });
+
+          return `<div class="progress-bar-container"><div class="progress-bar-fill" style="width:${prog}%"></div></div>
+            <div class="steps-container">
+              ${groups.map(group => {
+                const headerHtml = group.header ? `<div class="step-header" style="margin-top: 15px; margin-bottom: 5px; font-weight: 700; color: var(--accent); font-size: 0.9em; border-bottom: 1px solid var(--border-color); padding-bottom: 3px;">
+                    ${group.header.text}
+                </div>` : '';
+                
+                // Ordenar acciones dentro del grupo (pendientes primero)
+                const sortedActions = group.actions.sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1));
+                
+                const actionsHtml = sortedActions.map(s => {
+                  const i = s.originalIndex;
+                  let sAssignee = '';
+                  if(s.assignee === 'Pipe') sAssignee = '👨 ';
+                  else if(s.assignee === 'Tati') sAssignee = '👩 ';
+                  else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
+                  let sDuration = s.duration ? `<span style="font-size: 0.8em; background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; margin-left: 5px;">⏱️ ${s.duration}m</span>` : '';
+                  
+                  const isAction = s.text.includes('🎨') || s.text.includes('🚀');
+                  const displayStyle = isAction 
+                    ? 'display: inline-flex; width: auto; margin-right: 10px; margin-bottom: 5px; opacity: 0.9; font-size: 0.85em; background: var(--bg-deep); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); cursor:pointer;' 
+                    : 'margin-top: 5px; font-weight: 500; display: block;';
+
+                  return `<div class="step-item ${s.done?'done':''}" style="${displayStyle}" onclick="event.stopPropagation();window.toggleStep('${task.id}',${i})">
+                      <span style="display: flex; align-items: center;">${sAssignee}${s.text} ${sDuration}</span>
+                    </div>`;
+                }).join('');
+                
+                return headerHtml + actionsHtml;
+              }).join('')}
+            </div>`;
+        })()}
       </div></div>`;
   }).join('') || `<p style="color:var(--text-muted);text-align:center;padding:2rem;">No hay tareas en esta vista.</p>`;
   initIcons();
@@ -654,13 +708,11 @@ window.sliceWithAI = async () => {
             currentStepsInModal = rawSlices.map(s => ({
                 text: s.task || s.descripcion || s.tarea || "Paso sin nombre", 
                 done: false,
-                assignee: 'Ambos',
+                assignee: s.assignee || '🤝 Ambos',
                 duration: parseInt(s.estimated_time || s.duracion || s.tiempo) || 30
             }));
 
-            $('modal-steps-list').innerHTML = currentStepsInModal.map(s => {
-                return `<div class="step-item"><i data-lucide="circle" style="width:12px"></i> 🤝 ${s.text} <span style="font-size: 0.8em; opacity: 0.7; margin-left: 5px;">⏱️ ${s.duration}m</span></div>`;
-            }).join('');
+            renderModalSteps();
             
             initIcons();
             showToast("✅ ¡Proyecto rebanado con éxito!");
@@ -677,26 +729,64 @@ window.sliceWithAI = async () => {
     }
 };
 
+window.suggestWithAI = async (event) => {
+    const descField = $('new-task-desc');
+    const titleField = $('new-task-title');
+    const idea = descField.value;
+    if (!idea) {
+        alert("¡Escribe tu idea primero en el cuadro de descripción!");
+        return;
+    }
+
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "✨ Pensando...";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-architect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idea })
+        });
+        const data = await response.json();
+        if (data.suggested_title) titleField.value = data.suggested_title;
+        if (data.suggested_description) descField.value = data.suggested_description;
+    } catch (e) {
+        console.error(e);
+        alert("Error al conectar con el Arquitecto.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+
+window.updateModalStepText = (index, newText) => {
+    if (currentStepsInModal[index]) {
+        currentStepsInModal[index].text = newText;
+    }
+};
+
+window.removeModalStep = (index) => {
+    currentStepsInModal.splice(index, 1);
+    // Re-render list
+    renderModalSteps();
+};
+
 $('close-modal').onclick = () => {
   $('task-modal').style.display = 'none';
   $('save-task').onclick = createProject;
 };
 $('add-step-to-list').onclick = () => {
   const v = $('step-input').value; if(!v) return;
-  const a = $('step-assignee') ? $('step-assignee').value : 'Ambos';
-  const d = $('step-duration') ? parseInt($('step-duration').value) : null;
-  currentStepsInModal.push({text:v,done:false, assignee:a, duration: d}); 
+  const a = $('step-assignee') ? $('step-assignee').value : '🤝 Ambos';
+  const d = $('step-duration') ? parseInt($('step-duration').value) : 30;
+  currentStepsInModal.push({text:v, done:false, assignee:a, duration: d}); 
   $('step-input').value = '';
   if ($('step-duration')) $('step-duration').value = '';
-  if ($('step-assignee')) $('step-assignee').value = 'Ambos';
-  $('modal-steps-list').innerHTML = currentStepsInModal.map(s=> {
-    let sAssignee = '';
-    if(s.assignee === 'Pipe') sAssignee = '👨 ';
-    else if(s.assignee === 'Tati') sAssignee = '👩 ';
-    else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
-    let sDuration = s.duration ? `<span style="font-size: 0.8em; opacity: 0.7; margin-left: 5px;">⏱️ ${s.duration}m</span>` : '';
-    return `<div class="step-item"><i data-lucide="circle" style="width:12px"></i> ${sAssignee}${s.text} ${sDuration}</div>`;
-  }).join('');
+  
+  // Re-render list using the same editable template
+  renderModalSteps();
   initIcons();
 };
 const createProject = async () => {
@@ -1550,6 +1640,109 @@ window.saveDailyJournal = async () => {
   $('journal-modal').style.display = 'none';
   $('journal-wins').value = ''; $('journal-family').value = ''; 
   $('journal-lesson').value = ''; $('journal-frustrations').value = '';
+};
+window.renderModalSteps = () => {
+    $('modal-steps-list').innerHTML = currentStepsInModal.map((s, i) => {
+        const iconAssignee = s.assignee === 'Pipe' ? '👨' : (s.assignee === 'Tati' ? '👩' : '🤝');
+        return `<div class="step-item" style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
+            <span style="font-size: 0.75rem; opacity: 0.5; min-width: 20px; font-family: monospace;">${i + 1}.</span>
+            <span style="font-size: 1.2rem; min-width: 30px; text-align: center;">${iconAssignee}</span> 
+            <input type="text" value="${s.text}" 
+                style="flex:1; background:var(--bg-card); border:1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; color:var(--text); font-size:0.85em; font-weight:500;" 
+                onchange="window.updateModalStepText(${i}, this.value)">
+            <span style="font-size: 0.7em; opacity: 0.6; min-width: 45px; color:var(--text);">⏱️ ${s.duration || 25}m</span>
+            <button class="btn-mini" onclick="window.removeModalStep(${i})" style="color:var(--danger); opacity:0.6; background:transparent; border:none; cursor:pointer; font-size:1rem;">✕</button>
+        </div>`;
+    }).join('');
+    initIcons();
+};
+
+// ==================== BATCH JSON IMPORT ====================
+window.toggleJsonImport = () => {
+    const container = $('json-import-container');
+    container.style.display = container.style.display === 'none' ? 'block' : 'none';
+};
+
+window.processJsonImport = () => {
+    let input = $('json-import-input').value.trim();
+    if (!input) return;
+
+    let stepsToProcess = [];
+
+    try {
+        // --- MÉTODO 1: JSON ESTÁNDAR ---
+        let cleanInput = input.replace(/```json/g, '').replace(/```/g, '').trim();
+        const startIdx = cleanInput.indexOf('[');
+        const endIdx = cleanInput.lastIndexOf(']');
+        if (startIdx !== -1 && endIdx !== -1) {
+            cleanInput = cleanInput.substring(startIdx, endIdx + 1);
+        }
+        cleanInput = cleanInput.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"');
+        cleanInput = cleanInput.replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
+
+        const data = JSON.parse(cleanInput);
+        stepsToProcess = Array.isArray(data) ? data : (data.steps || []);
+
+    } catch (e) {
+        console.warn("JSON.parse falló, usando Extractor de Emergencia (Regex)...");
+        
+        // --- MÉTODO 2: EXTRACTOR DE EMERGENCIA (REGEX) ---
+        // Busca cualquier cosa que parezca "text": "Título" o "title": "Título"
+        const regex = /"(?:text|title|name)"\s*:\s*"([^"]+)"/g;
+        let match;
+        while ((match = regex.exec(input)) !== null) {
+            stepsToProcess.push({ text: match[1] });
+        }
+    }
+
+    if (stepsToProcess.length > 0) {
+        stepsToProcess.forEach(item => {
+            let stepText = "";
+            
+            // Si es el formato detallado de HansBiomed
+            if (item.Objetivo && item["Línea Estratégica"]) {
+                const fecha = item.Fecha && item.Fecha !== "Por definir" ? `[${item.Fecha.split('/')[0]}/${item.Fecha.split('/')[1]}] ` : "";
+                const formato = item.Formato ? `${item.Formato.split('.')[1] || item.Formato} - ` : "";
+                stepText = `${fecha}${formato}${item["Línea Estratégica"]}: ${item.Objetivo}`;
+            } else {
+                // Fallback a formatos simples
+                stepText = typeof item === 'string' ? item : (item.text || item.title || item.name || "Paso");
+            }
+
+            // 1. EL TÍTULO (Encabezado)
+            currentStepsInModal.push({
+                id: Math.random().toString(36).substr(2, 9),
+                text: `📌 ${stepText}`,
+                done: false,
+                isHeader: true
+            });
+
+            // 2. ACCIÓN: CREAR
+            currentStepsInModal.push({
+                id: Math.random().toString(36).substr(2, 9),
+                text: `🎨 Crear`,
+                done: false,
+                assignee: item.assignee || "Ambos",
+                duration: 30
+            });
+
+            // 3. ACCIÓN: PUBLICAR
+            currentStepsInModal.push({
+                id: Math.random().toString(36).substr(2, 9),
+                text: `🚀 Publicar`,
+                done: false,
+                assignee: "Tati",
+                duration: 5
+            });
+        });
+
+        renderModalSteps();
+        $('json-import-input').value = '';
+        $('json-import-container').style.display = 'none';
+        showToast(`✅ ¡${stepsToProcess.length} pasos rescatados con éxito!`);
+    } else {
+        alert("No pude encontrar ninguna lista de tareas. Asegúrate de que el texto contenga el formato [ { 'text': '...' } ]");
+    }
 };
 
 // ==================== INIT ====================
