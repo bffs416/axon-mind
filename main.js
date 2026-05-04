@@ -10,6 +10,7 @@ let selectedTaskId = null, selectedTaskTitle = "Sesión de Trabajo", currentStep
 let currentSessionId = null, taskToSchedule = null, allTasks = [];
 let sessionsCompleted = 0; // Para el descanso largo cada 4
 let currentEnergyFilter = 'all';
+let currentAssigneeFilter = 'all';
 let showFrozen = false;
 const modes = { pomodoro: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60 };
 
@@ -316,6 +317,14 @@ async function fetchTasks() {
       filteredTasks = filteredTasks.filter(t => (t.energy_level || 'medium') === currentEnergyFilter);
   }
 
+  // Filter by Assignee
+  if (currentAssigneeFilter !== 'all') {
+      filteredTasks = filteredTasks.filter(t => {
+          if (!t.steps || t.steps.length === 0) return true; // Show projects with no steps
+          return t.steps.some(s => !s.done && (s.assignee === currentAssigneeFilter || s.assignee === 'Ambos' || !s.assignee));
+      });
+  }
+
   taskList.innerHTML = filteredTasks.map(task => {
     const steps = task.steps || [], done = steps.filter(s=>s.done).length;
     const prog = steps.length ? (done/steps.length)*100 : (task.status==='done'?100:0);
@@ -329,6 +338,8 @@ async function fetchTasks() {
     if(eLvl === 'high') energyTag = '<span class="energy-tag high">⚡ Alta</span>';
     if(eLvl === 'medium') energyTag = '<span class="energy-tag medium">🔋 Media</span>';
     if(eLvl === 'low') energyTag = '<span class="energy-tag low">🪫 Baja</span>';
+
+
 
     return `<div class="task-card ${task.status==='done'?'done':''} ${task.status==='frozen'?'frozen':''} ${staleClass} ${sel}" data-id="${task.id}" data-title="${task.title}">
       <div style="width:100%">
@@ -353,13 +364,19 @@ async function fetchTasks() {
           </div>
         </div>
         ${steps.length ? `<div class="progress-bar-container"><div class="progress-bar-fill" style="width:${prog}%"></div></div>
-          <div class="steps-container">${steps.map((s,i)=>`<div class="step-item ${s.done?'done':''}">
+          <div class="steps-container">${steps.map((s,i)=> {
+            let sAssignee = '';
+            if(s.assignee === 'Pipe') sAssignee = '👨 ';
+            else if(s.assignee === 'Tati') sAssignee = '👩 ';
+            else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
+            let sDuration = s.duration ? `<span style="font-size: 0.8em; background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; margin-left: 5px;">⏱️ ${s.duration}m</span>` : '';
+            return `<div class="step-item ${s.done?'done':''}">
             <div class="action-btns">
               <button class="btn-mini" onclick="event.stopPropagation();window.focusStep('${task.id}','${task.title.replace(/'/g,"\\'")+': '+s.text.replace(/'/g,"\\'")}')"><i data-lucide="play" style="width:12px"></i></button>
               <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}')"><i data-lucide="calendar" style="width:12px"></i></button>
             </div>
-            <span onclick="event.stopPropagation();window.toggleStep('${task.id}',${i})">${s.text}</span>
-          </div>`).join('')}</div>` : ''}
+            <span onclick="event.stopPropagation();window.toggleStep('${task.id}',${i})">${sAssignee}${s.text} ${sDuration}</span>
+          </div>`}).join('')}</div>` : ''}
       </div></div>`;
   }).join('') || `<p style="color:var(--text-muted);text-align:center;padding:2rem;">No hay tareas en esta vista.</p>`;
   initIcons();
@@ -413,7 +430,13 @@ window.editTask = async (id) => {
   $('new-task-desc').value = task.description || '';
   $('new-task-energy').value = task.energy_level || 'medium';
   currentStepsInModal = task.steps || [];
-  $('modal-steps-list').innerHTML = currentStepsInModal.map(s => `<div class="step-item"><i data-lucide="circle" style="width:12px"></i> ${s.text}</div>`).join('');
+  $('modal-steps-list').innerHTML = currentStepsInModal.map(s => {
+    let sAssignee = '';
+    if(s.assignee === 'Pipe') sAssignee = '👨 ';
+    else if(s.assignee === 'Tati') sAssignee = '👩 ';
+    else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
+    return `<div class="step-item"><i data-lucide="circle" style="width:12px"></i> ${sAssignee}${s.text}</div>`;
+  }).join('');
   taskModal.style.display = 'flex';
   initIcons();
 
@@ -421,14 +444,15 @@ window.editTask = async (id) => {
   $('save-task').onclick = async () => {
     const title = $('new-task-title').value; if (!title) return;
     const energy = $('new-task-energy').value;
-    await supabase.from('tasks').update({ title, description: $('new-task-desc').value, energy_level: energy, steps: currentStepsInModal }).eq('id', id);
+    const { error } = await supabase.from('tasks').update({ title, description: $('new-task-desc').value, energy_level: energy, steps: currentStepsInModal }).eq('id', id);
+    if (error) {
+      console.error("Error al actualizar tarea:", error);
+      showToast("Error al actualizar: " + error.message);
+      return;
+    }
     $('task-modal').style.display = 'none';
     // Restore original save behavior
-    $('save-task').onclick = async () => {
-      const t = $('new-task-title').value; if (!t) return;
-      await supabase.from('tasks').insert([{ title: t, description: $('new-task-desc').value, energy_level: $('new-task-energy').value, status: 'todo', steps: currentStepsInModal }]);
-      $('task-modal').style.display = 'none'; fetchTasks();
-    };
+    $('save-task').onclick = createProject;
     fetchTasks();
     showToast('✅ Tarea actualizada');
   };
@@ -516,6 +540,16 @@ document.querySelectorAll('.energy-filter').forEach(btn => {
     };
 });
 
+// Configurar listeners de filtros de responsable
+document.querySelectorAll('.assignee-filter').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.assignee-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentAssigneeFilter = btn.dataset.assignee;
+        fetchTasks();
+    };
+});
+
 // ==================== MODALS ====================
 $('add-task-btn').onclick = () => { 
     currentStepsInModal = []; 
@@ -523,9 +557,9 @@ $('add-task-btn').onclick = () => {
     $('new-task-title').value = ''; 
     $('new-task-desc').value = ''; 
     $('new-task-energy').value = 'medium';
+    $('save-task').onclick = createProject; // Restaura la función de crear
     $('task-modal').style.display = 'flex'; 
 };
-
 let journalMood = 'neutral';
 document.querySelectorAll('.mood-btn').forEach(btn => {
     btn.onclick = () => {
@@ -588,19 +622,47 @@ window.sliceWithAI = () => {
     initIcons();
 };
 
-$('close-modal').onclick = () => $('task-modal').style.display = 'none';
+$('close-modal').onclick = () => {
+  $('task-modal').style.display = 'none';
+  $('save-task').onclick = createProject;
+};
 $('add-step-to-list').onclick = () => {
   const v = $('step-input').value; if(!v) return;
-  currentStepsInModal.push({text:v,done:false}); $('step-input').value = '';
-  $('modal-steps-list').innerHTML = currentStepsInModal.map(s=>`<div class="step-item"><i data-lucide="circle" style="width:12px"></i> ${s.text}</div>`).join('');
+  const a = $('step-assignee') ? $('step-assignee').value : 'Ambos';
+  const d = $('step-duration') ? parseInt($('step-duration').value) : null;
+  currentStepsInModal.push({text:v,done:false, assignee:a, duration: d}); 
+  $('step-input').value = '';
+  if ($('step-duration')) $('step-duration').value = '';
+  if ($('step-assignee')) $('step-assignee').value = 'Ambos';
+  $('modal-steps-list').innerHTML = currentStepsInModal.map(s=> {
+    let sAssignee = '';
+    if(s.assignee === 'Pipe') sAssignee = '👨 ';
+    else if(s.assignee === 'Tati') sAssignee = '👩 ';
+    else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
+    let sDuration = s.duration ? `<span style="font-size: 0.8em; opacity: 0.7; margin-left: 5px;">⏱️ ${s.duration}m</span>` : '';
+    return `<div class="step-item"><i data-lucide="circle" style="width:12px"></i> ${sAssignee}${s.text} ${sDuration}</div>`;
+  }).join('');
   initIcons();
 };
-$('save-task').onclick = async () => {
+const createProject = async () => {
   const title = $('new-task-title').value; if(!title) return;
   const energy = $('new-task-energy').value;
-  await supabase.from('tasks').insert([{ title, description: $('new-task-desc').value, energy_level: energy, status: 'todo', steps: currentStepsInModal }]);
+  const { error } = await supabase.from('tasks').insert([{ 
+    title, 
+    description: $('new-task-desc').value, 
+    energy_level: energy, 
+    status: 'todo', 
+    steps: currentStepsInModal
+  }]);
+  if (error) {
+    console.error("Error al crear tarea:", error);
+    showToast("Error al crear: " + error.message);
+    return;
+  }
   $('task-modal').style.display = 'none'; fetchTasks();
 };
+
+$('save-task').onclick = createProject;
 
 window.openSchedule = (title) => {
   taskToSchedule = title; $('schedule-task-name').textContent = title;
@@ -981,8 +1043,11 @@ let inboxDocs = JSON.parse(localStorage.getItem('axon_inbox_docs') || '[]');
 let vaultDocs = JSON.parse(localStorage.getItem('axon_vault_docs') || '[]');
 
 window.openQuickCapture = () => {
-  quickCaptureModal.style.display = 'flex';
-  setTimeout(() => $('inbox-content').focus(), 100);
+  quickCaptureModal.style.display = 'block';
+  setTimeout(() => {
+    $('inbox-content').focus();
+    initIcons();
+  }, 100);
 };
 
 window.closeQuickCapture = () => {

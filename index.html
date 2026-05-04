@@ -84,6 +84,11 @@
                             <button id="toggle-freezer-btn" class="btn-ghost" onclick="toggleFreezerView()" style="flex: 1; color: #60a5fa; font-size: 0.85rem; padding: 0.4rem;">❄️ Nevera</button>
                         </div>
                         
+                        <div class="assignee-filters" style="width: 100%; display: flex; gap: 0.5rem; margin-top: 0.5rem; overflow-x: auto; padding-bottom: 0.2rem;">
+                            <button class="assignee-filter active" data-assignee="all">Todos</button>
+                            <button class="assignee-filter" data-assignee="Pipe">👨 Pipe</button>
+                            <button class="assignee-filter" data-assignee="Tati">👩 Tati</button>
+                        </div>
                         <div class="energy-filters" style="width: 100%; display: flex; gap: 0.5rem; margin-top: 0.5rem; overflow-x: auto; padding-bottom: 0.2rem;">
                             <button class="energy-filter active" data-energy="all">Todas</button>
                             <button class="energy-filter energy-high-btn" data-energy="high">⚡ Alta</button>
@@ -351,9 +356,9 @@
                 <div style="margin: 1rem 0;">
                     <label class="input-label">Nivel de Energía Requerido</label>
                     <select id="new-task-energy" class="plan-select" style="width: 100%; padding: 0.8rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
-                        <option value="high">⚡ Alta (Requiere foco intenso)</option>
-                        <option value="medium" selected>🔋 Media (Trabajo normal)</option>
-                        <option value="low">🪫 Baja (Modo autopiloto)</option>
+                        <option value="high">⚡ Alta</option>
+                        <option value="medium" selected>🔋 Media</option>
+                        <option value="low">🪫 Baja</option>
                     </select>
                 </div>
 
@@ -363,8 +368,14 @@
                         <button class="btn-mini" onclick="window.sliceWithAI()" style="background:var(--accent); color:black; font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem; font-weight:700">🔪 IA: Rebanar</button>
                     </div>
                     <div id="modal-steps-list"></div>
-                    <div class="step-input-group">
-                        <input type="text" id="step-input" placeholder="Añadir un paso...">
+                    <div class="step-input-group" style="display: flex; gap: 0.5rem;">
+                        <select id="step-assignee" class="plan-select" style="padding: 0.5rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; width: 60px;" title="Responsable">
+                            <option value="Ambos" selected>🤝</option>
+                            <option value="Pipe">👨</option>
+                            <option value="Tati">👩</option>
+                        </select>
+                        <input type="text" id="step-input" placeholder="Añadir un paso..." style="flex: 1;">
+                        <input type="number" id="step-duration" placeholder="Min" style="width: 70px; padding: 0.5rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;" title="Minutos estimados">
                         <button id="add-step-to-list" class="btn-secondary">+</button>
                     </div>
                 </div>
@@ -428,15 +439,16 @@
       </div>
     </div>
 
-    <!-- Quick Capture Modal (Inbox) -->
-    <div id="quick-capture-modal" class="modal">
-      <div class="modal-content modal-sm">
-        <h3 style="color: var(--primary);">⚡ Captura Rápida</h3>
-        <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">Usa Ctrl+Espacio en cualquier momento</p>
-        <textarea id="inbox-content" placeholder="Escribe tu idea rápidamente..." rows="4"></textarea>
-        <div class="modal-actions" style="justify-content: space-between;">
-          <button class="btn btn-outline" onclick="closeQuickCapture()">Cerrar</button>
-          <button class="btn btn-primary" onclick="saveInbox()">Guardar ⚡</button>
+    <!-- Quick Capture Bar (Inbox) -->
+    <div id="quick-capture-modal" class="quick-capture-bar">
+      <div class="quick-capture-content">
+        <div class="quick-capture-header">
+           <span class="quick-capture-title">⚡ Captura Rápida</span>
+           <button class="btn-close-capture" onclick="closeQuickCapture()">✕</button>
+        </div>
+        <div class="quick-capture-body">
+            <input type="text" id="inbox-content" placeholder="Escribe tu idea y presiona Enter..." onkeydown="if(event.key==='Enter') saveInbox()">
+            <button class="btn-save-capture" onclick="saveInbox()"><i data-lucide="send"></i></button>
         </div>
       </div>
     </div>

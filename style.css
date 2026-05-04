@@ -528,8 +528,88 @@ button { cursor: pointer; border: none; font-family: var(--font); }
 /* ========== MODALS ========== */
 .modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); z-index: 1500; align-items: center; justify-content: center;
     padding: 1rem;
+}
+
+/* ========== QUICK CAPTURE BAR ========== */
+.quick-capture-bar {
+    display: none;
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    background: #1a1a2e;
+    border: 1px solid var(--primary);
+    border-radius: 1rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 20px var(--primary-glow);
+    z-index: 20000; /* Above everything including SOS */
+    padding: 1rem;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+.quick-capture-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.quick-capture-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quick-capture-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-close-capture {
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.quick-capture-body {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.quick-capture-body input {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: white;
+    font-family: var(--font);
+    outline: none;
+}
+
+.quick-capture-body input:focus {
+    border-color: var(--primary);
+}
+
+.btn-save-capture {
+    background: var(--primary);
+    color: white;
+    padding: 0 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .modal-content {
     background: #13111c; border: 1px solid var(--border); border-radius: var(--radius);
