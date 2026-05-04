@@ -428,7 +428,7 @@ async function fetchTasks() {
                         <button class="btn-mini" onclick="event.stopPropagation();window.focusStep('${task.id}','${task.title.replace(/'/g,"\\'")+': '+s.text.replace(/'/g,"\\'")}')" title="Iniciar Pomodoro" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
                           <i data-lucide="play" style="width:12px; height:12px;"></i>
                         </button>
-                        <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}')" title="Agendar" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                        <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}', ${s.duration || 25})" title="Agendar" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
                           <i data-lucide="calendar" style="width:12px; height:12px;"></i>
                         </button>
                       </div>
@@ -817,19 +817,22 @@ const createProject = async () => {
 
 $('save-task').onclick = createProject;
 
-window.openSchedule = (title) => {
-  taskToSchedule = title; $('schedule-task-name').textContent = title;
+window.openSchedule = (title, duration = 25) => {
+  taskToSchedule = title; 
+  window.currentScheduleDuration = duration; // Guardamos la duración para usarla al confirmar
+  $('schedule-task-name').textContent = `${title} (${duration}m)`;
   const now = new Date(); now.setMinutes(now.getMinutes()+5);
   $('schedule-time').value = new Date(now - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
   $('schedule-modal').style.display = 'flex';
 };
 $('confirm-schedule').onclick = async () => {
   const t = $('schedule-time').value; if(!t) return;
-  const start = new Date(t), end = new Date(start.getTime()+25*60000);
+  const dur = window.currentScheduleDuration || 25;
+  const start = new Date(t), end = new Date(start.getTime() + dur * 60000);
   selectedTaskTitle = taskToSchedule;
   await syncCalendar('scheduled', start.toISOString(), end.toISOString());
   $('schedule-modal').style.display = 'none';
-  showToast("📅 ¡Agendado! Tu teléfono te avisará.");
+  showToast(`📅 ¡Agendado (${dur}m)! Tu teléfono te avisará.`);
 };
 $('close-schedule-modal').onclick = () => $('schedule-modal').style.display = 'none';
 
