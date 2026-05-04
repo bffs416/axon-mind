@@ -3,6 +3,7 @@ import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, C
 
 const supabase = createClient('https://blwaxxacneipoaufpiag.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsd2F4eGFjbmVpcG9hdWZwaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5Mzg0ODgsImV4cCI6MjA3MzUxNDQ4OH0.MYorhHHAEOnFj5DPYZHozi5pyDZbtJQDBOeD2Te3WXU');
 const N8N_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/pomodoro-sync';
+const SLICER_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-slicer';
 
 // ==================== STATE ====================
 let timeLeft = 25 * 60, timerId = null, currentMode = 'pomodoro', pomodoroStartTime = null;
@@ -608,18 +609,72 @@ window.showMultipotentialSummary = () => {
     $('stats-summary-modal').style.display = 'flex';
 };
 
-window.sliceWithAI = () => {
+window.sliceWithAI = async () => {
     const title = $('new-task-title').value;
+    const desc = $('new-task-desc').value;
     if(!title) return showToast("Escribe primero el nombre del proyecto para rebanarlo");
     
-    showToast("🔪 IA Rebanando: " + title);
+    const btn = document.querySelector('button[onclick="window.sliceWithAI()"]');
+    const originalText = btn.innerHTML;
     
-    // Simulación de "slicing" lógico basado en el título
-    const steps = ["Investigación inicial 🧠", "Boceto de estructura 📝", "Implementación base 🛠️", "Pulido y detalles ✨"];
-    
-    currentStepsInModal = steps.map(s => ({text: s, done: false}));
-    $('modal-steps-list').innerHTML = currentStepsInModal.map(s=>`<div class="step-item"><i data-lucide="circle" style="width:12px"></i> ${s.text}</div>`).join('');
-    initIcons();
+    try {
+        btn.innerHTML = "⏳ Rebanando...";
+        btn.disabled = true;
+        showToast("🧠 Axon Slicer está pensando...");
+
+        const response = await fetch(SLICER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                title: title,
+                description: desc 
+            })
+        });
+
+        if (!response.ok) throw new Error("Error en la conexión con la IA");
+
+        const data = await response.json();
+        
+        // Lógica de mapeo ultra-flexible
+        let rawSlices = [];
+        
+        // Si es un array directo
+        const base = Array.isArray(data) ? data[0] : data;
+        
+        if (base.slices) rawSlices = base.slices;
+        else if (base.fragmentacion) {
+            // Si viene por fases (como el último ejemplo), aplanamos las tareas
+            base.fragmentacion.forEach(fase => {
+                if (fase.tareas) rawSlices.push(...fase.tareas);
+            });
+        } else if (base.tareas) rawSlices = base.tareas;
+        else if (Array.isArray(base)) rawSlices = base;
+
+        if (rawSlices.length > 0) {
+            currentStepsInModal = rawSlices.map(s => ({
+                text: s.task || s.descripcion || s.tarea || "Paso sin nombre", 
+                done: false,
+                assignee: 'Ambos',
+                duration: parseInt(s.estimated_time || s.duracion || s.tiempo) || 30
+            }));
+
+            $('modal-steps-list').innerHTML = currentStepsInModal.map(s => {
+                return `<div class="step-item"><i data-lucide="circle" style="width:12px"></i> 🤝 ${s.text} <span style="font-size: 0.8em; opacity: 0.7; margin-left: 5px;">⏱️ ${s.duration}m</span></div>`;
+            }).join('');
+            
+            initIcons();
+            showToast("✅ ¡Proyecto rebanado con éxito!");
+        } else {
+            console.error("No se encontraron tareas en la respuesta:", data);
+            showToast("⚠️ La IA no devolvió tareas claras");
+        }
+    } catch (error) {
+        console.error("Error al rebanar:", error);
+        showToast("❌ Error al conectar con el Slicer");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 };
 
 $('close-modal').onclick = () => {
