@@ -168,6 +168,8 @@ const updateDisplay = () => {
 async function startTimer() {
   if (timerId) return;
   pomodoroStartTime = Date.now();
+  const initialTimeLeft = timeLeft;
+  const pomodoroEndTime = Date.now() + initialTimeLeft * 1000;
   // Record focus session
   if (currentMode === 'pomodoro') {
     const { data } = await supabase.from('focus_sessions').insert([{
@@ -181,7 +183,7 @@ async function startTimer() {
   }
   document.body.classList.add('immersive-mode');
   timerId = setInterval(async () => {
-    timeLeft--;
+    timeLeft = Math.max(0, Math.ceil((pomodoroEndTime - Date.now()) / 1000));
     updateDisplay();
     if (timeLeft <= 0) {
       clearInterval(timerId); timerId = null;
