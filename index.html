@@ -106,9 +106,8 @@
                     <h2>📅 Planifica tu Semana</h2>
                     <p class="plan-subtitle">Asigna bloques de enfoque y súbelos todos a Google Calendar</p>
                     <div style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
-                        <button id="export-template-btn" class="btn-secondary" onclick="window.exportTemplate()"><i data-lucide="download"></i> Guardar Backup</button>
-                        <button id="import-template-btn" class="btn-secondary" onclick="document.getElementById('import-template-file').click()"><i data-lucide="upload"></i> Cargar Backup</button>
-                        <input type="file" id="import-template-file" style="display:none" accept=".json" onchange="window.importTemplate(event)">
+                        <button id="save-template-btn" class="btn-secondary" onclick="window.openSaveTemplateModal()"><i data-lucide="cloud"></i> Guardar en la Nube</button>
+                        <button id="load-template-btn" class="btn-secondary" onclick="window.openLoadTemplateModal()"><i data-lucide="download-cloud"></i> Cargar Plantilla</button>
                     </div>
                     <button id="sync-all-btn" class="btn-primary btn-sync-all"><i data-lucide="upload-cloud"></i> Subir Todo a Calendar</button>
                 </div>
@@ -429,6 +428,32 @@
                 </div>
             </div>
         </div>
+
+    <!-- Modals Plantillas Cloud -->
+    <div id="save-template-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <h3>☁️ Guardar en la Nube</h3>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">Se guardarán tus rutinas actuales y bloques inamovibles.</p>
+            <input type="text" id="template-name-input" class="plan-select" placeholder="Ej: Semana Base, Semana Lanzamiento...">
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="document.getElementById('save-template-modal').style.display='none'">Cancelar</button>
+                <button class="btn-primary" onclick="window.confirmSaveTemplate()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-template-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <h3>☁️ Mis Plantillas</h3>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">Selecciona una plantilla para sobreescribir tu semana actual.</p>
+            <div id="templates-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; margin-bottom: 1rem;">
+                <p style="color:var(--text-muted); font-size: 0.8rem; text-align: center;">Cargando...</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="document.getElementById('load-template-modal').style.display='none'">Cerrar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Cerebro / Vault -->
     <div id="vault-modal" class="modal">

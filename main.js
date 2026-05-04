@@ -680,6 +680,21 @@ $('confirm-schedule').onclick = async () => {
 };
 $('close-schedule-modal').onclick = () => $('schedule-modal').style.display = 'none';
 
+// ==================== HELPERS ====================
+const timeToMin = (t) => { if(!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+m; };
+const minToTime = (m) => { const h = Math.floor(m/60).toString().padStart(2,'0'), mm = (m%60).toString().padStart(2,'0'); return `${h}:${mm}`; };
+const format12h = (tStr) => {
+    if(!tStr) return '';
+    let [h, m] = tStr.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; h = h ? h : 12;
+    return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
+};
+const formatDuration = (min) => {
+    const h = Math.floor(min/60), m = min%60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
 // ==================== ROUTINES ====================
 const routines = JSON.parse(localStorage.getItem('axon_routines') || '[]');
 
@@ -706,7 +721,7 @@ function renderRoutines() {
     <div class="routine-chip" style="padding: 0.3rem 0.6rem;">
       <span class="routine-emoji">${r.emoji}</span>
       <span class="routine-name" style="font-weight:600; margin: 0 0.3rem;">${r.name}</span>
-      <span class="routine-chip-days" style="opacity:0.6; font-size:0.7rem;">${renderDayChipsShort(r.days)} ${r.time}</span>
+      <span class="routine-chip-days" style="opacity:0.6; font-size:0.7rem;">${renderDayChipsShort(r.days)} ${format12h(r.time)} (${formatDuration(r.duration)})</span>
       <button class="routine-chip-edit" style="margin-left:0.3rem" onclick="window.editRoutine('${r.id}')">✏️</button>
       <button class="routine-chip-remove" onclick="window.deleteRoutine('${r.id}')">✕</button>
     </div>
@@ -735,8 +750,6 @@ $('add-routine-btn').onclick = () => {
   if (routines && routines.length > 0) {
     const sorted = [...routines].sort((a,b) => a.time.localeCompare(b.time));
     const last = sorted[sorted.length - 1];
-    const timeToMin = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m; };
-    const minToTime = (m) => { const h = Math.floor(m/60).toString().padStart(2,'0'), mm = (m%60).toString().padStart(2,'0'); return `${h}:${mm}`; };
     defaultTime = minToTime(timeToMin(last.time) + last.duration);
   }
   
@@ -836,8 +849,6 @@ function getRoutineBlocksForDay(date) {
 
 function renderPlanner() {
   const days = getWeekDays(), today = new Date().toDateString();
-  const timeToMin = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m; };
-  const minToTime = (m) => { const h = Math.floor(m/60).toString().padStart(2,'0'), mm = (m%60).toString().padStart(2,'0'); return `${h}:${mm}`; };
 
   $('week-grid').innerHTML = days.map((d,i) => {
     const dateStr = d.toISOString().slice(0,10);
@@ -858,20 +869,18 @@ function renderPlanner() {
         // Calcular espacio libre antes de este bloque
         if (lastEndMin !== null && startMin > lastEndMin + 5) {
           const gap = startMin - lastEndMin;
-          const h = Math.floor(gap/60), m = gap%60;
-          const gapLabel = h > 0 ? `${h}h ${m}m` : `${m}m`;
           blocksHtml += `<div class="plan-block free">
             <div class="plan-block-info">
-              <span class="plan-block-time">${minToTime(lastEndMin)}</span>
-              <span class="plan-block-title">☕ Libre: ${gapLabel}</span>
+              <span class="plan-block-time">${format12h(minToTime(lastEndMin))}</span>
+              <span class="plan-block-title">☕ Libre: ${formatDuration(gap)}</span>
             </div>
           </div>`;
         }
 
         blocksHtml += `<div class="plan-block ${b.isRoutine?'routine':''} ${b.synced?'synced':''}">
           <div class="plan-block-info">
-            <span class="plan-block-time">${b.time}</span>
-            <span class="plan-block-title">${b.taskTitle}${b.duration ? ` (${b.duration}min)`:''}</span>
+            <span class="plan-block-time">${format12h(b.time)}</span>
+            <span class="plan-block-title">${b.taskTitle}${b.duration ? ` (${formatDuration(b.duration)})`:''}</span>
           </div>
           ${b.isRoutine ? '<span class="plan-block-lock">🔒</span>' : b.synced ? '<span class="plan-block-synced-icon">✓</span>' : `<button class="plan-block-remove" onclick="window.removePlanBlock('${b.id}')">✕</button>`}
         </div>`;
@@ -911,8 +920,6 @@ window.addPlanBlock = (dateStr, label) => {
   input.value = '';
   
   // Calcular hora sugerida (cascada)
-  const timeToMin = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m; };
-  const minToTime = (m) => { const h = Math.floor(m/60).toString().padStart(2,'0'), mm = (m%60).toString().padStart(2,'0'); return `${h}:${mm}`; };
   
   const dayDate = new Date(dateStr + "T12:00:00");
   const routineBlocks = getRoutineBlocksForDay(dayDate);
@@ -1038,46 +1045,129 @@ $('sync-all-btn').onclick = async () => {
   renderPlanner();
 };
 
-window.exportTemplate = () => {
-  const data = { routines, weekPlan };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `axon_plantilla_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast("💾 Plantilla descargada con éxito");
+window.openSaveTemplateModal = () => {
+  $('template-name-input').value = '';
+  $('save-template-modal').style.display = 'flex';
 };
 
-window.importTemplate = (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (data.routines) {
-        routines.length = 0;
-        routines.push(...data.routines);
-        localStorage.setItem('axon_routines', JSON.stringify(routines));
-      }
-      if (data.weekPlan) {
-        weekPlan.length = 0;
-        weekPlan.push(...data.weekPlan);
-        localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
-      }
-      renderRoutines();
-      renderPlanner();
-      showToast("⬆️ Plantilla cargada con éxito");
-    } catch (err) {
-      showToast("⚠️ Error al leer la plantilla");
-      console.error(err);
-    }
+window.confirmSaveTemplate = async () => {
+  const name = $('template-name-input').value.trim();
+  if (!name) return;
+  
+  const data = {
+    name: name,
+    routines: routines,
+    week_plan: weekPlan
   };
-  reader.readAsText(file);
-  event.target.value = ''; // reset
+  
+  try {
+    const { error } = await supabase.from('weekly_templates').insert([data]);
+    if (error) throw error;
+    showToast("☁️ Plantilla guardada en la Nube");
+    $('save-template-modal').style.display = 'none';
+  } catch (e) {
+    showToast("⚠️ Error al guardar en la Nube");
+    console.error(e);
+  }
 };
+
+window.openLoadTemplateModal = async () => {
+  $('load-template-modal').style.display = 'flex';
+  $('templates-list').innerHTML = '<p style="color:var(--text-muted); font-size: 0.8rem; text-align:center;">Cargando...</p>';
+  
+  try {
+    const { data, error } = await supabase.from('weekly_templates').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      $('templates-list').innerHTML = '<p style="color:var(--text-muted); font-size: 0.8rem; text-align:center;">No tienes plantillas guardadas aún.</p>';
+      return;
+    }
+    
+    $('templates-list').innerHTML = data.map(t => `
+      <div class="inbox-item" style="padding: 0.8rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <div style="cursor: pointer; flex: 1;" onclick="window.applyTemplate('${t.id}')">
+          <strong>${t.name}</strong>
+          <div style="font-size:0.7rem; color:var(--text-dim)">${new Date(t.created_at).toLocaleDateString()}</div>
+        </div>
+        <button class="btn-icon" style="color: var(--danger); opacity: 0.6;" onclick="window.deleteTemplate('${t.id}')">
+          <i data-lucide="trash-2" style="width: 14px;"></i>
+        </button>
+      </div>
+    `).join('');
+    
+    if (window.lucide) lucide.createIcons();
+    window._tempTemplates = data;
+  } catch (e) {
+    $('templates-list').innerHTML = '<p style="color:var(--danger); font-size: 0.8rem; text-align:center;">Error al cargar plantillas.</p>';
+    console.error(e);
+  }
+};
+
+window.deleteTemplate = async (id) => {
+  if (!window.confirm("¿Eliminar esta plantilla permanentemente?")) return;
+  try {
+    const { error } = await supabase.from('weekly_templates').delete().eq('id', id);
+    if (error) throw error;
+    showToast("🗑️ Plantilla eliminada");
+    window.openLoadTemplateModal(); // Refresh
+  } catch (e) {
+    showToast("⚠️ Error al eliminar");
+    console.error(e);
+  }
+};
+
+window.applyTemplate = (id) => {
+  const template = (window._tempTemplates || []).find(t => t.id === id);
+  if (!template) return;
+
+  if (!window.confirm(`¿Aplicar "${template.name}"? Se sobrescribirá tu semana actual.`)) return;
+  
+  // 1. Update Routines (date-agnostic)
+  if (template.routines) {
+    routines.length = 0;
+    routines.push(...template.routines);
+    localStorage.setItem('axon_routines', JSON.stringify(routines));
+  }
+  
+  // 2. Update Week Plan (Shift dates to CURRENT week)
+  if (template.week_plan && template.week_plan.length > 0) {
+    const currentWeek = getWeekDays();
+    const currentMonday = currentWeek[0];
+    
+    // Find the original Monday of the template
+    const sorted = [...template.week_plan].sort((a,b) => a.day.localeCompare(b.day));
+    const firstDate = new Date(sorted[0].day);
+    const firstDayIdx = firstDate.getDay();
+    const templateMonday = new Date(firstDate);
+    templateMonday.setDate(firstDate.getDate() - (firstDayIdx === 0 ? 6 : firstDayIdx - 1));
+    
+    const shiftedPlan = template.week_plan.map(block => {
+      const bDate = new Date(block.day);
+      const diffTime = bDate.getTime() - templateMonday.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      
+      const newDate = new Date(currentMonday);
+      newDate.setDate(currentMonday.getDate() + diffDays);
+      
+      return {
+        ...block,
+        day: newDate.toISOString().slice(0,10),
+        synced: false
+      };
+    });
+    
+    weekPlan.length = 0;
+    weekPlan.push(...shiftedPlan);
+    localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+  }
+  
+  renderRoutines();
+  renderPlanner();
+  $('load-template-modal').style.display = 'none';
+  showToast("✅ Plantilla aplicada y ajustada a esta semana");
+};
+
 
 // ==================== AXON MIND (VAULT & INBOX) ====================
 let inboxDocs = JSON.parse(localStorage.getItem('axon_inbox_docs') || '[]');
