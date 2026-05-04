@@ -1009,7 +1009,6 @@ $('sync-all-btn').onclick = async () => {
   let failed = [];
 
   for (const block of allUnsynced) {
-    // Creamos la fecha pero NO usamos toISOString() directo para evitar el desfase de UTC
     const datePart = block.day; // YYYY-MM-DD
     const timePart = block.time; // HH:mm
     const dur = block.duration || 30;
@@ -1019,6 +1018,13 @@ $('sync-all-btn').onclick = async () => {
     const endTotalMin = startTotalMin + dur;
     const endTimePart = minToTime(endTotalMin);
 
+    // Calculamos el offset UTC local (ej: "-05:00" para Colombia)
+    const offsetMin = new Date().getTimezoneOffset(); // en minutos, signo invertido
+    const sign = offsetMin <= 0 ? '+' : '-';
+    const absH = Math.floor(Math.abs(offsetMin) / 60).toString().padStart(2, '0');
+    const absM = (Math.abs(offsetMin) % 60).toString().padStart(2, '0');
+    const tzOffset = `${sign}${absH}:${absM}`; // ej: "-05:00"
+
     try {
       const url = new URL(N8N_URL);
       const res = await fetch(url.toString(), { 
@@ -1027,9 +1033,9 @@ $('sync-all-btn').onclick = async () => {
         body: JSON.stringify({ 
           taskId: block.taskTitle, 
           status: 'scheduled', 
-          // Enviamos como string local + timezone para que n8n/Google no lo muevan
-          startTime: `${datePart} ${timePart}:00`, 
-          endTime: `${datePart} ${endTimePart}:00`,
+          // ISO 8601 con offset explícito para que GCal no lo mueva
+          startTime: `${datePart}T${timePart}:00${tzOffset}`, 
+          endTime: `${datePart}T${endTimePart}:00${tzOffset}`,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           duration: dur,
           isRoutine: block.isRoutine
