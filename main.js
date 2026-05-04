@@ -494,16 +494,9 @@ window.editTask = async (id) => {
   $('new-task-title').value = task.title;
   $('new-task-desc').value = task.description || '';
   $('new-task-energy').value = task.energy_level || 'medium';
-  currentStepsInModal = task.steps || [];
-  $('modal-steps-list').innerHTML = currentStepsInModal.map(s => {
-    let sAssignee = '';
-    if(s.assignee === 'Pipe') sAssignee = '👨 ';
-    else if(s.assignee === 'Tati') sAssignee = '👩 ';
-    else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
-    return `<div class="step-item"><i data-lucide="circle" style="width:12px"></i> ${sAssignee}${s.text}</div>`;
-  }).join('');
+  currentStepsInModal = JSON.parse(JSON.stringify(task.steps || [])); // Deep copy para evitar mutar el original antes de guardar
+  renderModalSteps();
   taskModal.style.display = 'flex';
-  initIcons();
 
   // Override save to update instead of insert
   $('save-task').onclick = async () => {
