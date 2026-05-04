@@ -424,15 +424,15 @@ async function fetchTasks() {
                     : 'margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;';
 
                   return `<div class="step-item ${s.done?'done':''}" style="${displayStyle}" onclick="window.toggleStep('${task.id}',${i})">
-                      <div class="action-btns" style="display: flex; gap: 4px;">
-                        <button class="btn-mini" onclick="event.stopPropagation();window.focusStep('${task.id}','${task.title.replace(/'/g,"\\'")+': '+s.text.replace(/'/g,"\\'")}')" title="Iniciar Pomodoro">
-                          <i data-lucide="play" style="width:10px"></i>
+                      <div class="action-btns" style="display: flex; gap: 6px; align-items: center; margin-right: 4px;">
+                        <button class="btn-mini" onclick="event.stopPropagation();window.focusStep('${task.id}','${task.title.replace(/'/g,"\\'")+': '+s.text.replace(/'/g,"\\'")}')" title="Iniciar Pomodoro" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                          <i data-lucide="play" style="width:12px; height:12px;"></i>
                         </button>
-                        <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}')" title="Agendar">
-                          <i data-lucide="calendar" style="width:10px"></i>
+                        <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}')" title="Agendar" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                          <i data-lucide="calendar" style="width:12px; height:12px;"></i>
                         </button>
                       </div>
-                      <span style="display: flex; align-items: center;">${sAssignee}${s.text}${sDuration}</span>
+                      <span style="display: flex; align-items: center; gap: 4px;">${sAssignee}${s.text}${sDuration}</span>
                     </div>`;
                 }).join('');
                 
