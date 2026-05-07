@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X } from 'lucide';
+import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap } from 'lucide';
 
 const supabase = createClient('https://blwaxxacneipoaufpiag.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsd2F4eGFjbmVpcG9hdWZwaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5Mzg0ODgsImV4cCI6MjA3MzUxNDQ4OH0.MYorhHHAEOnFj5DPYZHozi5pyDZbtJQDBOeD2Te3WXU');
 const N8N_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/pomodoro-sync';
@@ -20,6 +20,7 @@ window.setTheme(savedTheme);
 let timeLeft = 25 * 60, timerId = null, currentMode = 'pomodoro', pomodoroStartTime = null;
 let selectedTaskId = null, selectedTaskTitle = "Sesión de Trabajo", currentStepsInModal = [];
 let currentSessionId = null, taskToSchedule = null, allTasks = [];
+let vaultDocToConvert = null; // Para rastrear qué nota estamos convirtiendo
 let sessionsCompleted = 0; // Para el descanso largo cada 4
 let currentEnergyFilter = 'all';
 let currentAssigneeFilter = 'all';
@@ -66,7 +67,7 @@ viewBtns.forEach(btn => {
     if (viewId === 'stats') loadStats();
   };
 });
-const initIcons = () => createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X } });
+const initIcons = () => createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap } });
 
 // ==================== AUDIO ALARM ====================
 function playSound(type = 'workEnd') {
@@ -313,17 +314,17 @@ window.selectTask = (id, title) => {
 };
 
 async function fetchTasks() {
-  const { data } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
-  if (!data) return;
+  const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+  if (error || !data) return;
   allTasks = data;
-  
+
   let filteredTasks = data;
   
-  // Filter by Frozen status
-  if (showFrozen) {
-      filteredTasks = data.filter(t => t.status === 'frozen');
+  // Filter by Status (unless in freezer view)
+  if (!showFrozen) {
+      filteredTasks = filteredTasks.filter(t => t.status !== 'frozen');
   } else {
-      filteredTasks = data.filter(t => t.status !== 'frozen');
+      filteredTasks = filteredTasks.filter(t => t.status === 'frozen');
   }
 
   // Filter by Energy
@@ -334,7 +335,7 @@ async function fetchTasks() {
   // Filter by Assignee
   if (currentAssigneeFilter !== 'all') {
       filteredTasks = filteredTasks.filter(t => {
-          if (!t.steps || t.steps.length === 0) return true; // Show projects with no steps
+          if (!t.steps || t.steps.length === 0) return true;
           return t.steps.some(s => !s.done && (s.assignee === currentAssigneeFilter || s.assignee === 'Ambos' || !s.assignee));
       });
   }
@@ -346,26 +347,36 @@ async function fetchTasks() {
     return 0;
   });
 
+  const taskList = $('task-list');
   taskList.innerHTML = filteredTasks.map(task => {
-    const steps = task.steps || [], done = steps.filter(s=>s.done).length;
-    const prog = steps.length ? (done/steps.length)*100 : (task.status==='done'?100:0);
+    const steps = task.steps || [], doneCount = steps.filter(s=>s.done).length;
+    const prog = steps.length ? (doneCount/steps.length)*100 : (task.status==='done'?100:0);
     const stale = staleDays(task);
     const staleClass = (task.status !== 'done' && task.status !== 'frozen') ? (stale >= 5 ? 'stale-danger' : stale >= 2 ? 'stale-warning' : '') : '';
     const sel = selectedTaskId === task.id ? 'selected' : '';
     
-    // Energy Tag
+    // Energy & Assignee Tags
     const eLvl = task.energy_level || 'medium';
     let energyTag = '';
     if(eLvl === 'high') energyTag = '<span class="energy-tag high">⚡ Alta</span>';
     if(eLvl === 'medium') energyTag = '<span class="energy-tag medium">🔋 Media</span>';
     if(eLvl === 'low') energyTag = '<span class="energy-tag low">🪫 Baja</span>';
 
-
+    const tAssignee = task.assignee || 'Ambos';
+    let assigneeIcon = '🤝';
+    if(tAssignee === 'Pipe') assigneeIcon = '👨';
+    else if(tAssignee === 'Tati') assigneeIcon = '👩';
+    else if(tAssignee === 'Robot') assigneeIcon = '🤖';
 
     return `<div class="task-card ${task.status==='done'?'done':''} ${task.status==='frozen'?'frozen':''} ${staleClass} ${sel}" data-id="${task.id}" data-title="${task.title}">
       <div style="width:100%">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div class="task-info"><h4>${task.title} ${energyTag}</h4><p>${task.description||''}</p>
+          <div class="task-info">
+            <h4 style="display:flex; align-items:center; gap:8px;">
+              <span class="assignee-toggle-icon" onclick="event.stopPropagation();window.cycleAssignee('${task.id}', '${tAssignee}')" title="Cambiar responsable" style="cursor:pointer; font-size:1.2rem;">${assigneeIcon}</span>
+              ${task.title} ${energyTag}
+            </h4>
+            <p>${task.description||''}</p>
             <div class="task-meta">
               ${task.pomodoro_count ? `<span class="meta-chip">🍅 ${task.pomodoro_count}</span>` : ''}
               ${stale >= 5 && task.status !== 'frozen' ? `<span class="meta-chip danger">⚠ ${stale} días sin actividad</span>` : stale >= 2 && task.status !== 'frozen' ? `<span class="meta-chip warning">${stale} días sin actividad</span>` : ''}
@@ -379,7 +390,7 @@ async function fetchTasks() {
             }
             <button class="btn-mini" onclick="event.stopPropagation();window.editTask('${task.id}', event)" title="Editar"><i data-lucide="edit-2"></i></button>
             <button class="btn-mini" onclick="event.stopPropagation();window.deleteTask('${task.id}', event)" title="Eliminar"><i data-lucide="trash-2"></i></button>
-            <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${task.title.replace(/'/g,"\\'")}')" title="Agendar"><i data-lucide="calendar"></i></button>
+            <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${task.title.replace(/'/g,"\\'")}', ${task.duration || 25})" title="Agendar"><i data-lucide="calendar"></i></button>
             ${stale >= 2 && task.status !== 'done' && task.status !== 'frozen' ? `<button class="btn-mini" onclick="event.stopPropagation();window.reschedule('${task.id}','${task.title.replace(/'/g,"\\'")}')">📅</button>` : ''}
             <button class="task-check" onclick="event.stopPropagation();window.toggleTask('${task.id}','${task.status}')"><i data-lucide="${task.status==='done'?'check':'circle'}"></i></button>
           </div>
@@ -387,7 +398,6 @@ async function fetchTasks() {
         ${(() => {
           if (!steps.length) return '';
           
-          // --- AGRUPAR PASOS POR HEADER ---
           const groups = [];
           let currentGroup = null;
           
@@ -405,24 +415,23 @@ async function fetchTasks() {
           return `<div class="progress-bar-container"><div class="progress-bar-fill" style="width:${prog}%"></div></div>
             <div class="steps-container">
               ${groups.map(group => {
-                const headerHtml = group.header ? `<div class="step-header" style="margin-top: 15px; margin-bottom: 5px; font-weight: 700; color: var(--accent); font-size: 0.9em; border-bottom: 1px solid var(--border-color); padding-bottom: 3px;">
+                const headerHtml = group.header ? `<div class="step-header" style="margin-top: 15px; margin-bottom: 5px; font-weight: 700; color: var(--accent); font-size: 0.9em; border-bottom: 1px solid var(--border); padding-bottom: 3px;">
                     ${group.header.text}
                 </div>` : '';
                 
-                // Ordenar acciones dentro del grupo (pendientes primero)
-                const sortedActions = group.actions.sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1));
-                
-                const actionsHtml = sortedActions.map(s => {
+                const actionsHtml = group.actions.map(s => {
                   const i = s.originalIndex;
-                  let sAssignee = '';
-                  if(s.assignee === 'Pipe') sAssignee = '👨 ';
-                  else if(s.assignee === 'Tati') sAssignee = '👩 ';
-                  else if(s.assignee === 'Ambos') sAssignee = '🤝 ';
+                  let sAssignee = '🤝';
+                  if(s.assignee === 'Pipe') sAssignee = '👨';
+                  else if(s.assignee === 'Tati') sAssignee = '👩';
+                  else if(s.assignee === 'Robot') sAssignee = '🤖';
+                  
+                  const assigneeHtml = `<span onclick="event.stopPropagation();window.cycleStepAssignee('${task.id}', ${i}, '${s.assignee || 'Ambos'}')" title="Cambiar responsable del paso" style="cursor:pointer; margin-right:4px;">${sAssignee}</span>`;
                   let sDuration = s.duration ? `<span style="font-size: 0.8em; opacity: 0.6; margin-left: 5px;">⏱️ ${formatDuration(s.duration)}</span>` : '';
                   
                   const isAction = s.text.includes('🎨') || s.text.includes('🚀');
                   const displayStyle = isAction 
-                    ? 'display: inline-flex; align-items: center; width: auto; margin-right: 10px; margin-bottom: 5px; opacity: 0.9; font-size: 0.85em; background: var(--bg-card); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); cursor:pointer; gap: 8px;' 
+                    ? 'display: inline-flex; align-items: center; width: auto; margin-right: 10px; margin-bottom: 5px; opacity: 0.9; font-size: 0.85em; background: var(--bg-card); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); cursor:pointer; gap: 8px;' 
                     : 'margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;';
 
                   return `<div class="step-item ${s.done?'done':''}" style="${displayStyle}" onclick="window.toggleStep('${task.id}',${i})">
@@ -434,7 +443,7 @@ async function fetchTasks() {
                           <i data-lucide="calendar" style="width:12px; height:12px;"></i>
                         </button>
                       </div>
-                      <span style="display: flex; align-items: center; gap: 4px;">${sAssignee}${s.text}${sDuration}</span>
+                      <span style="display: flex; align-items: center; gap: 4px;">${assigneeHtml}${s.text}${sDuration}</span>
                     </div>`;
                 }).join('');
                 
@@ -444,6 +453,16 @@ async function fetchTasks() {
         })()}
       </div></div>`;
   }).join('') || `<p style="color:var(--text-muted);text-align:center;padding:2rem;">No hay tareas en esta vista.</p>`;
+
+  // Actualizar contador en el encabezado
+  const projectHeader = document.querySelector('.section-header h2');
+  if (projectHeader) {
+    projectHeader.innerHTML = `<i data-lucide="list-todo"></i> Mis Proyectos (${filteredTasks.length})`;
+  }
+
+  // Actualizar Dashboard de Progreso
+  updateProgressDashboard(data);
+
   initIcons();
   document.querySelectorAll('.task-card').forEach(card => {
     card.onclick = () => {
@@ -474,6 +493,25 @@ window.toggleTask = async (id, st) => {
   if (done) { fireConfetti(); showToast("🎉 ¡Tarea completada!"); }
   fetchTasks(); loadStats();
 };
+
+window.cycleAssignee = async (id, current) => {
+  const list = ['Ambos', 'Pipe', 'Tati', 'Robot'];
+  const next = list[(list.indexOf(current) + 1) % list.length];
+  await supabase.from('tasks').update({ assignee: next }).eq('id', id);
+  fetchTasks();
+};
+
+window.cycleStepAssignee = async (taskId, stepIdx, current) => {
+  const list = ['Ambos', 'Pipe', 'Tati', 'Robot'];
+  const next = list[(list.indexOf(current) + 1) % list.length];
+  
+  const { data } = await supabase.from('tasks').select('steps').eq('id', taskId).single();
+  if (data && data.steps) {
+    data.steps[stepIdx].assignee = next;
+    await supabase.from('tasks').update({ steps: data.steps }).eq('id', taskId);
+    fetchTasks();
+  }
+};
 window.reschedule = (id, title) => { window.openSchedule(title); };
 
 window.deleteTask = async (id) => {
@@ -494,6 +532,7 @@ window.editTask = async (id) => {
   $('new-task-title').value = task.title;
   $('new-task-desc').value = task.description || '';
   $('new-task-energy').value = task.energy_level || 'medium';
+  if ($('new-task-assignee')) $('new-task-assignee').value = task.assignee || 'Ambos';
   currentStepsInModal = JSON.parse(JSON.stringify(task.steps || [])); // Deep copy para evitar mutar el original antes de guardar
   renderModalSteps();
   $('save-task').textContent = 'Actualizar Proyecto';
@@ -503,7 +542,8 @@ window.editTask = async (id) => {
   $('save-task').onclick = async () => {
     const title = $('new-task-title').value; if (!title) return;
     const energy = $('new-task-energy').value;
-    const { error } = await supabase.from('tasks').update({ title, description: $('new-task-desc').value, energy_level: energy, steps: currentStepsInModal }).eq('id', id);
+    const assignee = $('new-task-assignee') ? $('new-task-assignee').value : 'Ambos';
+    const { error } = await supabase.from('tasks').update({ title, description: $('new-task-desc').value, energy_level: energy, assignee: assignee, steps: currentStepsInModal }).eq('id', id);
     if (error) {
       console.error("Error al actualizar tarea:", error);
       showToast("Error al actualizar: " + error.message);
@@ -611,7 +651,8 @@ document.querySelectorAll('.assignee-filter').forEach(btn => {
 });
 
 // ==================== MODALS ====================
-$('add-task-btn').onclick = () => { 
+window.openAddTaskModal = () => { 
+    vaultDocToConvert = null; // Limpiamos si es una creación manual
     currentStepsInModal = []; 
     $('modal-steps-list').innerHTML = ''; 
     $('new-task-title').value = ''; 
@@ -619,7 +660,9 @@ $('add-task-btn').onclick = () => {
     $('new-task-energy').value = 'medium';
     $('save-task').onclick = createProject; // Restaura la función de crear
     $('task-modal').style.display = 'flex'; 
+    if(window.lucide) lucide.createIcons();
 };
+if($('add-task-btn')) $('add-task-btn').onclick = window.openAddTaskModal;
 let journalMood = 'neutral';
 document.querySelectorAll('.mood-btn').forEach(btn => {
     btn.onclick = () => {
@@ -798,10 +841,12 @@ $('add-step-to-list').onclick = () => {
 const createProject = async () => {
   const title = $('new-task-title').value; if(!title) return;
   const energy = $('new-task-energy').value;
+  const assignee = $('new-task-assignee') ? $('new-task-assignee').value : 'Ambos';
   const { error } = await supabase.from('tasks').insert([{ 
     title, 
     description: $('new-task-desc').value, 
     energy_level: energy, 
+    assignee: assignee,
     status: 'todo', 
     steps: currentStepsInModal
   }]);
@@ -810,6 +855,22 @@ const createProject = async () => {
     showToast("Error al crear: " + error.message);
     return;
   }
+  
+  // Si venía del Cerebro (Vault), eliminamos la nota original
+  if (vaultDocToConvert) {
+    try {
+      await supabase.from('vault_docs').delete().eq('id', vaultDocToConvert);
+      vaultDocToConvert = null;
+      fetchVaultDocs(); // Refrescar el cerebro
+    } catch (e) {
+      // Fallback local si falla la nube
+      vaultDocs = vaultDocs.filter(d => String(d.id) !== String(vaultDocToConvert));
+      localStorage.setItem('axon_vault_docs', JSON.stringify(vaultDocs));
+      vaultDocToConvert = null;
+      renderVault();
+    }
+  }
+
   $('task-modal').style.display = 'none'; fetchTasks();
 };
 
@@ -1473,6 +1534,7 @@ function renderVault() {
 window.convertVaultToTask = (docId) => {
   const doc = vaultDocs.find(d => String(d.id) === String(docId));
   if (!doc) return;
+  vaultDocToConvert = docId; // Guardamos el ID para borrarlo al guardar el proyecto
   $('new-task-title').value = doc.title;
   $('new-task-desc').value = doc.content || '';
   taskModal.style.display = 'flex';
@@ -1753,6 +1815,45 @@ window.processJsonImport = () => {
         alert("No pude encontrar ninguna lista de tareas. Asegúrate de que el texto contenga el formato [ { 'text': '...' } ]");
     }
 };
+
+function updateProgressDashboard(tasks) {
+    const dashboard = $('progress-dashboard');
+    if (!dashboard) return;
+
+    const activeTasks = tasks ? tasks.filter(t => t.status !== 'frozen') : [];
+    const completedTasks = activeTasks.filter(t => t.status === 'done');
+    const total = activeTasks.length;
+    const completedCount = completedTasks.length;
+    const percent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+    // Si no hay tareas, mostramos un mensaje de bienvenida
+    if (total === 0) {
+        dashboard.innerHTML = `
+            <div class="progress-message" style="text-align: center; font-style: normal; opacity: 0.8;">
+                ✨ <strong>¡Tablero despejado!</strong> Agrega un proyecto para empezar a medir tu éxito hoy.
+            </div>
+        `;
+        return;
+    }
+
+    let message = "";
+    if (percent === 0) message = "¡Día de conquista! El primer paso es el más valiente. 🚀";
+    else if (percent <= 30) message = "Buen ritmo, Pipe. Cada pieza cuenta para el gran puzzle. 💪";
+    else if (percent <= 60) message = "¡Ecuación perfecta! Ya cruzaste el ecuador del éxito. 🔋";
+    else if (percent <= 90) message = "¡Viento en popa! El hiperfoco está dando sus frutos. 🔥";
+    else if (percent === 100) message = "<strong>🏆 ¡LEYENDA!</strong> Has limpiado el tablero. Tiempo de celebrar. ✨";
+
+    dashboard.innerHTML = `
+        <div class="progress-header">
+            <div class="progress-title">Progreso del Día</div>
+            <div class="progress-stats"><span style="color: var(--primary); font-size: 1.2rem;">${completedCount}</span> / ${total} <small style="opacity: 0.6; font-weight: 400;">proyectos</small></div>
+        </div>
+        <div class="progress-bar-container" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border);">
+            <div class="progress-bar-fill" style="width: ${percent}%"></div>
+        </div>
+        <div class="progress-message" style="color: var(--text);">${message} <span style="float: right; opacity: 0.7; font-weight: 700;">${percent}%</span></div>
+    `;
+}
 
 // ==================== INIT ====================
 if (Notification.permission === 'default') Notification.requestPermission();
