@@ -3,6 +3,7 @@ import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, C
 
 const supabase = createClient('https://blwaxxacneipoaufpiag.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsd2F4eGFjbmVpcG9hdWZwaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5Mzg0ODgsImV4cCI6MjA3MzUxNDQ4OH0.MYorhHHAEOnFj5DPYZHozi5pyDZbtJQDBOeD2Te3WXU');
 const N8N_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/pomodoro-sync';
+const ARCHITECT_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-architect';
 const SLICER_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-slicer';
 
 // ==================== THEME MANAGEMENT ====================
@@ -25,6 +26,7 @@ let inboxDocToConvert = null; // Para rastrear qué nota del inbox estamos convi
 let sessionsCompleted = 0; // Para el descanso largo cada 4
 let currentEnergyFilter = 'all';
 let currentAssigneeFilter = 'all';
+let interrogation = { round: 0, idea: '', projectTitle: '', questions: [], allAnswers: [] };
 let showFrozen = false;
 const modes = { pomodoro: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60 };
 
@@ -717,6 +719,7 @@ function extractStepsFromData(dataRaw) {
     let rawSlices = [];
     let parsedTitle = "";
     let parsedDesc = "";
+    let parsedEnergy = "";
 
     // Convertir a string y buscar recursivamente si es necesario
     const searchRecursively = (obj) => {
@@ -735,6 +738,7 @@ function extractStepsFromData(dataRaw) {
         } else if (typeof obj === 'object') {
             if (obj.suggested_title && !parsedTitle) parsedTitle = obj.suggested_title;
             if (obj.suggested_description && !parsedDesc) parsedDesc = obj.suggested_description;
+            if (obj.energy_level && !parsedEnergy) parsedEnergy = obj.energy_level;
 
             if (obj.steps && Array.isArray(obj.steps)) rawSlices = obj.steps;
             else if (obj.slices && Array.isArray(obj.slices)) rawSlices = obj.slices;
@@ -753,7 +757,7 @@ function extractStepsFromData(dataRaw) {
     };
 
     searchRecursively(dataRaw);
-    return { rawSlices, parsedTitle, parsedDesc };
+    return { rawSlices, parsedTitle, parsedDesc, parsedEnergy };
 }
 
 window.sliceWithAI = async () => {
@@ -775,23 +779,25 @@ window.sliceWithAI = async () => {
         const response = await fetch(SLICER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 title: title,
-                description: desc 
-            })
+                description: desc
+            }),
+            signal: AbortSignal.timeout(120000)
         });
 
         if (!response.ok) throw new Error("Error en la conexión con la IA");
 
         const dataRaw = await response.json();
-        const { rawSlices, parsedTitle, parsedDesc } = extractStepsFromData(dataRaw);
-        
+        const { rawSlices, parsedTitle, parsedDesc, parsedEnergy } = extractStepsFromData(dataRaw);
+
         if (parsedTitle) titleField.value = parsedTitle;
         if (parsedDesc) descField.value = parsedDesc;
+        if (parsedEnergy) $('new-task-energy').value = parsedEnergy;
 
         if (rawSlices.length > 0) {
             currentStepsInModal = rawSlices.map(s => ({
-                text: s.task || s.title || s.descripcion || s.tarea || s.step || "Paso sin nombre", 
+                text: s.task || s.title || s.descripcion || s.tarea || s.step || "Paso sin nombre",
                 done: false,
                 assignee: s.assignee || s.responsable || '🤝 Ambos',
                 duration: parseInt(s.duration || s.estimated_time || s.duracion || s.tiempo || s.estimatedMinutes) || 25
@@ -814,6 +820,160 @@ window.sliceWithAI = async () => {
         }
     }
 };
+
+// ==================== INTERROGATORIO AXON ====================
+window.startInterrogation = (idea, event) => {
+  interrogation = { round: 1, idea, projectTitle: '', questions: [], allAnswers: [] };
+  $('interrogation-modal').style.display = 'flex';
+  updateInterrProgress(1);
+  $('interr-title').textContent = '🧠 Interrogatorio Axon — Descubrimiento';
+  $('interr-status').style.display = 'block';
+  $('interr-status').innerHTML = '⏳ El Arquitecto está analizando tu idea...';
+  $('interr-questions').style.display = 'none';
+  $('interr-actions').style.display = 'none';
+  runInterrogationRound(1);
+};
+
+async function runInterrogationRound(round) {
+  const statusEl = $('interr-status');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '⏳ Pensando...';
+  $('interr-questions').style.display = 'none';
+  $('interr-actions').style.display = 'none';
+
+  let url, body, title;
+  if (round === 1) {
+    url = ARCHITECT_URL;
+    body = {
+      idea: `FASE DESCUBRIMIENTO (MANAGER MODE):\nIDEA: ${interrogation.idea}\n\nGenera exactamente 5 preguntas clave para la GESTIÓN. Enfócate en: Responsables, Tiempos y Entregables.\n\nASIGNACIÓN INTELIGENTE: Elige al responsable más lógico (Pipe: Estrategia/Técnico, Tati: Operativo/Gestión, Robot: Automatización). NO asignes a Robot si la tarea es manual (ej: buscar una cámara).\n\nESTRUCTURA OBLIGATORIA JSON:\n{ "steps": [ { "task": "pregunta...", "assignee": "Pipe/Tati/Robot", "duration": 25 } ], "suggested_title": "título" }`
+    };
+  } else if (round === 3) {
+    url = SLICER_URL;
+    const allQA = interrogation.allAnswers
+      .map((a, i) => `[Pregunta] ${a.question}\n→ [Respuesta] ${a.answer}`).join('\n\n');
+    title = interrogation.projectTitle || interrogation.idea.slice(0, 80);
+    body = {
+      title: title,
+      description: `IDEA ORIGINAL: ${interrogation.idea}\n\nGESTIÓN RECOLECTADA:\n${allQA}\n\nINSTRUCCIÓN: Genera un plan de acción de GESTIÓN. ASIGNACIÓN LÓGICA: Solo usa a Robot para tareas automatizables. Para tareas físicas o de criterio humano, usa a Pipe o Tati. Responde con la estructura JSON de tareas habitual.`
+    };
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(60000)
+    });
+    if (!response.ok) throw new Error('Error de conexión');
+    const dataRaw = await response.json();
+
+    if (round === 3) {
+      statusEl.style.display = 'none';
+      const { rawSlices, parsedTitle, parsedDesc, parsedEnergy } = extractStepsFromData(dataRaw);
+      finalizeProject(rawSlices, parsedTitle || title, parsedDesc || body.description, parsedEnergy || 'medium');
+      window.closeInterrogation();
+      return;
+    }
+
+    const { rawSlices, parsedTitle } = extractStepsFromData(dataRaw);
+    if (parsedTitle) interrogation.projectTitle = parsedTitle;
+
+    const questions = rawSlices.map(s => ({
+      question: s.task || s.title || s.text || s.descripcion || s.tarea || 'Pregunta sin texto',
+      assignee: s.assignee || 'Pipe',
+      answer: ''
+    }));
+
+    if (questions.length === 0) {
+      statusEl.innerHTML = '⚠️ El Arquitecto no generó preguntas. Intenta de nuevo con más detalle en la descripción.';
+      return;
+    }
+
+    interrogation.questions = questions;
+    statusEl.style.display = 'none';
+    renderInterrogationQuestions(questions);
+
+    const btn = $('interr-next-btn');
+    btn.textContent = round === 2 ? '✨ Generar Plan' : 'Siguiente Ronda →';
+    $('interr-actions').style.display = 'flex';
+  } catch (e) {
+    console.error('Interrogation error:', e);
+    statusEl.innerHTML = '❌ Error de conexión con n8n. Revisa que el servidor esté activo e intenta de nuevo.';
+  }
+}
+
+function renderInterrogationQuestions(questions) {
+  const container = $('interr-questions');
+  container.style.display = 'block';
+  container.innerHTML = questions.map((q, i) => `
+    <div class="interr-question">
+      <label>${i + 1}. ${q.question}</label>
+      <div class="interr-assignee">👤 Dirigida a: ${q.assignee}</div>
+      <textarea id="interr-a-${i}" placeholder="Tu respuesta..." rows="2"></textarea>
+    </div>
+  `).join('');
+}
+
+window.advanceInterrogation = async () => {
+  const round = interrogation.round;
+  for (let i = 0; i < interrogation.questions.length; i++) {
+    const answerEl = $('interr-a-' + i);
+    const answer = answerEl ? answerEl.value.trim() : '';
+    interrogation.allAnswers.push({
+      round,
+      question: interrogation.questions[i].question,
+      assignee: interrogation.questions[i].assignee,
+      answer: answer || '(Sin respuesta)'
+    });
+  }
+
+  if (round === 1) {
+    // Saltamos a la fase de Generación (Round 3)
+    interrogation.round = 3;
+    updateInterrProgress(3);
+    $('interr-title').textContent = '🔪 Generando Plan de Gestión';
+    $('interr-questions').style.display = 'none';
+    $('interr-actions').style.display = 'none';
+    await runInterrogationRound(3);
+  }
+};
+
+function updateInterrProgress(round) {
+  document.querySelectorAll('.interr-step').forEach(el => {
+    const step = parseInt(el.dataset.step);
+    el.classList.remove('active', 'done');
+    
+    // Si saltamos la ronda 2, la marcamos como "skip" o simplemente invisible
+    if (step === 2) {
+        el.style.display = 'none';
+        return;
+    }
+
+    if (step < round) el.classList.add('done');
+    else if (step === round) el.classList.add('active');
+  });
+}
+
+window.closeInterrogation = () => {
+  $('interrogation-modal').style.display = 'none';
+  interrogation = { round: 0, idea: '', projectTitle: '', questions: [], allAnswers: [] };
+};
+
+function finalizeProject(rawSlices, title, desc, energy) {
+  currentStepsInModal = rawSlices.map(s => ({
+    text: s.task || s.title || s.descripcion || s.tarea || s.step || 'Paso sin nombre',
+    done: false,
+    assignee: s.assignee || 'Ambos',
+    duration: parseInt(s.duration || s.estimated_time || s.duracion || 25) || 25
+  }));
+  $('new-task-title').value = title || interrogation.projectTitle || interrogation.idea.slice(0, 80);
+  $('new-task-desc').value = desc || '';
+  if (energy) $('new-task-energy').value = energy;
+  renderModalSteps();
+  if (window.lucide) lucide.createIcons();
+  showToast('✅ ¡Plan generado con el Interrogatorio Axon!');
+}
 
 window.suggestWithAI = async (event) => {
     const titleField = $('new-task-title');
@@ -853,43 +1013,16 @@ window.suggestWithAI = async (event) => {
         btn.disabled = true;
     }
 
-    try {
-        const response = await fetch('https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-slicer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idea })
-        });
-        
-        const dataRaw = await response.json();
-        const { rawSlices, parsedTitle, parsedDesc } = extractStepsFromData(dataRaw);
+    // Redirect to interrogation flow
+    window.startInterrogation(idea, event);
 
-        if (parsedTitle) titleField.value = parsedTitle;
-        if (parsedDesc) descField.value = parsedDesc;
-        
-        if (rawSlices.length > 0) {
-            currentStepsInModal = rawSlices.map(s => ({
-                text: s.task || s.descripcion || s.tarea || s.text || s.step || "Paso sin nombre",
-                done: false,
-                assignee: s.assignee || s.responsable || '🤝 Ambos',
-                duration: parseInt(s.duration || s.estimated_time || s.duracion || s.tiempo || s.time) || 25
-            }));
-            
-            renderModalSteps();
-            if(window.lucide) lucide.createIcons();
-            showToast("✅ Proyecto rebanado y listo");
-        } else {
-            console.error("AXON DEBUG - No se encontraron tareas. Datos crudos:", dataRaw);
-            showToast("⚠️ La IA no devolvió tareas claras.");
-        }
-    } catch (e) {
-        console.error("Error en suggestWithAI:", e);
-        showToast("❌ Error al conectar con el Arquitecto.");
-    } finally {
+    // Reset button (interrogation runs async)
+    setTimeout(() => {
         if (btn) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-    }
+    }, 800);
 };
 
 window.updateModalStepText = (index, newText) => {
@@ -1304,6 +1437,45 @@ window.clearCalendarDay = async (dateStr) => {
     showToast("⚠️ No se pudo limpiar el calendario");
     console.error(e);
   }
+};
+
+window.clearEntireWeek = async () => {
+  if (!window.confirm("⚠️ ¿ESTÁS SEGURO? Esto eliminará TODOS los bloques de tu planificación semanal local.\n\n(No borrará tus 'Rutinas Inamovibles', solo los bloques de trabajo asignados)")) return;
+
+  const confirmGoogle = window.confirm("¿Deseas también intentar LIMPIAR el Google Calendar de toda la semana?\n\n(Esto enviará una señal a n8n para cada día. Recomendado si te equivocaste y no quieres duplicados)");
+
+  if (confirmGoogle) {
+    const days = getWeekDays().map(d => d.toISOString().slice(0, 10));
+    calStatus.textContent = 'Clearing Week...';
+    showToast("⏳ Iniciando limpieza en Google Calendar...");
+    
+    for (const dateStr of days) {
+      try {
+        const url = new URL(N8N_URL);
+        await fetch(url.toString(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'clear_day', day: dateStr })
+        });
+        console.log(`Día ${dateStr} limpiado en GCal`);
+      } catch (e) {
+        console.error(`Error clearing ${dateStr}:`, e);
+      }
+      // Pequeña pausa para no saturar el webhook
+      await new Promise(r => setTimeout(r, 300));
+    }
+    calStatus.textContent = 'Week Cleared';
+  }
+
+  // Limpiar localmente
+  weekPlan.length = 0;
+  localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+  
+  // Resetear estado de sincronización de rutinas (en esta sesión)
+  sessionStorage.setItem('synced_routines', '[]');
+  
+  showToast("✅ Semana reiniciada localmente.");
+  renderPlanner();
 };
 
 $('sync-all-btn').onclick = async () => {
@@ -1956,3 +2128,71 @@ function updateProgressDashboard(tasks) {
 // ==================== INIT ====================
 if (Notification.permission === 'default') Notification.requestPermission();
 fetchTasks(); updateDisplay(); renderRoutines(); renderPlanner(); loadStats(); initIcons();
+// ========== BIO-AXON WATER TRACKER LOGIC ==========
+let waterConsumed = parseFloat(localStorage.getItem('axon_water_consumed')) || 0;
+const WATER_GOAL = 3.0; // Liters
+
+window.initWaterTracker = () => {
+    updateWaterUI();
+    // Recordatorio cada 45 minutos (45 * 60 * 1000)
+    setInterval(() => {
+        showWaterReminder();
+    }, 45 * 60 * 1000);
+};
+
+window.addWater = (amount) => {
+    waterConsumed = Math.min(WATER_GOAL, waterConsumed + amount);
+    localStorage.setItem('axon_water_consumed', waterConsumed.toFixed(2));
+    updateWaterUI();
+    showToast(`💧 +${amount*1000}ml de vida añadidos.`);
+};
+
+window.resetWater = () => {
+    if (confirm('¿Reiniciar contador de agua diario?')) {
+        waterConsumed = 0;
+        localStorage.setItem('axon_water_consumed', '0');
+        updateWaterUI();
+    }
+};
+
+function updateWaterUI() {
+    const currentEl = $('water-current');
+    const fillEl = $('water-fill');
+    if (currentEl) currentEl.textContent = waterConsumed.toFixed(2);
+    if (fillEl) {
+        const percentage = (waterConsumed / WATER_GOAL) * 100;
+        fillEl.style.width = percentage + '%';
+    }
+}
+
+function showWaterReminder() {
+    // Crear el popup dinámicamente si no existe
+    let popup = document.querySelector('.water-reminder-popup');
+    if (!popup) {
+        popup = document.createElement('div');
+        popup.className = 'water-reminder-popup';
+        popup.innerHTML = `
+            <span class="icon">💧</span>
+            <div class="text">Momento Axon: ¡Pega un sorbo de tu vasija!</div>
+        `;
+        document.body.appendChild(popup);
+    }
+    
+    popup.classList.add('show');
+    
+    // Sonido sutil si es posible
+    try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
+        audio.volume = 0.2;
+        audio.play();
+    } catch(e) {}
+
+    setTimeout(() => {
+        popup.classList.remove('show');
+    }, 6000);
+}
+
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(window.initWaterTracker, 2000);
+});

@@ -73,6 +73,23 @@
                         <button class="mode-btn" data-mode="shortBreak">Break</button>
                         <button class="mode-btn" data-mode="longBreak">Descanso Largo</button>
                     </div>
+
+                    <!-- ========== BIO-AXON WATER TRACKER ========== -->
+                    <div class="water-tracker-container">
+                        <div class="water-info">
+                            <span class="water-label">💧 Bio-Axon: Hidratación</span>
+                            <span class="water-stats"><span id="water-current">0</span> / 3L</span>
+                        </div>
+                        <div class="water-progress-bar">
+                            <div id="water-fill" class="water-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="water-actions">
+                            <button onclick="window.addWater(2.5)" class="btn-water" title="Vasija de la mañana (2.5L)">🏺 +2.5L</button>
+                            <button onclick="window.addWater(0.25)" class="btn-water" title="Sorbito (250ml)">🥤 +250ml</button>
+                            <button onclick="window.addWater(0.5)" class="btn-water" title="Vaso (500ml)">🥛 +500ml</button>
+                            <button onclick="window.resetWater()" class="btn-water-reset" title="Reiniciar">🔄</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tasks-section">
@@ -123,7 +140,10 @@
                         <button id="save-template-btn" class="btn-secondary" onclick="window.openSaveTemplateModal()"><i data-lucide="cloud"></i> Guardar en la Nube</button>
                         <button id="load-template-btn" class="btn-secondary" onclick="window.openLoadTemplateModal()"><i data-lucide="download-cloud"></i> Cargar Plantilla</button>
                     </div>
-                    <button id="sync-all-btn" class="btn-primary btn-sync-all"><i data-lucide="upload-cloud"></i> Subir Todo a Calendar</button>
+                    <button id="sync-all-btn" class="btn-primary btn-sync-all" style="margin-bottom: 0.5rem;"><i data-lucide="upload-cloud"></i> Subir Todo a Calendar</button>
+                    <button id="clear-week-btn" class="btn-danger" style="background: var(--danger); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.8rem; border-radius: var(--radius); margin-top: 0.5rem; font-weight: 600;" onclick="window.clearEntireWeek()">
+                        <i data-lucide="trash-2" style="width: 18px;"></i> Limpiar Semana Completa
+                    </button>
                 </div>
                 <!-- Rutinas Inamovibles -->
                 <div class="routines-section">
@@ -426,6 +446,29 @@
                     <button id="save-task" class="btn-primary">Crear Proyecto</button>
                 </div>
             </div>
+        </div>
+
+        <!-- ========== MODAL INTERROGATORIO AXON ========== -->
+        <div id="interrogation-modal" class="modal">
+          <div class="modal-content" style="max-width:650px; max-height:90vh; overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+              <h3 id="interr-title">🧠 Interrogatorio Axon</h3>
+              <button class="btn-icon" onclick="closeInterrogation()"><i data-lucide="x"></i></button>
+            </div>
+            <div id="interr-progress" style="display:flex;gap:0.4rem;margin-bottom:1.2rem">
+              <div class="interr-step active" data-step="1">1. Descubrir</div>
+              <div class="interr-step" data-step="2">2. Profundizar</div>
+              <div class="interr-step" data-step="3">3. Generar</div>
+            </div>
+            <div id="interr-status" style="text-align:center;padding:2rem;color:var(--text-dim)">
+              ⏳ El Arquitecto está pensando...
+            </div>
+            <div id="interr-questions" style="display:none"></div>
+            <div id="interr-actions" style="display:none;margin-top:1rem;gap:0.5rem;justify-content:flex-end">
+              <button class="btn-ghost" onclick="closeInterrogation()">Cancelar</button>
+              <button id="interr-next-btn" class="btn-primary" onclick="advanceInterrogation()">Siguiente Ronda →</button>
+            </div>
+          </div>
         </div>
 
         <div id="schedule-modal" class="modal">
