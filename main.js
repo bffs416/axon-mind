@@ -939,17 +939,31 @@ const createProject = async () => {
   }
   
   // Si venía del Cerebro (Vault), eliminamos la nota original
+  // Si venía del Cerebro (Vault), eliminamos la nota original
   if (vaultDocToConvert) {
     try {
       await supabase.from('vault_docs').delete().eq('id', vaultDocToConvert);
       vaultDocToConvert = null;
-      fetchVaultDocs(); // Refrescar el cerebro
+      fetchVaultDocs();
     } catch (e) {
-      // Fallback local si falla la nube
       vaultDocs = vaultDocs.filter(d => String(d.id) !== String(vaultDocToConvert));
       localStorage.setItem('axon_vault_docs', JSON.stringify(vaultDocs));
       vaultDocToConvert = null;
       renderVault();
+    }
+  }
+
+  // Si venía del Inbox, eliminamos la nota original
+  if (inboxDocToConvert) {
+    try {
+      await supabase.from('inbox').delete().eq('id', inboxDocToConvert);
+      inboxDocToConvert = null;
+      fetchInbox();
+    } catch (e) {
+      inboxDocs = inboxDocs.filter(d => String(d.id) !== String(inboxDocToConvert));
+      localStorage.setItem('axon_inbox_docs', JSON.stringify(inboxDocs));
+      inboxDocToConvert = null;
+      renderInbox();
     }
   }
 
@@ -1553,6 +1567,7 @@ function renderInbox() {
 window.convertInboxToTask = (docId) => {
   const doc = inboxDocs.find(d => String(d.id) === String(docId));
   if (!doc) return;
+  inboxDocToConvert = docId; // Marcamos para borrar al guardar
   $('new-task-title').value = "Idea del Inbox";
   $('new-task-desc').value = doc.content;
   taskModal.style.display = 'flex';
