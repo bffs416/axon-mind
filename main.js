@@ -21,6 +21,7 @@ let timeLeft = 25 * 60, timerId = null, currentMode = 'pomodoro', pomodoroStartT
 let selectedTaskId = null, selectedTaskTitle = "Sesión de Trabajo", currentStepsInModal = [];
 let currentSessionId = null, taskToSchedule = null, allTasks = [];
 let vaultDocToConvert = null; // Para rastrear qué nota estamos convirtiendo
+let inboxDocToConvert = null; // Para rastrear qué nota del inbox estamos convirtiendo
 let sessionsCompleted = 0; // Para el descanso largo cada 4
 let currentEnergyFilter = 'all';
 let currentAssigneeFilter = 'all';
