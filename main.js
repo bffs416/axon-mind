@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap } from 'lucide';
+import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen } from 'lucide';
 
 const supabase = createClient('https://blwaxxacneipoaufpiag.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsd2F4eGFjbmVpcG9hdWZwaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5Mzg0ODgsImV4cCI6MjA3MzUxNDQ4OH0.MYorhHHAEOnFj5DPYZHozi5pyDZbtJQDBOeD2Te3WXU');
 const N8N_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/pomodoro-sync';
@@ -21,8 +21,9 @@ window.setTheme(savedTheme);
 let timeLeft = 25 * 60, timerId = null, currentMode = 'pomodoro', pomodoroStartTime = null;
 let selectedTaskId = null, selectedTaskTitle = "Sesión de Trabajo", currentStepsInModal = [];
 let currentSessionId = null, taskToSchedule = null, allTasks = [];
-let vaultDocToConvert = null; // Para rastrear qué nota estamos convirtiendo
-let inboxDocToConvert = null; // Para rastrear qué nota del inbox estamos convirtiendo
+let vaultDocs = [], inboxDocs = [];
+let vaultDocToConvert = null; 
+let inboxDocToConvert = null; 
 let sessionsCompleted = 0; // Para el descanso largo cada 4
 let currentEnergyFilter = 'all';
 let currentAssigneeFilter = 'all';
@@ -43,8 +44,15 @@ const motivations = [
   "¡Otro logro más! La constancia es tu superpoder ⭐","¡Genial! Cada minuto cuenta 🏆"
 ];
 
+const capitalizeFirstLetter = (str) => {
+    if (!str) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 // ==================== DOM ====================
-const $ = id => document.getElementById(id);
+window.$ = id => document.getElementById(id);
+const $ = window.$;
+window.closeModal = (id) => { $(id).style.display = 'none'; };
 const minutesEl = $('timer-minutes'), secondsEl = $('timer-seconds');
 const invisibleTimerBar = $('invisible-timer-bar');
 const progressCircle = document.querySelector('.progress-ring__circle');
@@ -68,9 +76,13 @@ viewBtns.forEach(btn => {
     if (targetView) targetView.classList.add('active');
     
     if (viewId === 'stats') loadStats();
+    if (viewId === 'cards') window.loadCards();
+    if (viewId === 'inbox') fetchInbox();
+    if (viewId === 'vault') fetchVaultDocs();
+    if (viewId === 'plan') { renderRoutines(); renderPlanner(); }
   };
 });
-const initIcons = () => createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap } });
+window.initIcons = () => createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen } });
 
 // ==================== AUDIO ALARM ====================
 function playSound(type = 'workEnd') {
@@ -464,7 +476,7 @@ async function fetchTasks() {
   }
 
   // Actualizar Dashboard de Progreso
-  updateProgressDashboard(data);
+  // updateProgressDashboard(data);
 
   initIcons();
   document.querySelectorAll('.task-card').forEach(card => {
@@ -543,10 +555,10 @@ window.editTask = async (id) => {
 
   // Override save to update instead of insert
   $('save-task').onclick = async () => {
-    const title = $('new-task-title').value; if (!title) return;
+    const title = capitalizeFirstLetter($('new-task-title').value); if (!title) return;
     const energy = $('new-task-energy').value;
     const assignee = $('new-task-assignee') ? $('new-task-assignee').value : 'Ambos';
-    const { error } = await supabase.from('tasks').update({ title, description: $('new-task-desc').value, energy_level: energy, assignee: assignee, steps: currentStepsInModal }).eq('id', id);
+    const { error } = await supabase.from('tasks').update({ title, description: capitalizeFirstLetter($('new-task-desc').value), energy_level: energy, assignee: assignee, steps: currentStepsInModal }).eq('id', id);
     if (error) {
       console.error("Error al actualizar tarea:", error);
       showToast("Error al actualizar: " + error.message);
@@ -665,7 +677,7 @@ window.openAddTaskModal = () => {
     $('task-modal').style.display = 'flex'; 
     if(window.lucide) lucide.createIcons();
 };
-if($('add-task-btn')) $('add-task-btn').onclick = window.openAddTaskModal;
+// El FAB ya tiene onclick="window.openAddSelector()" en el HTML — no sobrescribir
 let journalMood = 'neutral';
 document.querySelectorAll('.mood-btn').forEach(btn => {
     btn.onclick = () => {
@@ -1043,7 +1055,7 @@ $('close-modal').onclick = () => {
   $('save-task').onclick = createProject;
 };
 $('add-step-to-list').onclick = () => {
-  const v = $('step-input').value; if(!v) return;
+  const v = capitalizeFirstLetter($('step-input').value); if(!v) return;
   const a = $('step-assignee') ? $('step-assignee').value : '🤝 Ambos';
   const d = $('step-duration') ? parseInt($('step-duration').value) : 30;
   currentStepsInModal.push({text:v, done:false, assignee:a, duration: d}); 
@@ -1055,12 +1067,12 @@ $('add-step-to-list').onclick = () => {
   initIcons();
 };
 const createProject = async () => {
-  const title = $('new-task-title').value; if(!title) return;
+  const title = capitalizeFirstLetter($('new-task-title').value); if(!title) return;
   const energy = $('new-task-energy').value;
   const assignee = $('new-task-assignee') ? $('new-task-assignee').value : 'Ambos';
   const { error } = await supabase.from('tasks').insert([{ 
     title, 
-    description: $('new-task-desc').value, 
+    description: capitalizeFirstLetter($('new-task-desc').value), 
     energy_level: energy, 
     assignee: assignee,
     status: 'todo', 
@@ -1125,7 +1137,14 @@ $('confirm-schedule').onclick = async () => {
 };
 $('close-schedule-modal').onclick = () => $('schedule-modal').style.display = 'none';
 
-// ==================== HELPERS ====================
+// --- MODAL MANAGEMENT ---
+window.openAddSelector = () => {
+  const m = $('add-selector-modal');
+  if (m) {
+    m.style.display = 'flex';
+    if (window.initIcons) window.initIcons();
+  }
+};
 const timeToMin = (t) => { if(!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+m; };
 const minToTime = (m) => { const h = Math.floor(m/60).toString().padStart(2,'0'), mm = (m%60).toString().padStart(2,'0'); return `${h}:${mm}`; };
 const format12h = (tStr) => {
@@ -1476,278 +1495,220 @@ window.clearEntireWeek = async () => {
   
   showToast("✅ Semana reiniciada localmente.");
   renderPlanner();
-};
+}
 
-$('sync-all-btn').onclick = async () => {
-  const days = getWeekDays();
-  const allRoutineBlocks = days.flatMap(d => getRoutineBlocksForDay(d).map(b => ({...b, day: d.toISOString().slice(0,10)})));
-  const unsyncedWork = weekPlan.filter(b => !b.synced);
-  const syncedRoutineIds = JSON.parse(sessionStorage.getItem('synced_routines') || '[]');
-  const unsyncedRoutines = allRoutineBlocks.filter(b => !syncedRoutineIds.includes(b.id));
-  const allUnsynced = [...unsyncedWork, ...unsyncedRoutines];
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded', () => {
+    // Carga inicial de tarjetas si estamos en esa vista
+    if (document.querySelector('.tab-btn[data-view="cards"].active')) window.loadCards();
+});
 
-  if (!allUnsynced.length) { showToast("✅ Todo ya está sincronizado"); return; }
-  
-  calStatus.textContent = 'Syncing...';
-  let count = 0;
-  let failed = [];
+// ==================== AXON CARDS LOGIC (SRS) ====================
+let allCards = [];
+let studyQueue = [];
+let currentCardIndex = -1;
+let currentFilter = 'All';
 
-  for (const block of allUnsynced) {
-    const datePart = block.day; // YYYY-MM-DD
-    const timePart = block.time; // HH:mm
-    const dur = block.duration || 30;
-    
-    // Calculamos fin en minutos
-    const startTotalMin = timeToMin(timePart);
-    const endTotalMin = startTotalMin + dur;
-    const endTimePart = minToTime(endTotalMin);
+window.loadCards = async () => {
+    const { data, error } = await supabase
+        .from('flashcards')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    // Calculamos el offset UTC local (ej: "-05:00" para Colombia)
-    const offsetMin = new Date().getTimezoneOffset(); // en minutos, signo invertido
-    const sign = offsetMin <= 0 ? '+' : '-';
-    const absH = Math.floor(Math.abs(offsetMin) / 60).toString().padStart(2, '0');
-    const absM = (Math.abs(offsetMin) % 60).toString().padStart(2, '0');
-    const tzOffset = `${sign}${absH}:${absM}`; // ej: "-05:00"
-
-    try {
-      const url = new URL(N8N_URL);
-      const res = await fetch(url.toString(), { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          taskId: block.taskTitle, 
-          status: 'scheduled', 
-          // ISO 8601 con offset explícito para que GCal no lo mueva
-          startTime: `${datePart}T${timePart}:00${tzOffset}`, 
-          endTime: `${datePart}T${endTimePart}:00${tzOffset}`,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          duration: dur,
-          isRoutine: block.isRoutine
-        })
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      if (block.isRoutine) syncedRoutineIds.push(block.id);
-      else block.synced = true;
-      count++;
-      
-      // Pequeña pausa para evitar rate-limits
-      await new Promise(r => setTimeout(r, 500));
-    } catch (e) {
-      console.error("Sync error:", e);
-      failed.push(block.taskTitle);
+    if (error) {
+        console.error('Error loading cards:', error);
+        return;
     }
-  }
 
-  localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
-  sessionStorage.setItem('synced_routines', JSON.stringify(syncedRoutineIds));
-  
-  if (failed.length > 0) {
-    calStatus.textContent = 'Sync partial';
-    showToast(`⚠️ Error en: ${failed.join(', ')}`, 5000);
-  } else {
-    calStatus.textContent = 'All Synced!';
-    fireConfetti();
-    showToast(`📅 ¡${count} bloques subidos a Calendar!`);
-  }
-  
-  renderPlanner();
+    allCards = data || [];
+    renderCards();
+    updateCardStats();
 };
 
-window.openSaveTemplateModal = () => {
-  $('template-name-input').value = '';
-  $('save-template-modal').style.display = 'flex';
-};
+function renderCards() {
+    const list = $('cards-list');
+    if (!list) return;
 
-window.confirmSaveTemplate = async () => {
-  const name = $('template-name-input').value.trim();
-  if (!name) return;
-  
-  const data = {
-    name: name,
-    routines: routines,
-    week_plan: weekPlan
-  };
-  
-  try {
-    const { error } = await supabase.from('weekly_templates').insert([data]);
-    if (error) throw error;
-    showToast("☁️ Plantilla guardada en la Nube");
-    $('save-template-modal').style.display = 'none';
-  } catch (e) {
-    showToast("⚠️ Error al guardar en la Nube");
-    console.error(e);
-  }
-};
+    const filtered = currentFilter === 'All' 
+        ? allCards 
+        : allCards.filter(c => c.category === currentFilter);
 
-window.openLoadTemplateModal = async () => {
-  $('load-template-modal').style.display = 'flex';
-  $('templates-list').innerHTML = '<p style="color:var(--text-muted); font-size: 0.8rem; text-align:center;">Cargando...</p>';
-  
-  try {
-    const { data, error } = await supabase.from('weekly_templates').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      $('templates-list').innerHTML = '<p style="color:var(--text-muted); font-size: 0.8rem; text-align:center;">No tienes plantillas guardadas aún.</p>';
-      return;
-    }
-    
-    $('templates-list').innerHTML = data.map(t => `
-      <div class="inbox-item" style="padding: 0.8rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-        <div style="cursor: pointer; flex: 1;" onclick="window.applyTemplate('${t.id}')">
-          <strong>${t.name}</strong>
-          <div style="font-size:0.7rem; color:var(--text-dim)">${new Date(t.created_at).toLocaleDateString()}</div>
+    list.innerHTML = filtered.map(card => `
+        <div class="card-item" onclick="window.openCardModal('${card.id}')">
+            <span class="card-category-tag">${card.category}</span>
+            <div style="font-weight: 600; margin-bottom: 0.5rem;">${card.front}</div>
+            <div style="font-size: 0.8rem; color: var(--text-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                ${card.back}
+            </div>
+            <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.65rem; color: var(--primary);">Próximo: ${new Date(card.next_review).toLocaleDateString()}</span>
+                <button class="btn-icon" onclick="event.stopPropagation(); window.deleteCard('${card.id}')" style="color: var(--danger);">
+                    <i data-lucide="trash-2" style="width: 14px;"></i>
+                </button>
+            </div>
         </div>
-        <button class="btn-icon" style="color: var(--danger); opacity: 0.6;" onclick="window.deleteTemplate('${t.id}')">
-          <i data-lucide="trash-2" style="width: 14px;"></i>
-        </button>
-      </div>
     `).join('');
     
-    if (window.lucide) lucide.createIcons();
-    window._tempTemplates = data;
-  } catch (e) {
-    $('templates-list').innerHTML = '<p style="color:var(--danger); font-size: 0.8rem; text-align:center;">Error al cargar plantillas.</p>';
-    console.error(e);
-  }
-};
-
-window.deleteTemplate = async (id) => {
-  if (!window.confirm("¿Eliminar esta plantilla permanentemente?")) return;
-  try {
-    const { error } = await supabase.from('weekly_templates').delete().eq('id', id);
-    if (error) throw error;
-    showToast("🗑️ Plantilla eliminada");
-    window.openLoadTemplateModal(); // Refresh
-  } catch (e) {
-    showToast("⚠️ Error al eliminar");
-    console.error(e);
-  }
-};
-
-window.applyTemplate = (id) => {
-  const template = (window._tempTemplates || []).find(t => t.id === id);
-  if (!template) return;
-
-  if (!window.confirm(`¿Aplicar "${template.name}"? Se sobrescribirá tu semana actual.`)) return;
-  
-  // 1. Update Routines (date-agnostic)
-  if (template.routines) {
-    routines.length = 0;
-    routines.push(...template.routines);
-    localStorage.setItem('axon_routines', JSON.stringify(routines));
-  }
-  
-  // 2. Update Week Plan (Shift dates to CURRENT week)
-  if (template.week_plan && template.week_plan.length > 0) {
-    const currentWeek = getWeekDays();
-    const currentMonday = currentWeek[0];
-    
-    // Find the original Monday of the template
-    const sorted = [...template.week_plan].sort((a,b) => a.day.localeCompare(b.day));
-    const firstDate = new Date(sorted[0].day);
-    const firstDayIdx = firstDate.getDay();
-    const templateMonday = new Date(firstDate);
-    templateMonday.setDate(firstDate.getDate() - (firstDayIdx === 0 ? 6 : firstDayIdx - 1));
-    
-    const shiftedPlan = template.week_plan.map(block => {
-      const bDate = new Date(block.day);
-      const diffTime = bDate.getTime() - templateMonday.getTime();
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-      
-      const newDate = new Date(currentMonday);
-      newDate.setDate(currentMonday.getDate() + diffDays);
-      
-      return {
-        ...block,
-        day: newDate.toISOString().slice(0,10),
-        synced: false
-      };
-    });
-    
-    weekPlan.length = 0;
-    weekPlan.push(...shiftedPlan);
-    localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
-  }
-  
-  renderRoutines();
-  renderPlanner();
-  $('load-template-modal').style.display = 'none';
-  showToast("✅ Plantilla aplicada y ajustada a esta semana");
-};
-
-
-// ==================== AXON MIND (VAULT & INBOX) ====================
-let inboxDocs = JSON.parse(localStorage.getItem('axon_inbox_docs') || '[]');
-let vaultDocs = JSON.parse(localStorage.getItem('axon_vault_docs') || '[]');
-
-window.openQuickCapture = () => {
-  quickCaptureModal.style.display = 'block';
-  setTimeout(() => {
-    $('inbox-content').focus();
     initIcons();
-  }, 100);
+}
+
+function updateCardStats() {
+    const total = allCards.length;
+    const now = new Date().toISOString();
+    const due = allCards.filter(c => c.next_review <= now).length;
+
+    if ($('cards-total-count')) $('cards-total-count').textContent = total;
+    if ($('cards-due-count')) $('cards-due-count').textContent = due;
+}
+
+window.filterCards = (category, btn) => {
+    currentFilter = category;
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCards();
 };
 
-window.closeQuickCapture = () => {
-  quickCaptureModal.style.display = 'none';
-  $('inbox-content').value = '';
-};
+window.openCardModal = (id = null) => {
+    const modal = $('card-modal');
+    const title = $('card-modal-title');
+    const front = $('card-front');
+    const back = $('card-back');
+    const category = $('card-category');
+    const idInput = $('edit-card-id');
 
-window.saveInbox = async () => {
-  const content = $('inbox-content').value;
-  if (!content.trim()) return;
-  try {
-    const { error } = await supabase.from('inbox').insert([{ content }]);
-    if (error) throw error;
-    showToast("⚡ Capturado en Inbox (Nube)");
-  } catch (e) {
-    inboxDocs.unshift({ id: Date.now(), content, created_at: new Date().toISOString() });
-    localStorage.setItem('axon_inbox_docs', JSON.stringify(inboxDocs));
-    showToast("⚡ Nota guardada (Local)");
-  }
-  closeQuickCapture();
-  fetchInbox();
-};
-
-async function fetchInbox() {
-  try {
-    const { data, error } = await supabase.from('inbox').select('*').order('created_at', { ascending: false });
-    if(data && !error) {
-        inboxDocs = data;
-        localStorage.setItem('axon_inbox_docs', JSON.stringify(inboxDocs));
+    if (id) {
+        const card = allCards.find(c => c.id === id);
+        title.textContent = '📝 Editar Tarjeta';
+        front.value = card.front;
+        back.value = card.back;
+        category.value = card.category;
+        idInput.value = card.id;
+    } else {
+        title.textContent = '✨ Nueva Tarjeta de Estudio';
+        front.value = '';
+        back.value = '';
+        category.value = 'General';
+        idInput.value = '';
     }
-  } catch (e) {}
-  renderInbox();
-}
 
-function renderInbox() {
-  const list = $('inbox-list');
-  if(!list) return;
-  list.innerHTML = inboxDocs.map(doc => `
-    <div class="inbox-item">
-      <div class="inbox-item-content">${doc.content}</div>
-      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
-        <span class="inbox-item-date">${new Date(doc.created_at).toLocaleString()}</span>
-        <button class="btn btn-outline" style="padding: 0.3rem 0.5rem; font-size: 0.7rem;" onclick="window.convertInboxToTask('${doc.id}')">Convertir a Tarea</button>
-      </div>
-    </div>
-  `).join('') || '<p style="color:var(--text-muted); font-size: 0.9rem;">No hay notas en el Inbox.</p>';
-}
-
-window.convertInboxToTask = (docId) => {
-  const doc = inboxDocs.find(d => String(d.id) === String(docId));
-  if (!doc) return;
-  inboxDocToConvert = docId; // Marcamos para borrar al guardar
-  $('new-task-title').value = "Idea del Inbox";
-  $('new-task-desc').value = doc.content;
-  taskModal.style.display = 'flex';
-  showToast("Pre-cargado desde Inbox");
+    modal.style.display = 'flex';
 };
 
+window.saveCard = async () => {
+    const id = $('edit-card-id').value;
+    const front = capitalizeFirstLetter($('card-front').value.trim());
+    const back = capitalizeFirstLetter($('card-back').value.trim());
+    const category = $('card-category').value;
 
+    if (!front || !back) {
+        showToast('⚠️ Por favor completa ambos lados.');
+        return;
+    }
+
+    const cardData = {
+        front,
+        back,
+        category,
+        next_review: new Date().toISOString()
+    };
+
+    let error;
+    if (id) {
+        const { error: err } = await supabase.from('flashcards').update(cardData).eq('id', id);
+        error = err;
+    } else {
+        const { error: err } = await supabase.from('flashcards').insert([cardData]);
+        error = err;
+    }
+
+    if (error) {
+        showToast('❌ Error al guardar tarjeta.');
+    } else {
+        showToast('✅ Tarjeta guardada con éxito.');
+        $('card-modal').style.display = 'none';
+        window.loadCards();
+    }
+};
+
+window.deleteCard = async (id) => {
+    if (!confirm('¿Seguro que quieres eliminar esta tarjeta?')) return;
+
+    const { error } = await supabase.from('flashcards').delete().eq('id', id);
+    if (error) {
+        showToast('❌ Error al eliminar.');
+    } else {
+        showToast('🗑️ Tarjeta eliminada.');
+        window.loadCards();
+    }
+};
+
+// --- STUDY SESSION LOGIC ---
+window.startStudySession = () => {
+    const now = new Date().toISOString();
+    studyQueue = allCards.filter(c => c.next_review <= now);
+
+    if (studyQueue.length === 0) {
+        showToast('🎉 ¡No tienes tarjetas pendientes por hoy!');
+        return;
+    }
+
+    currentCardIndex = 0;
+    $('study-modal').style.display = 'flex';
+    renderStudyCard();
+};
+
+function renderStudyCard() {
+    const card = studyQueue[currentCardIndex];
+    if (!card) {
+        $('study-modal').style.display = 'none';
+        showToast('🏆 ¡Sesión completada!');
+        window.loadCards();
+        return;
+    }
+
+    $('current-flashcard').classList.remove('flipped');
+    $('card-front-text').textContent = card.front;
+    $('card-back-text').textContent = card.back;
+    $('study-card-category').textContent = card.category;
+    $('study-actions').style.display = 'none';
+    $('flip-hint').style.display = 'block';
+}
+
+window.flipCard = () => {
+    const card = $('current-flashcard');
+    if (!card.classList.contains('flipped')) {
+        card.classList.add('flipped');
+        $('study-actions').style.display = 'grid';
+        $('flip-hint').style.display = 'none';
+    }
+};
+
+window.answerCard = async (difficulty) => {
+    const card = studyQueue[currentCardIndex];
+    let interval = 1; // days
+
+    if (difficulty === 'hard') interval = 1;
+    else if (difficulty === 'good') interval = 3;
+    else if (difficulty === 'easy') interval = 7;
+
+    const nextReview = new Date();
+    nextReview.setDate(nextReview.getDate() + interval);
+
+    const { error } = await supabase
+        .from('flashcards')
+        .update({ 
+            next_review: nextReview.toISOString(),
+            last_interval: interval 
+        })
+        .eq('id', card.id);
+
+    if (error) {
+        showToast('❌ Error al actualizar SRS.');
+    } else {
+        currentCardIndex++;
+        renderStudyCard();
+    }
+};
 window.openVaultModal = () => {
   $('vault-title').value = '';
   $('vault-content').value = '';
@@ -1758,7 +1719,7 @@ window.openVaultModal = () => {
 window.closeVaultModal = () => vaultModal.style.display = 'none';
 
 window.saveVaultDoc = async () => {
-  const title = $('vault-title').value;
+  const title = capitalizeFirstLetter($('vault-title').value);
   const content = $('vault-content').value;
   const image = $('vault-image').value;
   if (!title) return alert("El título es obligatorio");
@@ -1787,6 +1748,7 @@ async function fetchVaultDocs() {
   } catch (e) {}
   renderVault();
 }
+window.fetchVaultDocs = fetchVaultDocs;
 
 function renderVault() {
   const grid = $('vault-list');
@@ -1798,13 +1760,13 @@ function renderVault() {
       <p>${doc.content || 'Sin descripción...'}</p>
       <button class="btn btn-outline" onclick="window.convertVaultToTask('${doc.id}')">Convertir a Tarea</button>
     </div>
-  `).join('');
+  `).join('') || '<p style="text-align:center; opacity:0.5; grid-column: 1/-1; padding:2rem;">El Cerebro está esperando tus ideas.</p>';
 }
 
 window.convertVaultToTask = (docId) => {
   const doc = vaultDocs.find(d => String(d.id) === String(docId));
   if (!doc) return;
-  vaultDocToConvert = docId; // Guardamos el ID para borrarlo al guardar el proyecto
+  vaultDocToConvert = docId; 
   $('new-task-title').value = doc.title;
   $('new-task-desc').value = doc.content || '';
   taskModal.style.display = 'flex';
@@ -1812,43 +1774,25 @@ window.convertVaultToTask = (docId) => {
 };
 
 // ==================== STATS ====================
-// ==================== STATS ====================
 let selectedProfile = 'Pipe';
 
-document.querySelectorAll('.profile-btn').forEach(btn => {
-  btn.onclick = () => {
+window.setStatProfile = (profile, btn) => {
     document.querySelectorAll('.profile-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    selectedProfile = btn.dataset.profile;
+    selectedProfile = profile;
     loadStats();
-  };
-});
+};
 
 async function loadStats() {
-  // 1. Fetch Focus Sessions
   const { data: sessions } = await supabase.from('focus_sessions').select('*').order('created_at', { ascending: false }).limit(100);
   if (!sessions) return;
 
   const completed = sessions.filter(s => s.completed);
   const totalSecs = completed.reduce((a,s) => a + (s.duration_seconds||0), 0);
   $('stat-total-pomodoros').textContent = completed.length;
-  $('stat-completion').textContent = sessions.length ? Math.round(completed.length/sessions.length*100)+'%' : '0%';
   $('stat-focus-hours').textContent = (totalSecs/3600).toFixed(1)+'h';
 
-  const dates = [...new Set(completed.map(s => new Date(s.started_at).toDateString()))].sort((a,b) => new Date(b)-new Date(a));
-  let streak = 0;
-  const check = new Date(); check.setHours(0,0,0,0);
-  for (const d of dates) {
-    const dd = new Date(d); dd.setHours(0,0,0,0);
-    if (dd.getTime() === check.getTime()) { streak++; check.setDate(check.getDate()-1); }
-    else if (dd < check) break;
-  }
-  $('stat-streak').textContent = streak;
-  $('streak-count').textContent = streak;
-
   const last7 = Array.from({length:7}, (_,i) => { const d = new Date(); d.setDate(d.getDate()-6+i); return d; });
-  
-  // Render Pomodoro Chart
   const chartData = last7.map(d => {
     const key = d.toDateString();
     return { label: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()], count: completed.filter(s => new Date(s.started_at).toDateString()===key).length };
@@ -1859,340 +1803,349 @@ async function loadStats() {
     <div class="chart-bar" style="height:${Math.max(d.count/maxCount*100, 4)}%"></div>
     <div class="chart-bar-label">${d.label}</div>
   </div>`).join('');
-
-  // 2. Fetch Journal Metrics
-  const { data: journals } = await supabase.from('daily_journal')
-    .select('*')
-    .eq('profile', selectedProfile)
-    .order('created_at', { ascending: false })
-    .limit(7);
-
-  if (journals) {
-    // Render Wellness Bars
-    const journalData = last7.map(d => {
-      const entry = journals.find(j => new Date(j.created_at).toDateString() === d.toDateString());
-      return { 
-        label: ['D','L','M','X','J','V','S'][d.getDay()], 
-        energy: entry ? entry.energy_level * 20 : 0,
-        focus: entry ? entry.focus_level * 20 : 0,
-        stress: entry ? entry.stress_level * 20 : 0
-      };
-    });
-
-    $('journal-metrics-chart').innerHTML = journalData.map(d => `
-      <div class="metric-day-column">
-        <div class="metric-bar-stack">
-          <div class="metric-segment segment-energy" style="height:${d.energy}%" title="Energía"></div>
-          <div class="metric-segment segment-focus" style="height:${d.focus}%" title="Enfoque"></div>
-          <div class="metric-segment segment-stress" style="height:${d.stress}%" title="Estrés"></div>
-        </div>
-        <div class="chart-bar-label">${d.label}</div>
-      </div>
-    `).join('');
-
-    // Render Reflections
-    $('journal-list').innerHTML = journals.map(j => `
-      <div class="journal-card">
-        <h5><span>${j.mood} ${new Date(j.created_at).toLocaleDateString()}</span> <span>👤 ${j.profile}</span></h5>
-        <div style="margin-bottom:0.5rem">
-          <span class="metric-badge">🔋 E:${j.energy_level}</span>
-          <span class="metric-badge">🧠 F:${j.focus_level}</span>
-          <span class="metric-badge">🔥 S:${j.stress_level}</span>
-          <span class="metric-badge">😴 ${j.sleep_hours}h</span>
-        </div>
-        <p><strong>Victoria:</strong> ${j.wins || '---'}</p>
-        <p><strong>Lección:</strong> ${j.life_lesson || '---'}</p>
-        <p><strong>Frustración:</strong> ${j.frustrations || '---'}</p>
-      </div>
-    `).join('') || '<p>Aún no hay reflexiones para este perfil.</p>';
-  }
-
-  // 3. Render Session List
-  $('sessions-list').innerHTML = sessions.slice(0,8).map(s => `<div class="session-item">
-    <span class="session-title">${s.task_title}</span>
-    <div class="session-meta">
-      <span>${s.duration_seconds ? Math.round(s.duration_seconds/60)+'min' : '-'}</span>
-      <span class="${s.completed?'session-complete':'session-incomplete'}">${s.completed?'✓ Completo':'⊘ Parcial'}</span>
-    </div>
-  </div>`).join('');
 }
-
-// ==================== NAVIGATION ====================
-viewBtns.forEach(btn => btn.onclick = () => {
-  viewBtns.forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const targetId = btn.dataset.view ? `view-${btn.dataset.view}` : btn.dataset.target;
-  views.forEach(v => v.classList.remove('active'));
-  $(targetId).classList.add('active');
-  if(targetId === 'view-tasks') fetchTasks();
-  if(targetId === 'view-plan') { renderRoutines(); renderPlanner(); }
-  if(targetId === 'view-stats') loadStats();
-  if(targetId === 'view-vault') { fetchVaultDocs(); fetchInbox(); }
-});
-
-// ==================== KEYBOARD SHORTCUTS ====================
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.code === 'Space') {
-    e.preventDefault();
-    window.openQuickCapture();
-  }
-});
+window.loadStats = loadStats;
 
 // ==================== DIARIO DE PAREJA ====================
 let selectedMood = '😊';
-document.querySelectorAll('.mood-btn').forEach(btn => {
-  btn.onclick = () => {
+window.selectMood = (mood, btn) => {
     document.querySelectorAll('.mood-btn').forEach(b => b.style.transform = 'scale(1)');
     btn.style.transform = 'scale(1.3)';
-    selectedMood = btn.textContent;
-  };
-});
+    selectedMood = mood;
+};
 
 window.saveDailyJournal = async () => {
   const profile = $('journal-profile').value;
-  const energy = parseInt($('journal-energy').value) || 3;
-  const focus = parseInt($('journal-focus').value) || 3;
-  const stress = parseInt($('journal-stress').value) || 3;
-  const sleep = parseFloat($('journal-sleep').value) || 7;
-  
   const wins = $('journal-wins').value;
-  const family = $('journal-family').value;
   const lesson = $('journal-lesson').value;
-  const frustrations = $('journal-frustrations').value;
 
   const entry = {
-    profile, energy_level: energy, focus_level: focus, stress_level: stress,
-    sleep_hours: sleep, mood: selectedMood,
-    wins, family_impact: family, life_lesson: lesson, frustrations
+    profile, mood: selectedMood, wins, life_lesson: lesson,
+    energy_level: parseInt($('journal-energy').value),
+    focus_level: parseInt($('journal-focus').value),
+    stress_level: parseInt($('journal-stress').value)
   };
 
   try {
-    const { error } = await supabase.from('daily_journal').insert([entry]);
-    if (error) throw error;
-    showToast("✅ ¡Cierre Cognitivo Guardado en la Nube! Descansa.");
+    await supabase.from('daily_journal').insert([entry]);
+    showToast("✅ ¡Cierre Cognitivo Guardado!");
   } catch (e) {
-    console.warn("Supabase Error saving journal:", e);
-    const localJournals = JSON.parse(localStorage.getItem('axon_journals') || '[]');
-    localJournals.push({...entry, id: Date.now(), created_at: new Date().toISOString()});
-    localStorage.setItem('axon_journals', JSON.stringify(localJournals));
-    showToast(`Error Nube: ${e.message || 'Desconocido'}. Guardado Local.`);
+    showToast("⚠️ Guardado Localmente");
   }
-
   $('journal-modal').style.display = 'none';
-  $('journal-wins').value = ''; $('journal-family').value = ''; 
-  $('journal-lesson').value = ''; $('journal-frustrations').value = '';
 };
+
+// ==================== MODAL STEPS ====================
 window.renderModalSteps = () => {
-    $('modal-steps-list').innerHTML = currentStepsInModal.map((s, i) => {
+    const list = $('modal-steps-list');
+    if (!list) return;
+    list.innerHTML = currentStepsInModal.map((s, i) => {
         const iconAssignee = s.assignee === 'Pipe' ? '👨' : (s.assignee === 'Tati' ? '👩' : '🤝');
         return `<div class="step-item" style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
             <span style="font-size: 0.75rem; opacity: 0.5; min-width: 20px; font-family: monospace;">${i + 1}.</span>
-            <span style="font-size: 1.2rem; min-width: 30px; text-align: center;">${iconAssignee}</span> 
-            <input type="text" value="${s.text}" 
-                style="flex:1; background:var(--bg-card); border:1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; color:var(--text); font-size:0.85em; font-weight:500;" 
-                onchange="window.updateModalStepText(${i}, this.value)">
-            <span style="font-size: 0.7em; opacity: 0.6; min-width: 45px; color:var(--text);">⏱️ ${s.duration || 25}m</span>
-            <button class="btn-mini" onclick="window.removeModalStep(${i})" style="color:var(--danger); opacity:0.6; background:transparent; border:none; cursor:pointer; font-size:1rem;">✕</button>
+            <input type="text" value="${s.text}" onchange="window.updateModalStep(${i}, 'text', this.value)" style="flex:1; margin:0; padding:4px 8px; font-size:0.85rem;" placeholder="Paso a seguir...">
+            <button class="btn-mini" onclick="window.cycleModalStepAssignee(${i})" title="Cambiar responsable">${iconAssignee}</button>
+            <button class="btn-mini" onclick="window.removeModalStep(${i})" style="color:var(--danger)">✕</button>
         </div>`;
-    }).join('');
-    initIcons();
+    }).join('') || '<p style="text-align:center; opacity:0.3; font-size:0.8rem;">No hay pasos definidos.</p>';
 };
 
-// ==================== BATCH JSON IMPORT ====================
-window.toggleJsonImport = () => {
-    const container = $('json-import-container');
-    container.style.display = container.style.display === 'none' ? 'block' : 'none';
+window.addModalStep = () => {
+    currentStepsInModal.push({ text: '', done: false, assignee: 'Ambos' });
+    window.renderModalSteps();
 };
 
-window.processJsonImport = () => {
-    let input = $('json-import-input').value.trim();
+window.updateModalStep = (i, field, val) => { currentStepsInModal[i][field] = val; };
+
+window.cycleModalStepAssignee = (i) => {
+    const s = currentStepsInModal[i];
+    const sequence = ['Ambos', 'Pipe', 'Tati'];
+    let idx = sequence.indexOf(s.assignee || 'Ambos');
+    s.assignee = sequence[(idx + 1) % sequence.length];
+    window.renderModalSteps();
+};
+
+window.removeModalStep = (i) => {
+    currentStepsInModal.splice(i, 1);
+    window.renderModalSteps();
+};
+
+// ==================== INBOX CONVERSION ====================
+window.convertInboxToTask = (docId) => {
+    const doc = inboxDocs.find(d => String(d.id) === String(docId));
+    if (!doc) return;
+    inboxDocToConvert = docId;
+    $('new-task-title').value = doc.content;
+    $('new-task-desc').value = '';
+    taskModal.style.display = 'flex';
+    showToast("Pre-cargado desde el Inbox");
+};
+
+// ==================== NAVIGATION ====================
+window.openAddSelector = () => {
+    $('add-selector-modal').style.display = 'flex';
+};
+
+window.openTaskModal = () => {
+    selectedTaskId = null;
+    $('new-task-title').value = '';
+    $('new-task-desc').value = '';
+    currentStepsInModal = [];
+    window.renderModalSteps();
+    $('task-modal').style.display = 'flex';
+};
+
+window.openQuickCapture = () => {
+    const modal = $('quick-capture-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        const input = $('inbox-content');
+        if (input) input.focus();
+    }
+};
+
+window.closeQuickCapture = () => {
+    const modal = $('quick-capture-modal');
+    if (modal) modal.style.display = 'none';
+    const input = $('inbox-content');
+    if (input) input.value = '';
+};
+
+window.saveInbox = async () => {
+    const input = $('inbox-content');
     if (!input) return;
-
-    let stepsToProcess = [];
+    const text = capitalizeFirstLetter(input.value.trim());
+    if (!text) return;
 
     try {
-        // --- MÉTODO 1: JSON ESTÁNDAR ---
-        let cleanInput = input.replace(/```json/g, '').replace(/```/g, '').trim();
-        const startIdx = cleanInput.indexOf('[');
-        const endIdx = cleanInput.lastIndexOf(']');
-        if (startIdx !== -1 && endIdx !== -1) {
-            cleanInput = cleanInput.substring(startIdx, endIdx + 1);
-        }
-        cleanInput = cleanInput.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"');
-        cleanInput = cleanInput.replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
-
-        const data = JSON.parse(cleanInput);
-        stepsToProcess = Array.isArray(data) ? data : (data.steps || []);
-
+        const { error } = await supabase.from('inbox').insert([{ content: text }]);
+        if (error) throw error;
+        showToast("📥 Idea capturada en la Nube");
     } catch (e) {
-        console.warn("JSON.parse falló, usando Extractor de Emergencia (Regex)...");
-        
-        // --- MÉTODO 2: EXTRACTOR DE EMERGENCIA (REGEX) ---
-        // Busca cualquier cosa que parezca "text": "Título" o "title": "Título"
-        const regex = /"(?:text|title|name)"\s*:\s*"([^"]+)"/g;
-        let match;
-        while ((match = regex.exec(input)) !== null) {
-            stepsToProcess.push({ text: match[1] });
+        console.warn("Error Inbox Supabase:", e);
+        inboxDocs.unshift({ id: Date.now(), content: text, created_at: new Date().toISOString() });
+        localStorage.setItem('axon_inbox_docs', JSON.stringify(inboxDocs));
+        showToast("📥 Idea capturada Localmente");
+    }
+
+    input.value = '';
+    window.closeQuickCapture();
+    fetchInbox();
+};
+
+async function fetchInbox() {
+    try {
+        const { data, error } = await supabase.from('inbox').select('*').order('created_at', { ascending: false });
+        if (data && !error) {
+            inboxDocs = data;
+            localStorage.setItem('axon_inbox_docs', JSON.stringify(inboxDocs));
         }
+    } catch (e) {
+        const local = localStorage.getItem('axon_inbox_docs');
+        if (local) inboxDocs = JSON.parse(local);
     }
-
-    if (stepsToProcess.length > 0) {
-        stepsToProcess.forEach(item => {
-            let stepText = "";
-            
-            // Si es el formato detallado de HansBiomed
-            if (item.Objetivo && item["Línea Estratégica"]) {
-                const fecha = item.Fecha && item.Fecha !== "Por definir" ? `[${item.Fecha.split('/')[0]}/${item.Fecha.split('/')[1]}] ` : "";
-                const formato = item.Formato ? `${item.Formato.split('.')[1] || item.Formato} - ` : "";
-                stepText = `${fecha}${formato}${item["Línea Estratégica"]}: ${item.Objetivo}`;
-            } else {
-                // Fallback a formatos simples
-                stepText = typeof item === 'string' ? item : (item.text || item.title || item.name || "Paso");
-            }
-
-            // 1. EL TÍTULO (Encabezado)
-            currentStepsInModal.push({
-                id: Math.random().toString(36).substr(2, 9),
-                text: `📌 ${stepText}`,
-                done: false,
-                isHeader: true
-            });
-
-            // 2. ACCIÓN: CREAR
-            currentStepsInModal.push({
-                id: Math.random().toString(36).substr(2, 9),
-                text: `🎨 Crear`,
-                done: false,
-                assignee: item.assignee || "Ambos",
-                duration: 30
-            });
-
-            // 3. ACCIÓN: PUBLICAR
-            currentStepsInModal.push({
-                id: Math.random().toString(36).substr(2, 9),
-                text: `🚀 Publicar`,
-                done: false,
-                assignee: "Tati",
-                duration: 5
-            });
-        });
-
-        renderModalSteps();
-        $('json-import-input').value = '';
-        $('json-import-container').style.display = 'none';
-        showToast(`✅ ¡${stepsToProcess.length} pasos rescatados con éxito!`);
-    } else {
-        alert("No pude encontrar ninguna lista de tareas. Asegúrate de que el texto contenga el formato [ { 'text': '...' } ]");
-    }
-};
-
-function updateProgressDashboard(tasks) {
-    const dashboard = $('progress-dashboard');
-    if (!dashboard) return;
-
-    const activeTasks = tasks ? tasks.filter(t => t.status !== 'frozen') : [];
-    const completedTasks = activeTasks.filter(t => t.status === 'done');
-    const total = activeTasks.length;
-    const completedCount = completedTasks.length;
-    const percent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
-
-    // Si no hay tareas, mostramos un mensaje de bienvenida
-    if (total === 0) {
-        dashboard.innerHTML = `
-            <div class="progress-message" style="text-align: center; font-style: normal; opacity: 0.8;">
-                ✨ <strong>¡Tablero despejado!</strong> Agrega un proyecto para empezar a medir tu éxito hoy.
-            </div>
-        `;
-        return;
-    }
-
-    let message = "";
-    if (percent === 0) message = "¡Día de conquista! El primer paso es el más valiente. 🚀";
-    else if (percent <= 30) message = "Buen ritmo, Pipe. Cada pieza cuenta para el gran puzzle. 💪";
-    else if (percent <= 60) message = "¡Ecuación perfecta! Ya cruzaste el ecuador del éxito. 🔋";
-    else if (percent <= 90) message = "¡Viento en popa! El hiperfoco está dando sus frutos. 🔥";
-    else if (percent === 100) message = "<strong>🏆 ¡LEYENDA!</strong> Has limpiado el tablero. Tiempo de celebrar. ✨";
-
-    dashboard.innerHTML = `
-        <div class="progress-header">
-            <div class="progress-title">Progreso del Día</div>
-            <div class="progress-stats"><span style="color: var(--primary); font-size: 1.2rem;">${completedCount}</span> / ${total} <small style="opacity: 0.6; font-weight: 400;">proyectos</small></div>
-        </div>
-        <div class="progress-bar-container" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border);">
-            <div class="progress-bar-fill" style="width: ${percent}%"></div>
-        </div>
-        <div class="progress-message" style="color: var(--text);">${message} <span style="float: right; opacity: 0.7; font-weight: 700;">${percent}%</span></div>
-    `;
+    renderInbox();
 }
+window.fetchInbox = fetchInbox;
 
-// ==================== INIT ====================
-if (Notification.permission === 'default') Notification.requestPermission();
-fetchTasks(); updateDisplay(); renderRoutines(); renderPlanner(); loadStats(); initIcons();
-// ========== BIO-AXON WATER TRACKER LOGIC ==========
-let waterConsumed = parseFloat(localStorage.getItem('axon_water_consumed')) || 0;
-const WATER_GOAL = 3.0; // Liters
+function renderInbox() {
+    const container = $('inbox-list');
+    if (!container) return;
+    
+    container.innerHTML = inboxDocs.map(doc => `
+        <div class="inbox-item" style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:10px; border-radius:8px; margin-bottom:8px; border:1px solid var(--border);">
+            <div style="flex:1; margin-right:10px;">
+                <p style="margin:0; font-size:0.9rem; color:var(--text);">${doc.content}</p>
+                <small style="opacity:0.5; font-size:0.7rem; color:var(--text-dim);">${new Date(doc.created_at).toLocaleDateString()}</small>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-mini" onclick="window.convertInboxToTask('${doc.id}')" title="Convertir a Tarea" style="background:var(--surface-light); border:1px solid var(--border); color:var(--text);">
+                    <i data-lucide="layers" style="width:14px; height:14px;"></i>
+                </button>
+                <button class="btn-mini" onclick="window.deleteInboxItem('${doc.id}')" title="Eliminar" style="background:var(--surface-light); border:1px solid var(--border); color:var(--danger);">
+                    <i data-lucide="trash-2" style="width:14px; height:14px;"></i>
+                </button>
+            </div>
+        </div>
+    `).join('') || '<p style="text-align:center; opacity:0.5; font-size:0.8rem; padding:20px; color:var(--text-dim);">Tu bandeja está vacía.</p>';
+    
+    if (window.lucide) lucide.createIcons();
+}
+window.renderInbox = renderInbox;
 
-window.initWaterTracker = () => {
-    updateWaterUI();
-    // Recordatorio cada 45 minutos (45 * 60 * 1000)
-    setInterval(() => {
-        showWaterReminder();
-    }, 45 * 60 * 1000);
+window.deleteInboxItem = async (id) => {
+    if (!confirm("¿Eliminar esta idea del Inbox?")) return;
+    try {
+        const { error } = await supabase.from('inbox').delete().eq('id', id);
+        if (error) throw error;
+        showToast("🗑️ Eliminado del Inbox");
+    } catch (e) {
+        inboxDocs = inboxDocs.filter(d => String(d.id) !== String(id));
+        localStorage.setItem('axon_inbox_docs', JSON.stringify(inboxDocs));
+        showToast("🗑️ Eliminado Localmente");
+    }
+    fetchInbox();
 };
+
+// ==================== WATER TRACKER ====================
+let waterTotal = parseFloat(localStorage.getItem('axon_water_' + new Date().toDateString()) || '0');
 
 window.addWater = (amount) => {
-    waterConsumed = Math.min(WATER_GOAL, waterConsumed + amount);
-    localStorage.setItem('axon_water_consumed', waterConsumed.toFixed(2));
-    updateWaterUI();
-    showToast(`💧 +${amount*1000}ml de vida añadidos.`);
+    waterTotal += amount;
+    localStorage.setItem('axon_water_' + new Date().toDateString(), waterTotal.toString());
+    updateWaterDisplay();
+    showToast(`💧 +${amount.toFixed(2)}L | Total: ${waterTotal.toFixed(1)}L`);
 };
 
 window.resetWater = () => {
-    if (confirm('¿Reiniciar contador de agua diario?')) {
-        waterConsumed = 0;
-        localStorage.setItem('axon_water_consumed', '0');
-        updateWaterUI();
+    waterTotal = 0;
+    localStorage.setItem('axon_water_' + new Date().toDateString(), '0');
+    updateWaterDisplay();
+};
+
+function updateWaterDisplay() {
+    const current = $('water-current');
+    const fill = $('water-fill');
+    if (current) current.textContent = waterTotal.toFixed(1);
+    if (fill) fill.style.width = Math.min((waterTotal / 3) * 100, 100) + '%';
+}
+
+// ==================== JSON IMPORT ====================
+window.toggleJsonImport = () => {
+    const container = $('json-import-container');
+    if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+};
+
+window.processJsonImport = () => {
+    const input = $('json-import-input');
+    if (!input || !input.value.trim()) return;
+    try {
+        const data = JSON.parse(input.value);
+        const { rawSlices } = extractStepsFromData(data);
+        if (rawSlices.length > 0) {
+            currentStepsInModal = rawSlices.map(s => ({
+                text: s.task || s.title || s.text || s.descripcion || s.tarea || s.step || 'Paso importado',
+                done: false,
+                assignee: s.assignee || 'Ambos',
+                duration: parseInt(s.duration || s.estimated_time || 25) || 25
+            }));
+            renderModalSteps();
+            if (window.lucide) lucide.createIcons();
+            showToast(`✅ ${rawSlices.length} pasos importados`);
+        } else {
+            showToast('⚠️ No se encontraron pasos en el JSON');
+        }
+    } catch (e) {
+        showToast('❌ JSON inválido. Revisa el formato.');
+    }
+    input.value = '';
+    const container = $('json-import-container');
+    if (container) container.style.display = 'none';
+};
+
+// ==================== TEMPLATES ====================
+window.openSaveTemplateModal = () => {
+    $('template-name-input').value = '';
+    $('save-template-modal').style.display = 'flex';
+};
+
+window.openLoadTemplateModal = async () => {
+    $('load-template-modal').style.display = 'flex';
+    const list = $('templates-list');
+    list.innerHTML = '<p style="color:var(--text-dim); font-size:0.8rem; text-align:center;">Cargando...</p>';
+    try {
+        const { data } = await supabase.from('week_templates').select('*').order('created_at', { ascending: false });
+        if (data && data.length > 0) {
+            list.innerHTML = data.map(t => `
+                <div style="background:var(--bg-card); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border);">
+                    <span style="font-weight:600;">${t.name}</span>
+                    <button class="btn-mini" onclick="window.loadTemplateById('${t.id}')" style="background:var(--primary); color:white; padding:0.4rem 0.8rem; border-radius:6px;">Cargar</button>
+                </div>
+            `).join('');
+        } else {
+            list.innerHTML = '<p style="color:var(--text-dim); text-align:center;">No hay plantillas guardadas</p>';
+        }
+    } catch(e) {
+        const local = JSON.parse(localStorage.getItem('axon_templates') || '[]');
+        if (local.length > 0) {
+            list.innerHTML = local.map(t => `
+                <div style="background:var(--bg-card); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border);">
+                    <span style="font-weight:600;">${t.name}</span>
+                    <button class="btn-mini" onclick="window.loadTemplateById('${t.id}')" style="background:var(--primary); color:white; padding:0.4rem 0.8rem; border-radius:6px;">Cargar</button>
+                </div>
+            `).join('');
+        } else {
+            list.innerHTML = '<p style="color:var(--text-dim); text-align:center;">No hay plantillas guardadas</p>';
+        }
     }
 };
 
-function updateWaterUI() {
-    const currentEl = $('water-current');
-    const fillEl = $('water-fill');
-    if (currentEl) currentEl.textContent = waterConsumed.toFixed(2);
-    if (fillEl) {
-        const percentage = (waterConsumed / WATER_GOAL) * 100;
-        fillEl.style.width = percentage + '%';
-    }
-}
-
-function showWaterReminder() {
-    // Crear el popup dinámicamente si no existe
-    let popup = document.querySelector('.water-reminder-popup');
-    if (!popup) {
-        popup = document.createElement('div');
-        popup.className = 'water-reminder-popup';
-        popup.innerHTML = `
-            <span class="icon">💧</span>
-            <div class="text">Momento Axon: ¡Pega un sorbo de tu vasija!</div>
-        `;
-        document.body.appendChild(popup);
-    }
-    
-    popup.classList.add('show');
-    
-    // Sonido sutil si es posible
+window.loadTemplateById = async (id) => {
+    let template = null;
     try {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
-        audio.volume = 0.2;
-        audio.play();
+        const { data } = await supabase.from('week_templates').select('*').eq('id', id).single();
+        if (data) template = data;
     } catch(e) {}
 
-    setTimeout(() => {
-        popup.classList.remove('show');
-    }, 6000);
-}
+    if (!template) {
+        const local = JSON.parse(localStorage.getItem('axon_templates') || '[]');
+        template = local.find(t => String(t.id) === String(id));
+    }
 
-// Inicializar al cargar
+    if (!template) { showToast('⚠️ Plantilla no encontrada'); return; }
+
+    const snapshot = template.data;
+    if (snapshot.routines) {
+        routines.length = 0;
+        routines.push(...snapshot.routines);
+        localStorage.setItem('axon_routines', JSON.stringify(routines));
+    }
+    if (snapshot.weekPlan) {
+        weekPlan.length = 0;
+        weekPlan.push(...snapshot.weekPlan);
+        localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+    }
+
+    $('load-template-modal').style.display = 'none';
+    renderRoutines();
+    renderPlanner();
+    showToast('✅ Plantilla cargada. Revisa tu semana.');
+};
+
+window.confirmSaveTemplate = async () => {
+    const name = $('template-name-input').value.trim();
+    if (!name) { showToast('⚠️ Ponle un nombre a la plantilla'); return; }
+
+    const snapshot = { routines: routines.slice(), weekPlan: weekPlan.slice() };
+    try {
+        const { error } = await supabase.from('week_templates').insert([{ name, data: snapshot }]);
+        if (error) throw error;
+        showToast('☁️ Plantilla guardada en la nube');
+    } catch(e) {
+        const templates = JSON.parse(localStorage.getItem('axon_templates') || '[]');
+        templates.push({ id: Date.now().toString(), name, data: snapshot });
+        localStorage.setItem('axon_templates', JSON.stringify(templates));
+        showToast('💾 Plantilla guardada localmente');
+    }
+    $('save-template-modal').style.display = 'none';
+};
+
+// Initialize water display on load
+updateWaterDisplay();
+
+// Initial calls
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(window.initWaterTracker, 2000);
+    renderRoutines();
+    renderPlanner();
+    setTimeout(() => {
+        fetchInbox();
+        fetchTasks();
+        if (window.loadCards) window.loadCards();
+        initIcons();
+    }, 1000);
 });
+
+
+
+
+

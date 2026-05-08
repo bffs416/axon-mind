@@ -30,7 +30,9 @@
             <nav class="tab-nav">
                 <button class="tab-btn active" data-view="focus"><i data-lucide="play"></i> Focus</button>
                 <button class="tab-btn" data-view="plan"><i data-lucide="calendar"></i> Planificar</button>
+                <button class="tab-btn" data-view="inbox"><i data-lucide="zap"></i> Inbox</button>
                 <button class="tab-btn" data-view="vault"><i data-lucide="brain"></i> Cerebro</button>
+                <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards</button>
                 <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
@@ -192,10 +194,10 @@
                     <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1 (Zen)</span><span>5 (Caos)</span></div>
                 </div>
                 <div class="form-group">
-                    <label>🛌 Horas de Sueño</label>
-                    <input type="number" id="journal-sleep" min="0" max="24" step="0.5" value="7" style="width:100%; padding:0.5rem; background:var(--bg-card-hover); border:1px solid var(--border); border-radius:4px; color:white;">
+    <label>🛌 Horas de Sueño</label>
+    <input type="number" id="journal-sleep" min="0" max="24" step="0.5" value="7" style="width:100%; padding:0.5rem; background:var(--bg-card-hover); border:1px solid var(--border); border-radius:4px; color:var(--text);">
+</div>
                 </div>
-            </div>
 
             <div class="form-group">
                 <label>¿Emoción principal?</label>
@@ -240,9 +242,10 @@
                     <input type="hidden" id="routine-id">
                     
                     <div class="form-row" style="display:flex; gap:0.5rem; margin-bottom: 0.8rem;">
-                        <input type="text" id="routine-emoji" placeholder="🎯" maxlength="2" style="width: 3.5rem; text-align: center; font-size: 1.2rem;" class="plan-select">
-                        <input type="text" id="routine-name" placeholder="Nombre de la rutina..." style="flex:1;" class="plan-select" list="routine-suggestions">
-                    </div>
+    <input type="text" id="routine-emoji" placeholder="🎯" maxlength="2" style="width: 3.5rem; text-align: center; font-size: 1.2rem;" class="plan-select">
+    <input type="text" id="routine-name" placeholder="Nombre de la rutina..." style="flex:1;" class="plan-select" list="routine-suggestions" oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1)">
+    <datalist id="routine-suggestions"></datalist>
+</div>
 
                     <div class="quick-emojis" style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom: 1rem; justify-content: center;">
                         <span onclick="$('routine-emoji').value='💼'">💼</span>
@@ -259,14 +262,14 @@
                             <input type="time" id="routine-time" class="plan-time-input" value="06:00">
                         </div>
                         <div>
-                            <label class="input-label">⏳ Duración</label>
-                            <div style="display:flex; gap:0.2rem; align-items:center;">
-                                <input type="number" id="routine-hours" value="1" min="0" max="23" style="width:100%" class="plan-select">
-                                <span style="font-size:0.7rem; color:var(--text-dim)">h</span>
-                                <input type="number" id="routine-minutes" value="0" min="0" max="59" style="width:100%" class="plan-select">
-                                <span style="font-size:0.7rem; color:var(--text-dim)">m</span>
-                            </div>
-                        </div>
+    <label class="input-label">⏳ Duración</label>
+    <div style="display:flex; gap:0.2rem; align-items:center;">
+        <input type="number" id="routine-hours" value="1" min="0" max="23" style="width:100%" class="plan-select">
+        <span style="font-size:0.6rem; font-weight:700; color:var(--text); text-transform:uppercase;">Hrs</span>
+        <input type="number" id="routine-minutes" value="0" min="0" max="59" style="width:100%" class="plan-select">
+        <span style="font-size:0.6rem; font-weight:700; color:var(--text); text-transform:uppercase;">Min</span>
+    </div>
+</div>
                     </div>
 
                     <div class="days-shortcut-group" style="display:flex; gap:0.3rem; margin-bottom: 0.8rem; flex-wrap: wrap; justify-content: center;">
@@ -347,25 +350,120 @@
             </section>
         </main>
 
-        <!-- ========== CEREBRO / VAULT ========== -->
+      <!-- ========== INBOX / BANDEJA ========== -->
+      <section id="view-inbox" class="view">
+        <div class="plan-header">
+          <h2>Bandeja de Entrada</h2>
+          <p class="plan-subtitle">Ideas capturadas rápidamente para procesar después.</p>
+        </div>
+        <div id="inbox-list" class="inbox-list">
+            <!-- Inbox items injected here -->
+        </div>
+      </section>
+
+      <!-- ========== CEREBRO / VAULT ========== -->
       <section id="view-vault" class="view">
         <div class="plan-header">
           <h2>Tu Cerebro</h2>
           <button class="btn btn-primary" onclick="openVaultModal()">+ Nuevo Documento</button>
         </div>
         
-        <div class="inbox-section">
-            <h3 style="margin-bottom: 1rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="zap"></i> Bandeja de Entrada (Captura Rápida)</h3>
-            <div id="inbox-list" class="inbox-list">
-                <!-- Inbox items will be injected here -->
-            </div>
-        </div>
-
-        <h3 style="margin-top: 2rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="book-open"></i> Documentos del Vault</h3>
+        <h3 style="margin-top: 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="book-open"></i> Documentos del Vault</h3>
                 <div class="vault-grid" id="vault-list">
           <!-- Vault docs will be injected here -->
         </div>
       </section>
+
+      <!-- ========== AXON CARDS VIEW ========== -->
+      <section id="view-cards" class="view">
+        <div class="plan-header">
+            <h2>Axon Cards (Estudio Polímata)</h2>
+            <div style="display:flex; gap:0.5rem;">
+                 <button class="btn btn-outline" onclick="window.startStudySession()"><i data-lucide="book-open"></i> Estudiar Hoy</button>
+                 <button class="btn btn-primary" onclick="window.openCardModal()"><i data-lucide="plus"></i> Nueva Tarjeta</button>
+            </div>
+        </div>
+        
+        <div class="cards-dashboard" style="margin-top: 1.5rem;">
+            <div class="stat-card" style="padding: 1rem;">
+                <div class="stat-number" id="cards-due-count" style="font-size: 1.5rem;">0</div>
+                <div class="stat-label" style="font-size: 0.7rem;">Pendientes hoy</div>
+            </div>
+            <div class="stat-card" style="padding: 1rem;">
+                <div class="stat-number" id="cards-total-count" style="font-size: 1.5rem;">0</div>
+                <div class="stat-label" style="font-size: 0.7rem;">Total Tarjetas</div>
+            </div>
+        </div>
+
+        <div class="cards-filter-bar" style="margin-bottom: 1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; margin-top: 1rem;">
+            <button class="filter-chip active" onclick="window.filterCards('All', this)">Todas</button>
+            <button class="filter-chip" onclick="window.filterCards('Languages', this)">🌍 Idiomas</button>
+            <button class="filter-chip" onclick="window.filterCards('Health', this)">🩺 Salud</button>
+            <button class="filter-chip" onclick="window.filterCards('General', this)">🧠 General</button>
+        </div>
+
+        <div class="cards-grid" id="cards-list">
+            <!-- Cards injected here -->
+        </div>
+      </section>
+
+      <!-- ========== MODAL ESTUDIO FLASHCARDS ========== -->
+      <div id="study-modal" class="modal">
+          <div class="modal-content" style="max-width: 600px; padding: 1.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                   <span id="study-card-category" class="card-category-tag">General</span>
+                   <button class="btn-icon" onclick="window.closeModal('study-modal')"><i data-lucide="x"></i></button>
+              </div>
+              
+              <div class="flashcard-container">
+                  <div class="flashcard" id="current-flashcard" onclick="window.flipCard()">
+                      <div class="flashcard-front">
+                          <div id="card-front-text">Front</div>
+                      </div>
+                      <div class="flashcard-back">
+                          <div id="card-back-text">Back</div>
+                      </div>
+                  </div>
+              </div>
+
+              <div id="study-actions" class="study-actions" style="display:none;">
+                  <button class="btn-srs hard" onclick="window.answerCard('hard')">Difícil <span>1d</span></button>
+                  <button class="btn-srs good" onclick="window.answerCard('good')">Bien <span>3d</span></button>
+                  <button class="btn-srs easy" onclick="window.answerCard('easy')">Fácil <span>7d</span></button>
+              </div>
+              
+              <div id="flip-hint" class="flip-hint">Toca la tarjeta para voltear</div>
+          </div>
+      </div>
+
+      <!-- ========== MODAL CREAR/EDITAR TARJETA ========== -->
+      <div id="card-modal" class="modal">
+          <div class="modal-content">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                  <h3 id="card-modal-title" style="margin:0;">✨ Nueva Tarjeta de Estudio</h3>
+                  <button class="btn-icon" onclick="window.closeModal('card-modal')"><i data-lucide="x"></i></button>
+              </div>
+              <input type="hidden" id="edit-card-id">
+              
+              <label class="input-label">Categoría</label>
+              <select id="card-category" class="plan-time-input" style="margin-bottom: 1rem;">
+                  <option value="Languages">🌍 Idiomas</option>
+                  <option value="Health">🩺 Salud</option>
+                  <option value="General">🧠 General</option>
+              </select>
+
+              <label class="input-label">Anverso (Pregunta / Palabra)</label>
+              <textarea id="card-front" placeholder="Ej: Challenge / Epigenética" style="min-height: 80px;"></textarea>
+              
+              <label class="input-label">Reverso (Respuesta / Significado)</label>
+              <textarea id="card-back" placeholder="Ej: Desafío / Estudio de cambios en la función de los genes..." style="min-height: 80px;"></textarea>
+
+              <div class="modal-actions">
+                  <button class="btn-ghost" onclick="window.closeModal('card-modal')">Cancelar</button>
+                  <button class="btn-primary" onclick="window.saveCard()">Guardar Tarjeta</button>
+              </div>
+          </div>
+      </div>
 
       <!-- ========== MODAL RESUMEN MULTIPOTENCIAL ========== -->
     <div id="stats-summary-modal" class="modal">
@@ -379,16 +477,16 @@
                     <!-- Se inyecta por JS -->
                 </div>
 
-                <button class="btn-primary" style="width:100%" onclick="$('stats-summary-modal').style.display='none'">¡Seguir Brillando! ✨</button>
+                <button class="btn-primary" style="width:100%" onclick="window.closeModal('stats-summary-modal')">¡Seguir Brillando! ✨</button>
             </div>
         </div>
     </div>
 
       <!-- ========== MODALES ========== -->
         <div id="task-modal" class="modal">
-            <div class="modal-content">
+            <div class="modal-content modal-lg">
                 <h3>✨ Nuevo Proyecto</h3>
-                <input type="text" id="new-task-title" placeholder="Nombre del proyecto">
+<input type="text" id="new-task-title" placeholder="Nombre del proyecto" oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1)">
                 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1rem; margin-bottom: 0.3rem;">
                   <label class="input-label" style="margin:0">Descripción o Idea bruta</label>
@@ -399,7 +497,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
                     <div>
                         <label class="input-label">Nivel de Energía</label>
-                        <select id="new-task-energy" class="plan-select" style="width: 100%; padding: 0.8rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                        <select id="new-task-energy" class="plan-select" style="width: 100%; padding: 0.8rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);">
                             <option value="high">⚡ Alta</option>
                             <option value="medium" selected>🔋 Media</option>
                             <option value="low">🪫 Baja</option>
@@ -407,7 +505,7 @@
                     </div>
                     <div>
                         <label class="input-label">Responsable</label>
-                        <select id="new-task-assignee" class="plan-select" style="width: 100%; padding: 0.8rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                        <select id="new-task-assignee" class="plan-select" style="width: 100%; padding: 0.8rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);">
                             <option value="Ambos" selected>🤝 Juntos</option>
                             <option value="Pipe">👨 Pipe</option>
                             <option value="Tati">👩 Tati</option>
@@ -430,14 +528,14 @@
                     </div>
                     <div id="modal-steps-list"></div>
                     <div class="step-input-group" style="display: flex; gap: 0.5rem;">
-                        <select id="step-assignee" class="plan-select" style="padding: 0.5rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; width: 60px;" title="Responsable">
+                        <select id="step-assignee" class="plan-select" style="padding: 0.5rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text); width: 60px;" title="Responsable">
                             <option value="Ambos" selected>🤝</option>
                             <option value="Pipe">👨</option>
                             <option value="Tati">👩</option>
                             <option value="Robot">🤖</option>
                         </select>
                         <input type="text" id="step-input" placeholder="Añadir un paso..." style="flex: 1;">
-                        <input type="number" id="step-duration" placeholder="Min" style="width: 70px; padding: 0.5rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;" title="Minutos estimados">
+                        <input type="number" id="step-duration" placeholder="Min" style="width: 70px; padding: 0.5rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);" title="Minutos estimados">
                         <button id="add-step-to-list" class="btn-secondary">+</button>
                     </div>
                 </div>
@@ -531,7 +629,7 @@
                 <p style="color:var(--text-muted); font-size: 0.8rem; text-align: center;">Cargando...</p>
             </div>
             <div class="modal-actions">
-                <button class="btn-ghost" onclick="document.getElementById('load-template-modal').style.display='none'">Cerrar</button>
+                <button class="btn-ghost" onclick="window.closeModal('load-template-modal')">Cerrar</button>
             </div>
         </div>
     </div>
@@ -564,9 +662,10 @@
       </div>
     </div>
 
-    <!-- Floating Action Buttons -->
+
+    <!-- ========== FAB RÁPIDO ========== -->
     <div class="fab-container">
-        <button id="add-task-btn" class="fab fab-primary" onclick="window.openAddTaskModal()" title="Nuevo Proyecto">
+        <button id="add-task-btn" class="fab fab-primary" onclick="window.openAddSelector()" title="Agregar">
             <i data-lucide="plus"></i>
         </button>
         <button id="quick-capture-fab" class="fab fab-secondary" onclick="openQuickCapture()" title="Captura Rápida">
@@ -576,7 +675,25 @@
 
     <div id="motivation-toast" class="motivation-toast">¡Genial!</div>
     
-    <!-- ========== SOS ZEN MODE OVERLAY ========== -->
+    <!-- ========== MODAL SELECTOR (+) ========== -->
+<div id="add-selector-modal" class="modal">
+    <div class="modal-content modal-sm" style="text-align:center;">
+        <h3 style="margin-bottom:1.5rem;">¿Qué quieres crear?</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <button class="btn-primary" style="flex-direction:column; padding:1.5rem; gap:0.5rem;" onclick="window.closeModal('add-selector-modal'); window.openAddTaskModal();">
+                <i data-lucide="layers" style="width:32px; height:32px;"></i>
+                <span>Proyecto</span>
+            </button>
+            <button class="btn-secondary" style="flex-direction:column; padding:1.5rem; gap:0.5rem; border-color:var(--primary);" onclick="window.closeModal('add-selector-modal'); window.openCardModal();">
+                <i data-lucide="brain" style="width:32px; height:32px; color:var(--primary);"></i>
+                <span>Tarjeta</span>
+            </button>
+        </div>
+        <button class="btn-ghost" style="margin-top:1.5rem; width:100%;" onclick="window.closeModal('add-selector-modal')">Cancelar</button>
+    </div>
+</div>
+
+<!-- ========== SOS ZEN MODE OVERLAY ========== -->
     <div id="sos-overlay" class="sos-overlay" style="display:none">
         <div class="sos-content">
             <div class="sos-label">🆘 MODO SOS ACTIVADO</div>
