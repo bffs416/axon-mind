@@ -711,9 +711,56 @@ window.showMultipotentialSummary = () => {
     $('stats-summary-modal').style.display = 'flex';
 };
 
+// Función auxiliar súper robusta para extraer pasos de cualquier JSON anidado
+function extractStepsFromData(dataRaw) {
+    let rawSlices = [];
+    let parsedTitle = "";
+    let parsedDesc = "";
+
+    // Convertir a string y buscar recursivamente si es necesario
+    const searchRecursively = (obj) => {
+        if (!obj) return;
+        if (typeof obj === 'string') {
+            try { obj = JSON.parse(obj); } catch(e) {}
+        }
+        
+        if (Array.isArray(obj)) {
+            // Si es un array de tareas directo
+            if (obj.length > 0 && (obj[0].task || obj[0].tarea || obj[0].text)) {
+                rawSlices = obj;
+                return;
+            }
+            obj.forEach(searchRecursively);
+        } else if (typeof obj === 'object') {
+            if (obj.suggested_title && !parsedTitle) parsedTitle = obj.suggested_title;
+            if (obj.suggested_description && !parsedDesc) parsedDesc = obj.suggested_description;
+
+            if (obj.steps && Array.isArray(obj.steps)) rawSlices = obj.steps;
+            else if (obj.slices && Array.isArray(obj.slices)) rawSlices = obj.slices;
+            else if (obj.tareas && Array.isArray(obj.tareas)) rawSlices = obj.tareas;
+            else if (obj.tasks && Array.isArray(obj.tasks)) rawSlices = obj.tasks;
+            else if (obj.fragmentacion && Array.isArray(obj.fragmentacion)) {
+                obj.fragmentacion.forEach(fase => {
+                    if (fase.tareas) rawSlices.push(...fase.tareas);
+                    else if (fase.steps) rawSlices.push(...fase.steps);
+                });
+            } else {
+                // Buscar más profundo
+                Object.values(obj).forEach(searchRecursively);
+            }
+        }
+    };
+
+    searchRecursively(dataRaw);
+    return { rawSlices, parsedTitle, parsedDesc };
+}
+
 window.sliceWithAI = async () => {
-    const title = $('new-task-title').value;
-    const desc = $('new-task-desc').value;
+    const titleField = $('new-task-title');
+    const descField = $('new-task-desc');
+    const title = titleField.value;
+    const desc = descField.value;
+    
     if(!title) return showToast("Escribe primero el nombre del proyecto para rebanarlo");
     
     const btn = document.querySelector('button[onclick="window.sliceWithAI()"]');
@@ -735,77 +782,112 @@ window.sliceWithAI = async () => {
 
         if (!response.ok) throw new Error("Error en la conexión con la IA");
 
-        const data = await response.json();
+        const dataRaw = await response.json();
+        const { rawSlices, parsedTitle, parsedDesc } = extractStepsFromData(dataRaw);
         
-        // Lógica de mapeo ultra-flexible
-        let rawSlices = [];
-        
-        // Si es un array directo
-        const base = Array.isArray(data) ? data[0] : data;
-        
-        if (base.slices) rawSlices = base.slices;
-        else if (base.fragmentacion) {
-            // Si viene por fases (como el último ejemplo), aplanamos las tareas
-            base.fragmentacion.forEach(fase => {
-                if (fase.tareas) rawSlices.push(...fase.tareas);
-            });
-        } else if (base.tareas) rawSlices = base.tareas;
-        else if (Array.isArray(base)) rawSlices = base;
+        if (parsedTitle) titleField.value = parsedTitle;
+        if (parsedDesc) descField.value = parsedDesc;
 
         if (rawSlices.length > 0) {
             currentStepsInModal = rawSlices.map(s => ({
-                text: s.task || s.descripcion || s.tarea || "Paso sin nombre", 
+                text: s.task || s.title || s.descripcion || s.tarea || s.step || "Paso sin nombre", 
                 done: false,
-                assignee: s.assignee || '🤝 Ambos',
-                duration: parseInt(s.estimated_time || s.duracion || s.tiempo) || 30
+                assignee: s.assignee || s.responsable || '🤝 Ambos',
+                duration: parseInt(s.duration || s.estimated_time || s.duracion || s.tiempo || s.estimatedMinutes) || 25
             }));
 
             renderModalSteps();
-            
-            initIcons();
+            if(window.lucide) lucide.createIcons();
             showToast("✅ ¡Proyecto rebanado con éxito!");
         } else {
-            console.error("No se encontraron tareas en la respuesta:", data);
+            console.error("AXON DEBUG - No se encontraron tareas. Datos crudos:", dataRaw);
             showToast("⚠️ La IA no devolvió tareas claras");
         }
     } catch (error) {
         console.error("Error al rebanar:", error);
         showToast("❌ Error al conectar con el Slicer");
     } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        if(btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 };
 
 window.suggestWithAI = async (event) => {
-    const descField = $('new-task-desc');
     const titleField = $('new-task-title');
-    const idea = descField.value;
+    const descField = document.getElementById('project-description') || $('new-task-desc');
+    const idea = descField.value.trim();
+    
+    if (idea.toUpperCase() === 'PING') {
+        const testData = {
+            suggested_title: "TEST: CONEXIÓN_ESTABLE",
+            suggested_description: "Ping exitoso. Dashboard listo.",
+            steps: [{ task: "Pipe: Test de Hardware", assignee: "Pipe", duration: 25 }, { task: "Tati: Test de ROI", assignee: "Tati", duration: 25 }]
+        };
+        setTimeout(() => {
+            titleField.value = testData.suggested_title;
+            descField.value = testData.suggested_description;
+            currentStepsInModal = testData.steps.map(s => ({ text: s.task, done: false, assignee: s.assignee, duration: s.duration }));
+            renderModalSteps();
+            if(window.lucide) lucide.createIcons();
+            showToast("📡 PING exitoso (Modo Test)");
+            if (event && event.target) {
+                event.target.innerHTML = "💡 Sugerir con IA";
+                event.target.disabled = false;
+            }
+        }, 500);
+        return;
+    }
+
     if (!idea) {
         alert("¡Escribe tu idea primero en el cuadro de descripción!");
         return;
     }
 
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = "✨ Pensando...";
-    btn.disabled = true;
+    let btn = event ? event.target : null;
+    let originalText = btn ? btn.innerHTML : "💡 Sugerir con IA";
+    if (btn) {
+        btn.innerHTML = "✨ Pensando...";
+        btn.disabled = true;
+    }
 
     try {
-        const response = await fetch('https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-architect', {
+        const response = await fetch('https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-slicer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ idea })
         });
-        const data = await response.json();
-        if (data.suggested_title) titleField.value = data.suggested_title;
-        if (data.suggested_description) descField.value = data.suggested_description;
+        
+        const dataRaw = await response.json();
+        const { rawSlices, parsedTitle, parsedDesc } = extractStepsFromData(dataRaw);
+
+        if (parsedTitle) titleField.value = parsedTitle;
+        if (parsedDesc) descField.value = parsedDesc;
+        
+        if (rawSlices.length > 0) {
+            currentStepsInModal = rawSlices.map(s => ({
+                text: s.task || s.descripcion || s.tarea || s.text || s.step || "Paso sin nombre",
+                done: false,
+                assignee: s.assignee || s.responsable || '🤝 Ambos',
+                duration: parseInt(s.duration || s.estimated_time || s.duracion || s.tiempo || s.time) || 25
+            }));
+            
+            renderModalSteps();
+            if(window.lucide) lucide.createIcons();
+            showToast("✅ Proyecto rebanado y listo");
+        } else {
+            console.error("AXON DEBUG - No se encontraron tareas. Datos crudos:", dataRaw);
+            showToast("⚠️ La IA no devolvió tareas claras.");
+        }
     } catch (e) {
-        console.error(e);
-        alert("Error al conectar con el Arquitecto.");
+        console.error("Error en suggestWithAI:", e);
+        showToast("❌ Error al conectar con el Arquitecto.");
     } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 };
 
