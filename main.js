@@ -1697,17 +1697,16 @@ window.clearCalendarDay = async (dateStr) => {
 
   calStatus.textContent = 'Cleaning day...';
   // Limpiar ambos calendarios
-  const calendars = [gcalId2, gcalId3].filter(Boolean);
-  for (const calId of calendars) {
-    try {
+  try {
+    const calendars = [gcalId2, gcalId3].filter(Boolean);
+    for (const calId of calendars) {
       const url = new URL(N8N_URL);
       await fetch(url.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'clear_day', day: dateStr, calendarId: calId })
       });
-    } catch (e) { console.error('Clear error for', calId, e); }
-  }
+    }
 
     // Reset local sync state for this day
     weekPlan.forEach(b => { if (b.day === dateStr) b.synced = false; });
