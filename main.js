@@ -2426,6 +2426,87 @@ window.processMarkdownImport = async () => {
     showToast(`📄 ${imported} tarjetas importadas a ${category}`);
 };
 
+// --- JSON IMPORT ---
+window.openJsonImportModal = () => {
+    $('json-import-input').value = '';
+    $('json-import-result').innerHTML = '';
+    $('json-import-modal').style.display = 'flex';
+};
+
+window.processJsonImport = async () => {
+    const input = $('json-import-input').value.trim();
+    const defaultCategory = $('json-import-category').value;
+    const resultEl = $('json-import-result');
+
+    if (!input) {
+        resultEl.innerHTML = '<span style="color:var(--danger);">⚠️ Pega JSON primero.</span>';
+        return;
+    }
+
+    let parsed;
+    try {
+        parsed = JSON.parse(input);
+    } catch (e) {
+        resultEl.innerHTML = `<span style="color:var(--danger);">⚠️ JSON inválido: ${e.message}</span>`;
+        return;
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+        resultEl.innerHTML = '<span style="color:var(--warning);">⚠️ Debe ser un array no vacío. Ej: [{ "front": "...", "back": "..." }]</span>';
+        return;
+    }
+
+    // Normalize each entry to { front, back, category }
+    const pairs = [];
+    for (let i = 0; i < parsed.length; i++) {
+        const item = parsed[i];
+        if (typeof item !== 'object' || item === null) {
+            resultEl.innerHTML = `<span style="color:var(--danger);">⚠️ Elemento ${i + 1} no es un objeto válido.</span>`;
+            return;
+        }
+        const front = item.front || item.question || item.q || item.pregunta || '';
+        const back = item.back || item.answer || item.a || item.respuesta || '';
+        if (!front || !back) {
+            resultEl.innerHTML = `<span style="color:var(--danger);">⚠️ Elemento ${i + 1} falta 'front' o 'back'.</span>`;
+            return;
+        }
+        pairs.push({
+            front: String(front).trim(),
+            back: String(back).trim(),
+            category: item.category || defaultCategory
+        });
+    }
+
+    resultEl.innerHTML = `<span style="color:var(--text-dim);">⏳ Importando ${pairs.length} tarjetas...</span>`;
+
+    const cards = pairs.map(p => ({
+        front: p.front,
+        back: p.back,
+        category: p.category,
+        srs_level: 0,
+        reviews_count: 0,
+        last_review: null,
+        next_review: new Date().toISOString()
+    }));
+
+    let imported = 0;
+    for (const card of cards) {
+        const { error } = await supabase.from('flashcards').insert([card]);
+        if (!error) imported++;
+    }
+
+    resultEl.innerHTML = `<span style="color:var(--success);">✅ Se importaron ${imported} de ${pairs.length} tarjetas con éxito.</span>`;
+
+    if (imported > 0) {
+        setTimeout(() => {
+            $('json-import-modal').style.display = 'none';
+            window.loadCards();
+        }, 1500);
+    }
+
+    showToast(`📄 ${imported} tarjetas importadas desde JSON`);
+};
+
 // --- STUDY SESSION LOGIC ---
 window.startStudySession = () => {
     const now = new Date().toISOString();

@@ -554,7 +554,8 @@
             <div style="display:flex; gap:0.5rem;">
                  <button class="btn btn-outline" onclick="window.startStudySession()"><i data-lucide="book-open"></i> Estudiar Hoy</button>
                  <button class="btn btn-primary" onclick="window.openCardModal()"><i data-lucide="plus"></i> Nueva Tarjeta</button>
-                 <button class="btn btn-secondary" onclick="window.openMarkdownImportModal()" title="Importar tarjetas desde Markdown"><i data-lucide="file-text"></i> Importar MD</button>
+                 <button class="btn btn-secondary" onclick="window.openMarkdownImportModal()" title="Importar tarjetas desde Markdown"><i data-lucide="file-text"></i> MD</button>
+                 <button class="btn btn-secondary" onclick="window.openJsonImportModal()" title="Importar tarjetas desde JSON"><i data-lucide="braces"></i> JSON</button>
             </div>
         </div>
         
@@ -707,6 +708,39 @@
                   <button class="btn-primary" onclick="window.processMarkdownImport()" style="flex:1;">⚡ Procesar e Importar</button>
               </div>
               <div id="md-import-result" style="margin-top:1rem; text-align:center; font-weight:600;"></div>
+          </div>
+      </div>
+
+      <!-- ========== JSON IMPORT MODAL ========== -->
+      <div id="json-import-modal" class="modal">
+          <div class="modal-content" style="max-width: 700px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                  <h3 style="margin:0;">📄 Importar Tarjetas desde JSON</h3>
+                  <button class="btn-icon" onclick="window.closeModal('json-import-modal')"><i data-lucide="x"></i></button>
+              </div>
+              <p style="font-size:0.8rem; color:var(--text-dim); margin-bottom:1rem;">
+                  Formato esperado: array de objetos con <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">front</code> / <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">back</code>
+                  (o <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">question</code> / <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">answer</code>).
+                  <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">category</code> opcional por tarjeta.
+              </p>
+              <textarea id="json-import-input" placeholder='Pega aquí tu JSON...
+Ejemplo:
+[
+  {
+    "front": "¿Qué es...?",
+    "back": "Es una...",
+    "category": "General"
+  }
+]' style="width:100%; min-height:300px; font-family:monospace; font-size:0.85rem; background:var(--bg-deep); color:var(--text); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; resize:vertical;"></textarea>
+              <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                  <select id="json-import-category" class="plan-select" style="flex:1;">
+                      <option value="Languages">🌍 Idiomas</option>
+                      <option value="Health">🩺 Salud</option>
+                      <option value="General" selected>🧠 General</option>
+                  </select>
+                  <button class="btn-primary" onclick="window.processJsonImport()" style="flex:1;">⚡ Procesar e Importar</button>
+              </div>
+              <div id="json-import-result" style="margin-top:1rem; text-align:center; font-weight:600;"></div>
           </div>
       </div>
 
