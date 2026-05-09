@@ -36,6 +36,20 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- 0c. Tabla de plantillas semanales (Guardar/Cargar Plan)
+CREATE TABLE IF NOT EXISTS public.week_templates (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    data JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.week_templates ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all for anon' AND tablename = 'week_templates') THEN
+    CREATE POLICY "Allow all for anon" ON public.week_templates FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
 -- 1. Tabla de sesiones de estudio (para XP y rachas)
 CREATE TABLE IF NOT EXISTS public.study_sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

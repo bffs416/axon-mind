@@ -2649,18 +2649,18 @@ window.selectSleepQuality = (quality, btn) => {
 };
 
 window.openMorningCheckin = () => {
+    const profile = $('morning-profile').value;
     const todayISO = new Date().toISOString().slice(0, 10);
-    const saved = JSON.parse(localStorage.getItem('axon_morning_' + todayISO));
+    const saved = JSON.parse(localStorage.getItem('axon_morning_' + profile + '_' + todayISO));
 
     if (saved) {
-        // Ya hizo el check-in hoy — mostrar resumen
         $('morning-form').style.display = 'none';
         $('morning-done').style.display = 'block';
-        if ($('morning-intention-show')) $('morning-intention-show').textContent = '"' + (saved.intention || 'Sin intención específica') + '"';
+        const emoji = profile === 'Pipe' ? '👨' : '👱‍♀️';
+        if ($('morning-intention-show')) $('morning-intention-show').textContent = emoji + ' ' + profile + ': "' + (saved.intention || 'Sin intención específica') + '"';
     } else {
         $('morning-form').style.display = 'block';
         $('morning-done').style.display = 'none';
-        // Reset defaults
         morningSleepQuality = 3;
         document.querySelectorAll('.sleep-btn').forEach(b => b.classList.toggle('active', b.dataset.sleep === '3'));
         $('morning-sleep-hours').value = 7;
@@ -2671,21 +2671,23 @@ window.openMorningCheckin = () => {
 };
 
 window.saveMorningCheckin = () => {
+    const profile = $('morning-profile').value;
     const todayISO = new Date().toISOString().slice(0, 10);
     const entry = {
+        profile,
         sleep_quality: morningSleepQuality,
         hours: parseFloat($('morning-sleep-hours').value) || 7,
         intention: $('morning-intention').value.trim(),
         energy_start: parseInt($('morning-energy').value),
         timestamp: new Date().toISOString()
     };
-    localStorage.setItem('axon_morning_' + todayISO, JSON.stringify(entry));
+    localStorage.setItem('axon_morning_' + profile + '_' + todayISO, JSON.stringify(entry));
 
-    // Show done state
     $('morning-form').style.display = 'none';
     $('morning-done').style.display = 'block';
-    if ($('morning-intention-show')) $('morning-intention-show').textContent = '"' + (entry.intention || 'Sin intención específica') + '"';
-    showToast('☀️ ¡Día empezado con intención!');
+    const emoji = profile === 'Pipe' ? '👨' : '👱‍♀️';
+    if ($('morning-intention-show')) $('morning-intention-show').textContent = emoji + ' ' + profile + ': "' + (entry.intention || 'Sin intención específica') + '"';
+    showToast('☀️ ¡' + profile + ', día empezado con intención!');
 };
 
 // ==================== JOURNAL STEPS NAVIGATION ====================
@@ -2800,11 +2802,12 @@ window.checkAllRoutines = () => {
 function showMorningComparison() {
     const container = $('morning-comparison');
     if (!container) return;
+    const profile = $('journal-profile')?.value || 'Pipe';
     const todayISO = new Date().toISOString().slice(0, 10);
-    const morning = JSON.parse(localStorage.getItem('axon_morning_' + todayISO));
+    const morning = JSON.parse(localStorage.getItem('axon_morning_' + profile + '_' + todayISO));
     if (!morning) { container.style.display = 'none'; return; }
     container.style.display = 'block';
-    container.innerHTML = `☀️ Esta mañana: energía <strong>${'⚡'.repeat(morning.energy_start)}</strong> · sueño <strong>${morning.hours}h</strong> · intención: "<em>${morning.intention || 'ninguna'}</em>"`;
+    container.innerHTML = `☀️ ${profile} esta mañana: energía <strong>${'⚡'.repeat(morning.energy_start)}</strong> · sueño <strong>${morning.hours}h</strong> · intención: "<em>${morning.intention || 'ninguna'}</em>"`;
 }
 
 function renderPlanReview() {
