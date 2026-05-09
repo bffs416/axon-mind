@@ -1,0 +1,197 @@
+{
+  "name": "Axon - Pomodoro Sync + Calendar Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pomodoro-sync",
+        "responseMode": "lastNode"
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "clear_day",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "switch-1",
+      "name": "¿Limpiar o Crear?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com",
+          "mode": "list"
+        },
+        "timeMin": "={{ $json.day }}T00:00:00-05:00",
+        "timeMax": "={{ $json.day }}T23:59:59-05:00",
+        "query": "Axon"
+      },
+      "id": "gcal-get-rutinas",
+      "name": "Buscar eventos Rutinas",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "credentials": {
+        "googleCalendarOAuth2Api": "Google Calendar"
+      },
+      "position": [750, 200]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com",
+          "mode": "list"
+        },
+        "eventId": "={{ $json.id }}"
+      },
+      "id": "gcal-delete-rutinas",
+      "name": "Borrar de Rutinas",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "credentials": {
+        "googleCalendarOAuth2Api": "Google Calendar"
+      },
+      "position": [1000, 200]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "42ed8e94b879dca88ae92956a9bf0f4780da36fbbde26f849aabb32a437c2e13@group.calendar.google.com",
+          "mode": "list"
+        },
+        "timeMin": "={{ $json.day }}T00:00:00-05:00",
+        "timeMax": "={{ $json.day }}T23:59:59-05:00",
+        "query": "Axon"
+      },
+      "id": "gcal-get-proyectos",
+      "name": "Buscar eventos Proyectos",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "credentials": {
+        "googleCalendarOAuth2Api": "Google Calendar"
+      },
+      "position": [750, 400]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "42ed8e94b879dca88ae92956a9bf0f4780da36fbbde26f849aabb32a437c2e13@group.calendar.google.com",
+          "mode": "list"
+        },
+        "eventId": "={{ $json.id }}"
+      },
+      "id": "gcal-delete-proyectos",
+      "name": "Borrar de Proyectos",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "credentials": {
+        "googleCalendarOAuth2Api": "Google Calendar"
+      },
+      "position": [1000, 400]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "create",
+        "calendar": {
+          "__rl": true,
+          "value": "={{ $json.calendarId }}",
+          "mode": "raw"
+        },
+        "start": "={{ $json.startTime }}",
+        "end": "={{ $json.endTime }}",
+        "summary": "={{ $json.taskId }}",
+        "description": "Creado por Axon Flow 🌊"
+      },
+      "id": "gcal-create",
+      "name": "Crear evento en calendario correcto",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "credentials": {
+        "googleCalendarOAuth2Api": "Google Calendar"
+      },
+      "position": [750, 550]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "ok"
+            }
+          ]
+        }
+      },
+      "id": "respond-1",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "¿Limpiar o Crear?", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Limpiar o Crear?": {
+      "main": [
+        [
+          { "node": "Buscar eventos Rutinas", "type": "main", "index": 0 },
+          { "node": "Buscar eventos Proyectos", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Crear evento en calendario correcto", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar eventos Rutinas": {
+      "main": [[{ "node": "Borrar de Rutinas", "type": "main", "index": 0 }]]
+    },
+    "Buscar eventos Proyectos": {
+      "main": [[{ "node": "Borrar de Proyectos", "type": "main", "index": 0 }]]
+    },
+    "Borrar de Rutinas": {
+      "main": [[{ "node": "Responder OK", "type": "main", "index": 0 }]]
+    },
+    "Borrar de Proyectos": {
+      "main": [[{ "node": "Responder OK", "type": "main", "index": 0 }]]
+    },
+    "Crear evento en calendario correcto": {
+      "main": [[{ "node": "Responder OK", "type": "main", "index": 0 }]]
+    }
+  }
+}

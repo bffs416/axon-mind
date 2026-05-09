@@ -1693,16 +1693,21 @@ window.removePlanBlock = (id) => {
 };
 
 window.clearCalendarDay = async (dateStr) => {
-  if (!window.confirm(`¿Quieres limpiar todos los bloques de Axon Mind del día ${dateStr} en tu Google Calendar?`)) return;
-  
+  if (!window.confirm(`¿Limpiar todos los bloques de Axon del día ${dateStr} en Google Calendar?`)) return;
+
   calStatus.textContent = 'Cleaning day...';
-  try {
-    const url = new URL(N8N_URL);
-    await fetch(url.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'clear_day', day: dateStr })
-    });
+  // Limpiar ambos calendarios
+  const calendars = [gcalId2, gcalId3].filter(Boolean);
+  for (const calId of calendars) {
+    try {
+      const url = new URL(N8N_URL);
+      await fetch(url.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear_day', day: dateStr, calendarId: calId })
+      });
+    } catch (e) { console.error('Clear error for', calId, e); }
+  }
 
     // Reset local sync state for this day
     weekPlan.forEach(b => { if (b.day === dateStr) b.synced = false; });
@@ -1742,19 +1747,20 @@ window.clearEntireWeek = async () => {
     calStatus.textContent = 'Clearing Week...';
     showToast("⏳ Iniciando limpieza en Google Calendar...");
     
+    const calendars = [gcalId2, gcalId3].filter(Boolean);
     for (const dateStr of days) {
-      try {
-        const url = new URL(N8N_URL);
-        await fetch(url.toString(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'clear_day', day: dateStr })
-        });
-        console.log(`Día ${dateStr} limpiado en GCal`);
-      } catch (e) {
-        console.error(`Error clearing ${dateStr}:`, e);
+      for (const calId of calendars) {
+        try {
+          const url = new URL(N8N_URL);
+          await fetch(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'clear_day', day: dateStr, calendarId: calId })
+          });
+        } catch (e) {
+          console.error(`Error clearing ${dateStr}:`, e);
+        }
       }
-      // Pequeña pausa para no saturar el webhook
       await new Promise(r => setTimeout(r, 300));
     }
     calStatus.textContent = 'Week Cleared';
