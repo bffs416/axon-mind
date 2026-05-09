@@ -184,12 +184,20 @@
             <div id="gcal-settings-modal" class="modal">
                 <div class="modal-content modal-sm">
                     <h3>⚙️ Configurar Google Calendar</h3>
-                    <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.8rem;">
-                        1. Ve a Google Calendar → Configuración → Calendario → Integrar<br>
-                        2. Copia la URL del iframe (src="...")<br>
-                        3. Pégala aquí
+                    <p style="font-size:0.7rem;color:var(--text-dim);margin-bottom:0.8rem;">
+                        Buscá el ID de cada calendario en:<br>
+                        Google Calendar → ⚙️ Configuración → Calendario → Integrar calendario<br>
+                        El ID es el texto después de <code>src=</code> (ej: <code>tucorreo@gmail.com</code>)
                     </p>
-                    <input type="text" id="gcal-url-input" placeholder="https://calendar.google.com/calendar/embed?src=..." style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.8rem;">
+                    <label class="input-label">Calendario #1 (ej: Pipe)</label>
+                    <input type="text" id="gcal-id-1" placeholder="tucorreo@gmail.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.6rem;">
+
+                    <label class="input-label">Calendario #2 (ej: Tati)</label>
+                    <input type="text" id="gcal-id-2" placeholder="otrocorreo@gmail.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.8rem;">
+
+                    <p style="font-size:0.65rem;color:var(--text-dim);margin-bottom:0.8rem;">
+                        ⚠️ Cada calendario debe ser <strong>público</strong> o compartido para que aparezca aquí.
+                    </p>
                     <div class="modal-actions">
                         <button class="btn-ghost" onclick="window.closeModal('gcal-settings-modal')">Cancelar</button>
                         <button class="btn-primary" onclick="window.saveGCalUrl()">Guardar</button>

@@ -1453,32 +1453,51 @@ window.selectRoutineDays = (mode) => {
 };
 
 // ==================== GOOGLE CALENDAR EMBED ====================
-let gcalUrl = localStorage.getItem('axon_gcal_url') || '';
+let gcalId1 = localStorage.getItem('axon_gcal_id_1') || '';
+let gcalId2 = localStorage.getItem('axon_gcal_id_2') || '';
+
+function buildGCalUrl() {
+    if (!gcalId1 && !gcalId2) return '';
+    const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Bogota');
+    let url = `https://calendar.google.com/calendar/embed?showTitle=0&showNav=1&showDate=1&showTabs=0&showCalendars=0&mode=WEEK&height=600&wkst=1&bgcolor=%23ffffff&ctz=${tz}`;
+    if (gcalId1) url += `&src=${encodeURIComponent(gcalId1)}`;
+    if (gcalId2) url += `&src=${encodeURIComponent(gcalId2)}`;
+    url += '&color=%234285F4&color=%23E67C73';
+    return url;
+}
 
 function loadGCal() {
     const iframe = $('gcal-iframe');
-    if (iframe && gcalUrl) {
-        iframe.src = gcalUrl;
+    if (!iframe) return;
+    const url = buildGCalUrl();
+    if (!url) {
+        iframe.style.display = 'none';
+        return;
     }
+    iframe.style.display = 'block';
+    iframe.src = url;
 }
 
 window.refreshGCal = () => {
     const iframe = $('gcal-iframe');
-    if (iframe) iframe.src = gcalUrl; // Reload
+    if (iframe) iframe.src = buildGCalUrl();
     showToast('🔄 Calendario actualizado');
 };
 
 window.openGCalSettings = () => {
-    $('gcal-url-input').value = gcalUrl;
+    $('gcal-id-1').value = gcalId1;
+    $('gcal-id-2').value = gcalId2;
     $('gcal-settings-modal').style.display = 'flex';
 };
 
 window.saveGCalUrl = () => {
-    gcalUrl = $('gcal-url-input').value.trim();
-    localStorage.setItem('axon_gcal_url', gcalUrl);
+    gcalId1 = $('gcal-id-1').value.trim();
+    gcalId2 = $('gcal-id-2').value.trim();
+    localStorage.setItem('axon_gcal_id_1', gcalId1);
+    localStorage.setItem('axon_gcal_id_2', gcalId2);
     $('gcal-settings-modal').style.display = 'none';
     loadGCal();
-    showToast('✅ URL del calendario guardada');
+    showToast('✅ Calendarios guardados');
 };
 
 window.togglePlannerView = () => {
