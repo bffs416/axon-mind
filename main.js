@@ -2443,11 +2443,22 @@ window.processJsonImport = async () => {
         return;
     }
 
+    // Strip markdown code fences if present
+    let cleaned = input.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
     let parsed;
     try {
-        parsed = JSON.parse(input);
+        parsed = JSON.parse(cleaned);
     } catch (e) {
-        resultEl.innerHTML = `<span style="color:var(--danger);">⚠️ JSON inválido: ${e.message}</span>`;
+        // Find exact position of error for debugging
+        const pos = parseInt(e.message.match(/position\s+(\d+)/i)?.[1], 10);
+        let snippet = '';
+        if (pos && pos < cleaned.length) {
+            const start = Math.max(0, pos - 20);
+            const end = Math.min(cleaned.length, pos + 20);
+            snippet = `<br><span style="font-size:0.75rem;font-family:monospace;background:var(--surface-light);padding:4px 8px;border-radius:4px;">...${cleaned.slice(start, end).replace(/</g,'&lt;').replace(/>/g,'&gt;')}...</span>`;
+        }
+        resultEl.innerHTML = `<span style="color:var(--danger);">⚠️ JSON inválido: ${e.message}${snippet}</span>`;
         return;
     }
 
