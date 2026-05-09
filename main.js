@@ -2357,6 +2357,30 @@ window.deleteCard = async (id) => {
     window.loadCards();
 };
 
+window.clearAllCards = async () => {
+    const key = prompt('Ingresa la clave para limpiar todas las tarjetas:');
+    if (key !== '1629') {
+        if (key !== null) showToast('🔒 Clave incorrecta');
+        return;
+    }
+    if (!confirm('¿Seguro? Esto eliminará TODAS las tarjetas de estudio (no se puede deshacer).')) return;
+
+    showToast('🗑️ Eliminando todas las tarjetas...');
+
+    // Limpiar backup local
+    localStorage.setItem('axon_cards_backup', '[]');
+
+    // Eliminar de Supabase
+    try {
+        const { error } = await supabase.from('flashcards').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (error) console.warn('Supabase delete error:', error.message);
+    } catch (e) {}
+
+    allCards = [];
+    window.loadCards();
+    showToast('✅ Todas las tarjetas han sido eliminadas');
+};
+
 // --- MARKDOWN IMPORT ---
 window.openMarkdownImportModal = () => {
     $('md-import-input').value = '';
