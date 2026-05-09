@@ -79,7 +79,7 @@ viewBtns.forEach(btn => {
     if (viewId === 'cards') window.loadCards();
     if (viewId === 'inbox') fetchInbox();
     if (viewId === 'vault') fetchVaultDocs();
-    if (viewId === 'plan') { renderRoutines(); renderPlanner(); }
+    if (viewId === 'plan') { renderRoutines(); renderPlanner(); loadGCal(); }
   };
 });
 window.initIcons = () => createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen } });
@@ -1451,6 +1451,58 @@ window.selectRoutineDays = (mode) => {
     else if (mode === 'weekdays') cb.checked = (val >= 1 && val <= 5);
   });
 };
+
+// ==================== GOOGLE CALENDAR EMBED ====================
+let gcalUrl = localStorage.getItem('axon_gcal_url') || '';
+
+function loadGCal() {
+    const iframe = $('gcal-iframe');
+    if (iframe && gcalUrl) {
+        iframe.src = gcalUrl;
+    }
+}
+
+window.refreshGCal = () => {
+    const iframe = $('gcal-iframe');
+    if (iframe) iframe.src = gcalUrl; // Reload
+    showToast('🔄 Calendario actualizado');
+};
+
+window.openGCalSettings = () => {
+    $('gcal-url-input').value = gcalUrl;
+    $('gcal-settings-modal').style.display = 'flex';
+};
+
+window.saveGCalUrl = () => {
+    gcalUrl = $('gcal-url-input').value.trim();
+    localStorage.setItem('axon_gcal_url', gcalUrl);
+    $('gcal-settings-modal').style.display = 'none';
+    loadGCal();
+    showToast('✅ URL del calendario guardada');
+};
+
+window.togglePlannerView = () => {
+    const blocksView = $('planner-blocks-view');
+    const gcalContainer = $('gcal-container');
+    const toggleBtn = $('toggle-view-btn');
+    const showingBlocks = blocksView.style.display !== 'none';
+
+    if (showingBlocks) {
+        blocksView.style.display = 'none';
+        gcalContainer.style.display = 'block';
+        if (toggleBtn) toggleBtn.textContent = '📋 Ver Bloques';
+    } else {
+        blocksView.style.display = 'block';
+        gcalContainer.style.display = 'none';
+        if (toggleBtn) toggleBtn.textContent = '📅 Ver Calendario';
+        renderPlanner();
+    }
+};
+
+// Cargar calendario al iniciar
+document.addEventListener('DOMContentLoaded', () => {
+    if (gcalUrl) loadGCal();
+});
 
 // ==================== WEEKLY PLANNER ====================
 function getWeekDays() {
@@ -3266,9 +3318,12 @@ window.openLoadTemplateModal = async () => {
 window.loadTemplateById = async (id) => {
     let template = null;
     try {
-        const { data } = await supabase.from('weekly_templates').select('*').eq('id', id).single();
+        const { data, error } = await supabase.from('weekly_templates').select('*').eq('id', id).maybeSingle();
+        if (error) console.error('Supabase load template error:', error.message);
         if (data) template = data;
-    } catch(e) {}
+    } catch(e) {
+        console.error('Template load exception:', e);
+    }
 
     if (!template) {
         const local = JSON.parse(localStorage.getItem('axon_templates') || '[]');
@@ -3277,13 +3332,16 @@ window.loadTemplateById = async (id) => {
 
     if (!template) { showToast('⚠️ Plantilla no encontrada'); return; }
 
-    const snapshot = template.data;
-    if (snapshot.routines) {
+    // Manejar tanto { routines, weekPlan } como datos crudos
+    const snapshot = typeof template.data === 'string' ? JSON.parse(template.data) : template.data;
+    if (!snapshot || typeof snapshot !== 'object') { showToast('⚠️ Formato de plantilla inválido'); return; }
+
+    if (snapshot.routines && Array.isArray(snapshot.routines)) {
         routines.length = 0;
         routines.push(...snapshot.routines);
         localStorage.setItem('axon_routines', JSON.stringify(routines));
     }
-    if (snapshot.weekPlan) {
+    if (snapshot.weekPlan && Array.isArray(snapshot.weekPlan)) {
         weekPlan.length = 0;
         weekPlan.push(...snapshot.weekPlan);
         localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));

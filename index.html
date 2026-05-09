@@ -144,27 +144,58 @@
             <section id="view-plan" class="view">
                 <div class="plan-header">
                     <h2>📅 Planifica tu Semana</h2>
-                    <p class="plan-subtitle">Asigna bloques de enfoque y súbelos todos a Google Calendar</p>
-                    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
-                        <button id="save-template-btn" class="btn-secondary" onclick="window.openSaveTemplateModal()"><i data-lucide="cloud"></i> Guardar en la Nube</button>
+                    <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:0.5rem;">
+                        <button id="save-template-btn" class="btn-secondary" onclick="window.openSaveTemplateModal()"><i data-lucide="cloud"></i> Guardar Plantilla</button>
                         <button id="load-template-btn" class="btn-secondary" onclick="window.openLoadTemplateModal()"><i data-lucide="download-cloud"></i> Cargar Plantilla</button>
+                        <button id="sync-all-btn" class="btn-primary" onclick="window.syncAllToCalendar()"><i data-lucide="upload-cloud"></i> Sincronizar</button>
                     </div>
-                    <button id="sync-all-btn" class="btn-primary btn-sync-all" style="margin-bottom: 0.5rem;" onclick="window.syncAllToCalendar()"><i data-lucide="upload-cloud"></i> Subir Todo a Calendar</button>
-                    <button id="clear-week-btn" class="btn-danger" style="background: var(--danger); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.8rem; border-radius: var(--radius); margin-top: 0.5rem; font-weight: 600;" onclick="window.clearEntireWeek()">
-                        <i data-lucide="trash-2" style="width: 18px;"></i> Limpiar Semana Completa
-                    </button>
-                </div>
-                <!-- Rutinas Inamovibles -->
-                <div class="routines-section">
-                    <div class="section-header">
-                        <h3>🔒 Rutinas Inamovibles</h3>
-                        <button id="add-routine-btn" class="btn-icon"><i data-lucide="plus"></i></button>
+                    <div style="display:flex;gap:0.3rem;justify-content:center;margin-bottom:0.5rem;">
+                        <button class="btn-ghost" onclick="window.togglePlannerView()" id="toggle-view-btn" style="font-size:0.75rem;">📋 Ver Bloques</button>
+                        <button class="btn-ghost" onclick="window.openGCalSettings()" style="font-size:0.75rem;">⚙️ URL Calendario</button>
                     </div>
-                    <div id="routines-list" class="routines-list"></div>
                 </div>
 
-                <div id="week-grid" class="week-grid"></div>
+                <!-- Google Calendar Embed -->
+                <div id="gcal-container" style="position:relative; width:100%; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); margin-bottom:1rem;">
+                    <iframe id="gcal-iframe" src="" style="width:100%; height:600px; border:0;" frameborder="0" scrolling="no"></iframe>
+                </div>
+
+                <!-- Rutinas + Bloques (toggleable) -->
+                <div id="planner-blocks-view" style="display:none;">
+                    <div class="routines-section">
+                        <div class="section-header">
+                            <h3>🔒 Rutinas Inamovibles</h3>
+                            <button id="add-routine-btn" class="btn-icon"><i data-lucide="plus"></i></button>
+                        </div>
+                        <div id="routines-list" class="routines-list"></div>
+                    </div>
+                    <div id="week-grid" class="week-grid"></div>
+                </div>
+
+                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                    <button id="clear-week-btn" class="btn-danger" style="background:var(--danger);flex:1;display:flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.6rem;border-radius:var(--radius-sm);font-weight:600;font-size:0.8rem;" onclick="window.clearEntireWeek()">
+                        <i data-lucide="trash-2" style="width:16px;"></i> Limpiar Semana
+                    </button>
+                    <button class="btn-secondary" onclick="window.refreshGCal()" style="flex:1;font-size:0.8rem;">🔄 Refrescar Calendario</button>
+                </div>
             </section>
+
+            <!-- Modal configurar Google Calendar URL -->
+            <div id="gcal-settings-modal" class="modal">
+                <div class="modal-content modal-sm">
+                    <h3>⚙️ Configurar Google Calendar</h3>
+                    <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.8rem;">
+                        1. Ve a Google Calendar → Configuración → Calendario → Integrar<br>
+                        2. Copia la URL del iframe (src="...")<br>
+                        3. Pégala aquí
+                    </p>
+                    <input type="text" id="gcal-url-input" placeholder="https://calendar.google.com/calendar/embed?src=..." style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.8rem;">
+                    <div class="modal-actions">
+                        <button class="btn-ghost" onclick="window.closeModal('gcal-settings-modal')">Cancelar</button>
+                        <button class="btn-primary" onclick="window.saveGCalUrl()">Guardar</button>
+                    </div>
+                </div>
+            </div>
 
             <!-- ========== MODAL APERTURA MATUTINA ========== -->
     <div id="morning-modal" class="modal">
