@@ -2443,8 +2443,20 @@ window.processJsonCardImport = async () => {
         return;
     }
 
-    // Strip markdown code fences and clean
+    // Strip everything before first [ or { and after last ] or }
     let cleaned = input.trim();
+    const firstOpen = Math.min(
+        cleaned.indexOf('[') >= 0 ? cleaned.indexOf('[') : Infinity,
+        cleaned.indexOf('{') >= 0 ? cleaned.indexOf('{') : Infinity
+    );
+    if (firstOpen > 0 && isFinite(firstOpen)) cleaned = cleaned.slice(firstOpen);
+    const lastClose = Math.max(
+        cleaned.lastIndexOf(']'),
+        cleaned.lastIndexOf('}')
+    );
+    if (lastClose > 0 && lastClose < cleaned.length - 1) cleaned = cleaned.slice(0, lastClose + 1);
+
+    // Strip markdown code fences and clean
     if (/^```/i.test(cleaned)) {
         cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
     }
