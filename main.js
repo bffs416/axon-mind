@@ -3237,7 +3237,7 @@ window.openLoadTemplateModal = async () => {
     const list = $('templates-list');
     list.innerHTML = '<p style="color:var(--text-dim); font-size:0.8rem; text-align:center;">Cargando...</p>';
     try {
-        const { data } = await supabase.from('week_templates').select('*').order('created_at', { ascending: false });
+        const { data } = await supabase.from('weekly_templates').select('*').order('created_at', { ascending: false });
         if (data && data.length > 0) {
             list.innerHTML = data.map(t => `
                 <div style="background:var(--bg-card); padding:1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border);">
@@ -3266,7 +3266,7 @@ window.openLoadTemplateModal = async () => {
 window.loadTemplateById = async (id) => {
     let template = null;
     try {
-        const { data } = await supabase.from('week_templates').select('*').eq('id', id).single();
+        const { data } = await supabase.from('weekly_templates').select('*').eq('id', id).single();
         if (data) template = data;
     } catch(e) {}
 
@@ -3301,7 +3301,7 @@ window.confirmSaveTemplate = async () => {
 
     const snapshot = { routines: routines.slice(), weekPlan: weekPlan.slice() };
     try {
-        const { error } = await supabase.from('week_templates').insert([{ name, data: snapshot }]);
+        const { error } = await supabase.from('weekly_templates').insert([{ name, data: snapshot }]);
         if (error) throw error;
         showToast('☁️ Plantilla guardada en la nube');
     } catch(e) {
