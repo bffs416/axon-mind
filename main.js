@@ -2434,29 +2434,35 @@ window.openJsonImportModal = () => {
 };
 
 window.processJsonImport = async () => {
-    const input = $('json-import-input').value.trim();
+    const input = $('json-import-input').value;
     const defaultCategory = $('json-import-category').value;
     const resultEl = $('json-import-result');
 
-    if (!input) {
+    if (!input || !input.trim()) {
         resultEl.innerHTML = '<span style="color:var(--danger);">⚠️ Pega JSON primero.</span>';
         return;
     }
 
-    // Strip markdown code fences if present
-    let cleaned = input.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    // Strip markdown code fences and clean
+    let cleaned = input.trim();
+    if (/^```/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+    }
 
     let parsed;
     try {
         parsed = JSON.parse(cleaned);
     } catch (e) {
-        // Find exact position of error for debugging
         const pos = parseInt(e.message.match(/position\s+(\d+)/i)?.[1], 10);
         let snippet = '';
-        if (pos && pos < cleaned.length) {
-            const start = Math.max(0, pos - 20);
-            const end = Math.min(cleaned.length, pos + 20);
-            snippet = `<br><span style="font-size:0.75rem;font-family:monospace;background:var(--surface-light);padding:4px 8px;border-radius:4px;">...${cleaned.slice(start, end).replace(/</g,'&lt;').replace(/>/g,'&gt;')}...</span>`;
+        if (pos !== null && !isNaN(pos) && pos < cleaned.length) {
+            const start = Math.max(0, pos - 15);
+            const end = Math.min(cleaned.length, pos + 15);
+            const raw = cleaned.slice(start, end);
+            snippet = `<br><span style="font-size:0.75rem;font-family:monospace;background:var(--surface-light);padding:4px 8px;border-radius:4px;">→ ${raw.replace(/</g,'&lt;').replace(/>/g,'&gt;')} ←</span>`;
+            // Also show char codes for debugging invisible chars
+            const charCodes = [...raw].map(c => c.charCodeAt(0)).join(' ');
+            snippet += `<br><span style="font-size:0.65rem;color:var(--text-dim);">códigos: ${charCodes}</span>`;
         }
         resultEl.innerHTML = `<span style="color:var(--danger);">⚠️ JSON inválido: ${e.message}${snippet}</span>`;
         return;
@@ -2478,7 +2484,7 @@ window.processJsonImport = async () => {
         const front = item.front || item.question || item.q || item.pregunta || '';
         const back = item.back || item.answer || item.a || item.respuesta || '';
         if (!front || !back) {
-            resultEl.innerHTML = `<span style="color:var(--danger);">⚠️ Elemento ${i + 1} falta 'front' o 'back'.</span>`;
+            resultEl.innerHTML = `<span style="color:var(--danger);">⚠️ Elemento ${i + 1} falta 'front' o 'back'.<br><span style="font-size:0.75rem;color:var(--text-dim);">Campos encontrados: ${Object.keys(item).join(', ') || '(ninguno)'}</span></span>`;
             return;
         }
         pairs.push({
