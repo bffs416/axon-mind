@@ -121,8 +121,20 @@ function playSound(type = 'workEnd') {
   });
 }
 
-function showNotification(title, body) {
-  if (Notification.permission === 'granted') new Notification(title, { body, icon: '🎯' });
+async function showNotification(title, body) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '🎯', vibrate: [200, 100, 200], requireInteraction: true });
+  }
+}
+
+// Request permission on user gesture (called from startTimer)
+async function ensureNotificationPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
 }
 
 function showToast(msg) {
@@ -197,6 +209,9 @@ async function startTimer() {
   } else {
     playSound('breakStart');
   }
+  // Request notification permission (needs user gesture)
+  ensureNotificationPermission();
+
   document.body.classList.add('immersive-mode');
   timerId = setInterval(async () => {
     timeLeft = Math.max(0, Math.ceil((pomodoroEndTime - Date.now()) / 1000));
@@ -210,7 +225,10 @@ async function startTimer() {
       setTimeout(() => {
         tc.classList.remove('timer-alarm', 'glow-pulse');
       }, 4500);
-      showNotification('¡Pomodoro Completado!', selectedTaskTitle);
+      const pomodoroMsg = currentMode === 'pomodoro'
+        ? `🍅 ${selectedTaskTitle} — ${Math.round((Date.now() - pomodoroStartTime)/60000)}min completados`
+        : '⏰ Descanso terminado — ¡a volver!';
+      showNotification('Axon Flow', pomodoroMsg);
       showToast(motivations[Math.floor(Math.random()*motivations.length)]);
       // Complete session
       if (currentSessionId) {

@@ -1482,9 +1482,11 @@ input::placeholder, textarea::placeholder {
 /* Small phones */
 @media (max-width: 400px) {
     .tab-btn {
-        font-size: 0.65rem;
-        padding: 0.4rem 0.3rem;
+        font-size: 0.6rem;
+        padding: 0.35rem 0.25rem;
+        gap: 0.1rem;
     }
+    .tab-btn svg { width: 11px; height: 11px; }
     .timer-container {
         width: 180px;
         height: 180px;
@@ -1510,6 +1512,15 @@ input::placeholder, textarea::placeholder {
         height: 44px;
         border-radius: 22px;
     }
+    .fab-container { bottom: 0.75rem; right: 0.75rem; }
+    #gcal-iframe { height: 350px !important; }
+    .plan-header h2 { font-size: 1rem; }
+    .plan-block { font-size: 0.65rem; padding: 0.3rem 0.4rem; }
+    .area-pill { font-size: 0.6rem; padding: 0.25rem 0.45rem; }
+    .journal-step { font-size: 0.65rem; padding: 0.4rem 0.2rem; }
+    .xp-header { font-size: 0.8rem; }
+    .level-badge { font-size: 0.7rem; padding: 0.3rem 0.5rem; }
+    .study-dashboard { padding: 0.8rem; }
 }
 
 /* ========== IMMERSIVE MODE ========== */
