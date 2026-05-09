@@ -2448,6 +2448,13 @@ window.processJsonImport = async () => {
     if (/^```/i.test(cleaned)) {
         cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
     }
+    // Replace smart/curly quotes and other invisible chars that break JSON.parse
+    cleaned = cleaned
+        .replace(/[“”„‟″‶]/g, '"') // smart double quotes
+        .replace(/[‘’‚‛′‵]/g, "'") // smart single quotes
+        .replace(/ /g, ' ')   // non-breaking space
+        .replace(/​/g, '')    // zero-width space
+        .replace(/﻿/g, '');   // BOM
 
     let parsed;
     try {
