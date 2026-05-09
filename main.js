@@ -2358,24 +2358,27 @@ window.deleteCard = async (id) => {
 };
 
 window.clearAllCards = async () => {
-    const key = prompt('Ingresa la clave para limpiar todas las tarjetas:');
+    const key = prompt('🔑 Ingresa la clave para limpiar todas las tarjetas:');
     if (key !== '1629') {
         if (key !== null) showToast('🔒 Clave incorrecta');
         return;
     }
-    if (!confirm('¿Seguro? Esto eliminará TODAS las tarjetas de estudio (no se puede deshacer).')) return;
+    if (!confirm('⚠️ ¿Seguro? Esto eliminará TODAS las tarjetas de estudio (no se puede deshacer).')) return;
 
     showToast('🗑️ Eliminando todas las tarjetas...');
 
+    // Obtener todas las tarjetas de Supabase
+    try {
+        const { data } = await supabase.from('flashcards').select('id');
+        if (data && data.length > 0) {
+            const ids = data.map(c => c.id);
+            const { error } = await supabase.from('flashcards').delete().in('id', ids);
+            if (error) console.warn('Supabase delete error:', error.message);
+        }
+    } catch (e) { console.warn('Error fetching/deleting from Supabase:', e); }
+
     // Limpiar backup local
     localStorage.setItem('axon_cards_backup', '[]');
-
-    // Eliminar de Supabase
-    try {
-        const { error } = await supabase.from('flashcards').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        if (error) console.warn('Supabase delete error:', error.message);
-    } catch (e) {}
-
     allCards = [];
     window.loadCards();
     showToast('✅ Todas las tarjetas han sido eliminadas');
