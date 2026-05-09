@@ -2433,7 +2433,7 @@ window.openJsonImportModal = () => {
     $('json-import-modal').style.display = 'flex';
 };
 
-window.processJsonImport = async () => {
+window.processJsonCardImport = async () => {
     const input = $('json-import-input').value;
     const defaultCategory = $('json-import-category').value;
     const resultEl = $('json-import-result');
