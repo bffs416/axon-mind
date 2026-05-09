@@ -228,12 +228,31 @@ header {
 
 /* ========== TIMER ========== */
 .timer-section { text-align: center; margin-bottom: 2rem; }
-.timer-container { position: relative; width: 280px; height: 280px; margin: 0 auto 1.5rem; }
-.progress-ring { transform: rotate(-90deg); }
+.timer-container {
+    position: relative;
+    width: min(280px, 85vw);
+    height: min(280px, 85vw);
+    margin: 0 auto 1.5rem;
+    max-width: 280px;
+    aspect-ratio: 1 / 1;
+}
+.progress-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    width: 100%;
+    height: 100%;
+}
 .progress-ring__circle { transition: stroke-dashoffset 0.5s ease; }
 .timer-display {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    font-size: 4rem; font-weight: 800; letter-spacing: -2px;
+    font-size: clamp(2rem, 10vw, 4rem);
+    font-weight: 800; letter-spacing: -2px;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
 }
 .active-task-container {
     display: flex;
@@ -1196,28 +1215,22 @@ input::placeholder, textarea::placeholder {
         gap: 1.5rem;
     }
 
-    /* Timer */
+    /* Timer - fluid sizing, keep it readable */
     .timer-container {
-        width: 220px;
-        height: 220px;
-    }
-    .timer-display {
-        font-size: 2.8rem;
-    }
-    .progress-ring {
-        width: 220px;
-        height: 220px;
+        width: min(240px, 80vw);
+        height: min(240px, 80vw);
     }
     .timer-controls {
         gap: 0.5rem;
+        flex-wrap: wrap;
     }
     .timer-controls button {
-        padding: 0.5rem 0.8rem;
-        font-size: 0.8rem;
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
     }
     .mode-btn {
-        font-size: 0.7rem;
-        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
     }
     .active-task-container {
         padding: 0.5rem 1rem;
@@ -1488,15 +1501,8 @@ input::placeholder, textarea::placeholder {
     }
     .tab-btn svg { width: 11px; height: 11px; }
     .timer-container {
-        width: 180px;
-        height: 180px;
-    }
-    .timer-display {
-        font-size: 2.2rem;
-    }
-    .progress-ring {
-        width: 180px;
-        height: 180px;
+        width: min(200px, 75vw);
+        height: min(200px, 75vw);
     }
     .stats-grid {
         grid-template-columns: 1fr;
@@ -1545,17 +1551,29 @@ body.immersive-mode .timer-section {
     background: radial-gradient(circle at center, rgba(139, 92, 246, 0.05) 0%, var(--bg-deep) 70%);
     z-index: 1000;
     margin: 0;
+    padding: 1rem;
 }
 
 body.immersive-mode .timer-container {
-    transform: scale(1.2);
-    margin-bottom: 3rem;
+    transform: scale(min(1.2, calc(100vw / 350)));
+    margin-bottom: 2rem;
 }
 
 body.immersive-mode .active-task-container {
-    transform: scale(1.1);
+    transform: scale(min(1.1, calc(100vw / 500)));
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
+    max-width: 90vw;
+}
+
+body.immersive-mode .timer-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Ensure SOS mode plays well with immersive */
+body.immersive-mode #sos-overlay {
+    z-index: 1001;
 }
 
 /* Cleaned up duplicate FAB styles */
