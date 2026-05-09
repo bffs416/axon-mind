@@ -1325,20 +1325,32 @@ $('add-step-to-list').onclick = () => {
   initIcons();
 };
 // ==================== TASK CATEGORIES (localStorage-backed, no DB column needed) ====================
-const taskCategories = JSON.parse(localStorage.getItem('axon_task_categories') || '{}');
+let taskCategories = {};
+
+function loadTaskCategories() {
+  try {
+    taskCategories = JSON.parse(localStorage.getItem('axon_task_categories') || '{}');
+    // Normalizar IDs a string para evitar desajustes con Supabase (number vs string)
+    taskCategories = Object.fromEntries(
+      Object.entries(taskCategories).map(([k, v]) => [String(k), v])
+    );
+  } catch (e) {
+    taskCategories = {};
+  }
+}
+loadTaskCategories();
 
 const getTaskCategory = (task) => {
-  // Use stored category or default to Personal
-  return taskCategories[task.id] || task.category || 'Personal';
+  return taskCategories[String(task.id)] || 'Personal';
 };
 
 const setTaskCategory = (taskId, category) => {
-  taskCategories[taskId] = category;
+  taskCategories[String(taskId)] = category;
   localStorage.setItem('axon_task_categories', JSON.stringify(taskCategories));
 };
 
 const removeTaskCategory = (taskId) => {
-  delete taskCategories[taskId];
+  delete taskCategories[String(taskId)];
   localStorage.setItem('axon_task_categories', JSON.stringify(taskCategories));
 };
 
@@ -2663,6 +2675,7 @@ function renderVault() {
         <button class="btn btn-outline" onclick="window.convertVaultToTask('${doc.id}')" style="flex:1; font-size:0.75rem;">📋 Tarea</button>
         <button class="btn btn-outline" onclick="window.convertVaultToCard('${doc.id}')" style="flex:1; font-size:0.75rem; background:rgba(139,92,246,0.1); border-color:var(--primary); color:var(--primary);">🧠 Tarjeta</button>
         <button class="btn btn-outline" onclick="window.openVaultModal('${doc.id}')" style="flex:0; font-size:0.75rem;">✏️</button>
+        <button class="btn btn-outline" onclick="window.deleteVaultDoc('${doc.id}')" style="flex:0; font-size:0.75rem; color:var(--danger); border-color:rgba(239,68,68,0.3);">🗑️</button>
       </div>
     </div>
   `).join('') || '<p style="text-align:center; opacity:0.5; grid-column: 1/-1; padding:2rem;">El Cerebro está esperando tus ideas.</p>';
@@ -2700,6 +2713,20 @@ window.convertVaultToCard = (docId) => {
   idInput.value = '';
   modal.style.display = 'flex';
   showToast('🧠 Contenido precargado desde el Cerebro');
+};
+
+window.deleteVaultDoc = async (id) => {
+  if (!confirm("¿Eliminar este documento del Cerebro?")) return;
+  try {
+    const { error } = await supabase.from('vault_docs').delete().eq('id', id);
+    if (error) throw error;
+    showToast("🗑️ Documento eliminado del Cerebro");
+  } catch (e) {
+    vaultDocs = vaultDocs.filter(d => String(d.id) !== String(id));
+    localStorage.setItem('axon_vault_docs', JSON.stringify(vaultDocs));
+    showToast("🗑️ Documento eliminado (Local)");
+  }
+  fetchVaultDocs();
 };
 let selectedProfile = 'Pipe';
 
