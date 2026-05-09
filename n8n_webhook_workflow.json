@@ -1,66 +1,201 @@
 {
-  "name": "Axon - Rutinas → Google Calendar",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "pomodoro-sync",
-        "responseMode": "lastNode"
+        "options": {}
       },
-      "id": "webhook-1",
-      "name": "Webhook",
+      "id": "77766447-6dfe-49a0-a38e-c724d899c88f",
+      "name": "App Webhook",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [250, 300]
+      "typeVersion": 2.1,
+      "position": [-368, 32],
+      "webhookId": "e6bfcfc5-26f6-4824-81cc-395917c36bbb"
     },
     {
       "parameters": {
-        "resource": "event",
-        "operation": "create",
-        "calendar": {
-          "__rl": true,
-          "value": "ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com",
-          "mode": "list"
-        },
-        "start": "={{ $json.startTime }}",
-        "end": "={{ $json.endTime }}",
-        "summary": "={{ $json.taskId }}",
-        "description": "={{ $json.isRoutine ? '🔒 Rutina Axon' : '📌 Proyecto Axon' }}"
-      },
-      "id": "gcal-create",
-      "name": "Crear en Rutinas",
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1,
-      "credentials": {
-        "googleCalendarOAuth2Api": "Google Calendar"
-      },
-      "position": [500, 300]
-    },
-    {
-      "parameters": {
-        "values": {
-          "string": [
-            { "name": "status", "value": "ok" }
-          ]
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.action }}",
+              "rightValue": "clear_day",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
         }
       },
-      "id": "respond-1",
-      "name": "OK",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1,
-      "position": [750, 300]
+      "id": "f1ae194e-b19f-4d07-888e-588035bbb39c",
+      "name": "Is Clear Day?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-176, 32]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $json.body?.day + 'T00:00:00' }}",
+        "timeMax": "={{ $json.body?.day + 'T23:59:59' }}",
+        "options": { "query": "Focus:" }
+      },
+      "id": "da9ad234-f583-48fc-ac23-55ea47912e46",
+      "name": "Get Rutinas Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [32, -160],
+      "credentials": { "googleCalendarOAuth2Api": { "id": "GG2dmMi2ehFkOpqc", "name": "Google Calendar" } }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com"
+        },
+        "eventId": "={{ $json.id }}"
+      },
+      "id": "da9a4549-9b87-4786-af62-3b1f97d3707f",
+      "name": "Delete Rutinas Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [288, -160],
+      "credentials": { "googleCalendarOAuth2Api": { "id": "GG2dmMi2ehFkOpqc", "name": "Google Calendar" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.isRoutine }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "8f3ab2f5-543e-4110-8a3f-5d604d71c800",
+      "name": "Is Routine?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [32, 192]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com"
+        },
+        "start": "={{ $json.body?.startTime || $json.query?.startTime }}",
+        "end": "={{ $json.body?.endTime || $json.query?.endTime }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "description": "🔒 Rutina desde Axon",
+          "summary": "=🔒 {{ $json.body?.taskId || $json.query?.taskId || \"Rutina\" }}"
+        },
+        "remindersUi": { "remindersValues": [{ "method": "popup", "minutes": 2 }] }
+      },
+      "id": "d919dc45-cca3-46c3-a5a7-1b4ce09ee0ab",
+      "name": "Create in Rutinas",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [240, 128],
+      "credentials": { "googleCalendarOAuth2Api": { "id": "GG2dmMi2ehFkOpqc", "name": "Google Calendar" } }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "42ed8e94b879dca88ae92956a9bf0f4780da36fbbde26f849aabb32a437c2e13@group.calendar.google.com"
+        },
+        "start": "={{ $json.body?.startTime || $json.query?.startTime }}",
+        "end": "={{ $json.body?.endTime || $json.query?.endTime }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "description": "📌 Proyecto desde Axon",
+          "summary": "=📌 {{ $json.body?.taskId || $json.query?.taskId || \"Proyecto\" }}"
+        },
+        "remindersUi": { "remindersValues": [{ "method": "popup", "minutes": 2 }] }
+      },
+      "id": "0470feb6-284c-419d-9dfd-4fd0436c0580",
+      "name": "Create in Nyvara",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [240, 256],
+      "credentials": { "googleCalendarOAuth2Api": { "id": "GG2dmMi2ehFkOpqc", "name": "Google Calendar" } }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "42ed8e94b879dca88ae92956a9bf0f4780da36fbbde26f849aabb32a437c2e13@group.calendar.google.com"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $('App Webhook').item.json.body?.day + 'T00:00:00' }}",
+        "timeMax": "={{ $('App Webhook').item.json.body?.day + 'T23:59:59' }}",
+        "options": { "query": "Focus:" }
+      },
+      "id": "4b8b846c-951c-4de0-9b3a-fc8c338652c1",
+      "name": "Get Nyvara Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [32, -64],
+      "executeOnce": true,
+      "credentials": { "googleCalendarOAuth2Api": { "id": "GG2dmMi2ehFkOpqc", "name": "Google Calendar" } }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "42ed8e94b879dca88ae92956a9bf0f4780da36fbbde26f849aabb32a437c2e13@group.calendar.google.com"
+        },
+        "eventId": "={{ $json.id }}"
+      },
+      "id": "f22b5e0b-71d4-4104-be1d-280787194d01",
+      "name": "Delete Nyvara Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [288, -64],
+      "credentials": { "googleCalendarOAuth2Api": { "id": "GG2dmMi2ehFkOpqc", "name": "Google Calendar" } }
     }
   ],
   "connections": {
-    "Webhook": {
+    "App Webhook": { "main": [[{ "node": "Is Clear Day?", "type": "main", "index": 0 }]] },
+    "Is Clear Day?": {
       "main": [
-        [{ "node": "Crear en Rutinas", "type": "main", "index": 0 }]
+        [{ "node": "Get Rutinas Events", "type": "main", "index": 0 }, { "node": "Get Nyvara Events", "type": "main", "index": 0 }],
+        [{ "node": "Is Routine?", "type": "main", "index": 0 }]
       ]
     },
-    "Crear en Rutinas": {
+    "Get Rutinas Events": { "main": [[{ "node": "Delete Rutinas Event", "type": "main", "index": 0 }]] },
+    "Is Routine?": {
       "main": [
-        [{ "node": "OK", "type": "main", "index": 0 }]
+        [{ "node": "Create in Rutinas", "type": "main", "index": 0 }],
+        [{ "node": "Create in Nyvara", "type": "main", "index": 0 }]
       ]
-    }
+    },
+    "Get Nyvara Events": { "main": [[{ "node": "Delete Nyvara Event", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "meta": {
+    "aiBuilderAssisted": true,
+    "templateCredsSetupCompleted": true,
+    "instanceId": "12909c1533893f70dd882cafc36ff380944a0da2dc4e5f308a5e33a84828ebce"
   }
 }
