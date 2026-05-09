@@ -350,6 +350,8 @@ window.syncAllToCalendar = async () => {
       url.searchParams.append('endTime', endDate.toISOString());
       url.searchParams.append('taskId', block.title);
 
+      // Rutinas → calendar 2, Proyectos → calendar 3
+      const calendarId = block.isRoutine ? gcalId2 : gcalId3;
       await fetch(url.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -357,7 +359,8 @@ window.syncAllToCalendar = async () => {
           taskId: block.title,
           status: 'scheduled',
           startTime: startDate.toISOString(),
-          endTime: endDate.toISOString()
+          endTime: endDate.toISOString(),
+          calendarId: calendarId
         })
       });
 
@@ -1716,6 +1719,17 @@ window.clearCalendarDay = async (dateStr) => {
     showToast("⚠️ No se pudo limpiar el calendario");
     console.error(e);
   }
+};
+
+window.newEmptyWeek = () => {
+    if (!window.confirm('✨ ¿Empezar una semana desde cero?\n\nEsto borrará TODAS las rutinas y bloques actuales. No afecta tus plantillas guardadas ni Google Calendar.')) return;
+    routines.length = 0;
+    weekPlan.length = 0;
+    localStorage.setItem('axon_routines', JSON.stringify(routines));
+    localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+    renderRoutines();
+    renderPlanner();
+    showToast('✅ Semana limpia. ¡A construir!');
 };
 
 window.clearEntireWeek = async () => {

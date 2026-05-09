@@ -179,10 +179,11 @@
                 </div>
 
                 <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-                    <button id="clear-week-btn" class="btn-danger" style="background:var(--danger);flex:1;display:flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.6rem;border-radius:var(--radius-sm);font-weight:600;font-size:0.8rem;" onclick="window.clearEntireWeek()">
-                        <i data-lucide="trash-2" style="width:16px;"></i> Limpiar Semana
+                    <button class="btn-secondary" onclick="window.newEmptyWeek()" style="flex:1;font-size:0.75rem;">✨ Nueva Semana</button>
+                    <button id="clear-week-btn" class="btn-danger" style="background:var(--danger);flex:1;display:flex;align-items:center;justify-content:center;gap:0.3rem;padding:0.6rem;border-radius:var(--radius-sm);font-weight:600;font-size:0.75rem;" onclick="window.clearEntireWeek()">
+                        <i data-lucide="trash-2" style="width:14px;"></i> Limpiar
                     </button>
-                    <button class="btn-secondary" onclick="window.refreshGCal()" style="flex:1;font-size:0.8rem;">🔄 Refrescar Calendario</button>
+                    <button class="btn-secondary" onclick="window.refreshGCal()" style="flex:1;font-size:0.75rem;">🔄 Refrescar</button>
                 </div>
             </section>
 
@@ -194,11 +195,11 @@
                         Google Calendar → ⚙️ Configuración → Calendario → Integrar<br>
                         Copiá el ID después de <code>src=</code>
                     </p>
-                    <label class="input-label">📅 Principal (bffs.16.04.95)</label>
+                    <label class="input-label">📅 Principal (solo vista)</label>
                     <input type="text" id="gcal-id-1" placeholder="bffs.16.04.95@gmail.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.5rem;">
-                    <label class="input-label">🔒 Rutinas</label>
+                    <label class="input-label">🔒 Rutinas ← aquí se suben las rutinas</label>
                     <input type="text" id="gcal-id-2" placeholder="...@group.calendar.google.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.5rem;">
-                    <label class="input-label">📌 Tercero</label>
+                    <label class="input-label">📌 Proyectos ← aquí se suben los proyectos</label>
                     <input type="text" id="gcal-id-3" placeholder="...@group.calendar.google.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.8rem;">
                     <p style="font-size:0.65rem;color:var(--text-dim);margin-bottom:0.5rem;">⚠️ Deben ser públicos en Google Calendar</p>
                     <div class="modal-actions">
