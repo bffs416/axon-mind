@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axon Pomodoro v3 | Productividad Multipotencial</title>
+    <meta name="description" content="Sistema de productividad diseñado para mentes multipotenciales. Pomodoro + Google Calendar + Gamificación.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-BLBOPV-4.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-YWeMIn7F.css">
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+    <div id="app">
+        <div class="top-sticky-container">
+            <header>
+                <div class="logo"><span class="accent">AXON</span> FLOW</div>
+                <div class="header-right">
+                    <div class="theme-switcher">
+                        <button onclick="setTheme('dark')" title="Deep Night">🌑</button>
+                        <button onclick="setTheme('twilight')" title="Twilight">🌗</button>
+                        <button onclick="setTheme('light')" title="Morning Glow">☀️</button>
+                        <button onclick="setTheme('barbie')" title="Barbie Mode">🌸</button>
+                    </div>
+                    <div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span> días</div>
+                    <div class="status-badge"><i data-lucide="calendar"></i> <span id="calendar-status">Standby</span></div>
+                </div>
+            </header>
+
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-view="focus"><i data-lucide="play"></i> Focus</button>
+                <button class="tab-btn" data-view="plan"><i data-lucide="calendar"></i> Planificar</button>
+                <button class="tab-btn" data-view="inbox"><i data-lucide="zap"></i> Inbox</button>
+                <button class="tab-btn" data-view="vault"><i data-lucide="brain"></i> Cerebro</button>
+                <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards <span id="cards-pending-badge" class="tab-badge" style="display:none;">0</span></button>
+                <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
+                <div style="flex:1"></div>
+                <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
+                <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
+            </nav>
+        </div>
+
+        <main>
+            <!-- ========== VISTA FOCUS ========== -->
+            <section id="view-focus" class="view active">
+                <div class="timer-section">
+                    <div class="timer-container">
+                        <svg class="progress-ring" viewBox="0 0 280 280">
+                            <circle class="progress-ring__circle-bg" stroke="var(--ring-bg)" stroke-width="6" fill="transparent" r="130" cx="140" cy="140"/>
+                            <circle class="progress-ring__circle" stroke="var(--primary)" stroke-width="6" stroke-linecap="round" fill="transparent" r="130" cx="140" cy="140"/>
+                        </svg>
+                        <div class="timer-display">
+                            <span id="timer-minutes">25</span>:<span id="timer-seconds">00</span>
+                        </div>
+                    </div>
+                    <div class="active-task-container" id="active-task-display">
+                        <div class="active-task-emoji" id="active-task-emoji">🎯</div>
+                        <div class="active-task-content">
+                            <div class="active-task-status" id="active-task-status">Selecciona una tarea</div>
+                            <div class="active-task-title" id="active-task-title">Enfoque de trabajo</div>
+                        </div>
+                    </div>
+                    <div class="session-dots" id="session-dots">
+                        <div class="session-dot"></div>
+                        <div class="session-dot"></div>
+                        <div class="session-dot"></div>
+                        <div class="session-dot"></div>
+                    </div>
+                    <div class="timer-controls">
+                        <button id="start-btn" class="btn-primary"><i data-lucide="play"></i> Iniciar</button>
+                        <button id="pause-btn" class="btn-secondary" disabled><i data-lucide="pause"></i></button>
+                        <button id="reset-btn" class="btn-ghost"><i data-lucide="rotate-ccw"></i></button>
+                    </div>
+                    <div class="timer-modes">
+                        <button class="mode-btn active" data-mode="pomodoro">Pomodoro</button>
+                        <button class="mode-btn" data-mode="shortBreak">Break</button>
+                        <button class="mode-btn" data-mode="longBreak">Descanso Largo</button>
+                    </div>
+
+                    <!-- ========== BIO-AXON WATER TRACKER ========== -->
+                    <div class="water-tracker-container">
+                        <div class="water-info">
+                            <span class="water-label">💧 Bio-Axon: Hidratación</span>
+                            <span class="water-stats"><span id="water-current">0</span> / 3L</span>
+                        </div>
+                        <div style="display:flex; gap:0.3rem; justify-content:center; margin-bottom:0.5rem;">
+                            <button class="water-profile-btn active" data-water-profile="Pipe" onclick="window.switchWaterProfile('Pipe', this)">👨 Pipe</button>
+                            <button class="water-profile-btn" data-water-profile="Tati" onclick="window.switchWaterProfile('Tati', this)">👩 Tati</button>
+                        </div>
+                        <div class="water-progress-bar">
+                            <div id="water-fill" class="water-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="water-actions">
+                            <button onclick="window.addWater(2.5)" class="btn-water" title="Vasija de la mañana (2.5L)">🏺 +2.5L</button>
+                            <button onclick="window.addWater(0.25)" class="btn-water" title="Sorbito (250ml)">🥤 +250ml</button>
+                            <button onclick="window.addWater(0.5)" class="btn-water" title="Vaso (500ml)">🥛 +500ml</button>
+                            <button onclick="window.resetWater()" class="btn-water-reset" title="Reiniciar">🔄</button>
+                            <button onclick="window.saveWater()" class="btn-water-save" title="Guardar hidratación del día">💾</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tasks-section">
+                    <div class="section-header" style="flex-wrap: wrap; gap: 0.5rem; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <h2><i data-lucide="list-todo"></i> Mis Proyectos</h2>
+                            <div style="width: 24px;"></div> <!-- Spacer -->
+                        </div>
+                        
+                        <!-- Quick Actions Toolbar -->
+                        <div class="quick-actions" style="display: flex; justify-content: space-between; width: 100%; background: rgba(0,0,0,0.2); padding: 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                            <button id="roulette-btn" class="btn-ghost" onclick="rouletteTask()" style="flex: 1; color: var(--warning); font-size: 0.85rem; padding: 0.4rem;">🎲 Ruleta</button>
+                            <div style="width: 1px; background: var(--border); margin: 0.2rem 0;"></div>
+                            <button id="sos-btn" class="btn-ghost" onclick="window.enterSOSMode()" style="flex: 1; color: var(--danger); font-size: 0.85rem; padding: 0.4rem;">🆘 SOS</button>
+                            <div style="width: 1px; background: var(--border); margin: 0.2rem 0;"></div>
+                            <button id="toggle-freezer-btn" class="btn-ghost" onclick="toggleFreezerView()" style="flex: 1; color: #60a5fa; font-size: 0.85rem; padding: 0.4rem;">❄️ Nevera</button>
+                        </div>
+                        
+                        <div class="assignee-filters" style="width: 100%; display: flex; gap: 0.5rem; margin-top: 0.5rem; overflow-x: auto; padding-bottom: 0.2rem;">
+                            <button class="assignee-filter active" data-assignee="all">Todos</button>
+                            <button class="assignee-filter" data-assignee="Pipe">👨 Pipe</button>
+                            <button class="assignee-filter" data-assignee="Tati">👩 Tati</button>
+                            <button class="assignee-filter" data-assignee="Robot">🤖 Robot</button>
+                        </div>
+                        <div class="energy-filters" style="width: 100%; display: flex; gap: 0.5rem; margin-top: 0.5rem; overflow-x: auto; padding-bottom: 0.2rem;">
+                            <button class="energy-filter active" data-energy="all">Todas</button>
+                            <button class="energy-filter energy-high-btn" data-energy="high">⚡ Alta</button>
+                            <button class="energy-filter energy-medium-btn" data-energy="medium">🔋 Media</button>
+                            <button class="energy-filter energy-low-btn" data-energy="low">🪫 Baja</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Dashboard -->
+                    <div id="progress-dashboard" class="progress-dashboard">
+                        <!-- Se llena dinámicamente desde JS -->
+                    </div>
+
+                    <div id="task-list" class="task-list"></div>
+                </div>
+            </section>
+
+            <!-- ========== VISTA PLANIFICADOR ========== -->
+            <section id="view-plan" class="view">
+                <div class="plan-header">
+                    <h2>📅 Planifica tu Semana</h2>
+                    <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:0.5rem;">
+                        <button id="save-template-btn" class="btn-secondary" onclick="window.openSaveTemplateModal()"><i data-lucide="cloud"></i> Guardar Plantilla</button>
+                        <button id="load-template-btn" class="btn-secondary" onclick="window.openLoadTemplateModal()"><i data-lucide="download-cloud"></i> Cargar Plantilla</button>
+                        <button id="sync-all-btn" class="btn-primary" onclick="window.syncAllToCalendar()"><i data-lucide="upload-cloud"></i> Sincronizar</button>
+                    </div>
+                    <div style="display:flex;gap:0.3rem;justify-content:center;margin-bottom:0.5rem;">
+                        <button class="btn-ghost" onclick="window.togglePlannerView()" id="toggle-view-btn" style="font-size:0.75rem;">📋 Ver Bloques</button>
+                        <button class="btn-ghost" onclick="window.openGCalSettings()" style="font-size:0.75rem;">⚙️ URL Calendario</button>
+                    </div>
+                </div>
+
+                <!-- Google Calendar Embed -->
+                <div id="gcal-container" style="position:relative; width:100%; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); margin-bottom:0.5rem;">
+                    <div style="display:flex;gap:0.3rem;padding:0.5rem;background:var(--bg-card);justify-content:center;">
+                        <button class="gcal-view-btn" data-mode="DAY" onclick="window.setGCalView('DAY')">📆 Día</button>
+                        <button class="gcal-view-btn active" data-mode="WEEK" onclick="window.setGCalView('WEEK')">📅 Semana</button>
+                        <button class="gcal-view-btn" data-mode="MONTH" onclick="window.setGCalView('MONTH')">🗓️ Mes</button>
+                        <button class="gcal-view-btn" data-mode="AGENDA" onclick="window.setGCalView('AGENDA')">📋 Agenda</button>
+                    </div>
+                    <iframe id="gcal-iframe" src="" style="width:100%; height:600px; border:0;" frameborder="0" scrolling="no"></iframe>
+                </div>
+
+                <!-- Rutinas + Bloques (toggleable) -->
+                <div id="planner-blocks-view" style="display:none;">
+                    <div class="routines-section">
+                        <div class="section-header">
+                            <h3>🔒 Rutinas Inamovibles</h3>
+                            <button id="add-routine-btn" class="btn-icon"><i data-lucide="plus"></i></button>
+                        </div>
+                        <div id="routines-list" class="routines-list"></div>
+                    </div>
+                    <div id="week-grid" class="week-grid"></div>
+                </div>
+
+                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                    <button class="btn-secondary" onclick="window.newEmptyWeek()" style="flex:1;font-size:0.75rem;">✨ Nueva Semana</button>
+                    <button id="clear-week-btn" class="btn-danger" style="background:var(--danger);flex:1;display:flex;align-items:center;justify-content:center;gap:0.3rem;padding:0.6rem;border-radius:var(--radius-sm);font-weight:600;font-size:0.75rem;" onclick="window.clearEntireWeek()">
+                        <i data-lucide="trash-2" style="width:14px;"></i> Limpiar
+                    </button>
+                    <button class="btn-secondary" onclick="window.refreshGCal()" style="flex:1;font-size:0.75rem;">🔄 Refrescar</button>
+                </div>
+            </section>
+
+            <!-- Modal configurar Google Calendar -->
+            <div id="gcal-settings-modal" class="modal">
+                <div class="modal-content modal-sm">
+                    <h3>⚙️ Configurar Calendarios</h3>
+                    <p style="font-size:0.7rem;color:var(--text-dim);margin-bottom:0.8rem;">
+                        Google Calendar → ⚙️ Configuración → Calendario → Integrar<br>
+                        Copiá el ID después de <code>src=</code>
+                    </p>
+                    <label class="input-label">📅 Principal (solo vista)</label>
+                    <input type="text" id="gcal-id-1" placeholder="bffs.16.04.95@gmail.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.5rem;">
+                    <label class="input-label">🔒 Rutinas ← aquí se suben las rutinas</label>
+                    <input type="text" id="gcal-id-2" placeholder="...@group.calendar.google.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.5rem;">
+                    <label class="input-label">📌 Proyectos ← aquí se suben los proyectos</label>
+                    <input type="text" id="gcal-id-3" placeholder="...@group.calendar.google.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.8rem;">
+                    <p style="font-size:0.65rem;color:var(--text-dim);margin-bottom:0.5rem;">⚠️ Deben ser públicos en Google Calendar</p>
+                    <div class="modal-actions">
+                        <button class="btn-ghost" onclick="window.closeModal('gcal-settings-modal')">Cancelar</button>
+                        <button class="btn-primary" onclick="window.saveGCalUrl()">Guardar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== MODAL APERTURA MATUTINA ========== -->
+    <div id="morning-modal" class="modal">
+        <div class="modal-content" style="max-width:550px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <h2>☀️ Buenos Días</h2>
+                <button class="btn-icon" onclick="window.closeModal('morning-modal')"><i data-lucide="x"></i></button>
+            </div>
+            <div id="morning-form">
+                <div class="form-group" style="background: var(--bg-card); padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <label>¿Quién eres?</label>
+                    <select id="morning-profile" class="plan-select" style="margin-top: 0.3rem; width: 100%;">
+                        <option value="Pipe">👨 Pipe</option>
+                        <option value="Tati">👱‍♀️ Tati</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🛌 ¿Cómo dormiste?</label>
+                    <div id="sleep-quality-selector" style="display:flex; gap:0.5rem; justify-content:center; margin:0.5rem 0;">
+                        <button class="sleep-btn" data-sleep="1" onclick="window.selectSleepQuality(1, this)">😴</button>
+                        <button class="sleep-btn" data-sleep="2" onclick="window.selectSleepQuality(2, this)">💤</button>
+                        <button class="sleep-btn active" data-sleep="3" onclick="window.selectSleepQuality(3, this)">😐</button>
+                        <button class="sleep-btn" data-sleep="4" onclick="window.selectSleepQuality(4, this)">👍</button>
+                        <button class="sleep-btn" data-sleep="5" onclick="window.selectSleepQuality(5, this)">🌟</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+                        <input type="number" id="morning-sleep-hours" value="7" min="0" max="24" step="0.5" style="width:70px; text-align:center; padding:0.4rem; background:var(--bg-deep); border:1px solid var(--border); border-radius:6px; color:var(--text);">
+                        <span style="font-size:0.8rem; color:var(--text-dim);">horas</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🎯 Intención del día</label>
+                    <input type="text" id="morning-intention" placeholder="Hoy quiero..." style="width:100%; padding:0.7rem; background:var(--bg-deep); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font);">
+                </div>
+
+                <div class="form-group">
+                    <label>⚡ Energía al despertar</label>
+                    <input type="range" id="morning-energy" min="1" max="5" value="3" class="journal-slider">
+                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+                </div>
+
+                <button class="btn-primary" style="width:100%; padding:1rem; font-size:1.1rem;" onclick="window.saveMorningCheckin()">✨ Empezar el Día</button>
+                <p id="morning-saved-msg" style="display:none; text-align:center; color:var(--success); margin-top:0.5rem;">✅ Ya registraste tu apertura hoy</p>
+            </div>
+            <div id="morning-done" style="display:none; text-align:center;">
+                <div style="font-size:3rem; margin-bottom:1rem;">☀️</div>
+                <p style="color:var(--text-dim);">Ya empezaste tu día con intención.</p>
+                <p id="morning-intention-show" style="font-weight:600; color:var(--primary); font-size:1.1rem;"></p>
+                <button class="btn-ghost" style="margin-top:1rem;" onclick="window.closeModal('morning-modal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL DIARIO (CIERRE COGNITIVO) ========== -->
+    <div id="journal-modal" class="modal journal-modal">
+        <div class="modal-content journal-modal-content">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+                <h2 id="journal-step-title">🌙 Cierre Cognitivo</h2>
+                <button class="btn-icon" onclick="window.closeModal('journal-modal')"><i data-lucide="x"></i></button>
+            </div>
+
+            <!-- Step indicators -->
+            <div id="journal-steps" style="display:flex;gap:0.4rem;margin-bottom:1.2rem">
+                <div class="journal-step active" data-step="1">🏠 Rutinas</div>
+                <div class="journal-step" data-step="2">📊 Métricas</div>
+                <div class="journal-step" data-step="3">🧠 Reflexión</div>
+            </div>
+
+            <!-- Paso 1: Rutinas + Perfil -->
+            <div id="journal-step-1">
+                <div class="form-group" style="background: var(--bg-card); padding: 0.8rem; border-radius: 8px;">
+                    <label>¿Quién escribe hoy?</label>
+                    <select id="journal-profile" class="plan-select" style="margin-top: 0.3rem; width: 100%;">
+                        <option value="Tati">👱‍♀️ Tati</option>
+                        <option value="Pipe">👨 Pipe</option>
+                    </select>
+                </div>
+                <h4 style="margin: 1rem 0 0.5rem;">🔒 Rutinas de Hoy</h4>
+                <div id="journal-routine-checklist" style="margin-bottom:1rem;">
+                    <p style="color:var(--text-dim);font-size:0.8rem;">Cargando rutinas...</p>
+                </div>
+                <button class="btn-ghost" onclick="window.checkAllRoutines()" style="font-size:0.75rem; width:100%;">✅ Marcar todas</button>
+                <button class="btn-primary" onclick="window.journalGoToStep(2)" style="width:100%; margin-top:0.8rem;">Siguiente →</button>
+            </div>
+
+            <!-- Paso 2: Métricas -->
+            <div id="journal-step-2" style="display:none;">
+                <div id="morning-comparison" style="background:rgba(14,165,233,0.08); padding:0.6rem 1rem; border-radius:8px; margin-bottom:1rem; font-size:0.8rem; display:none;"></div>
+                <h4 style="margin: 0 0 0.8rem 0; color: var(--primary);">Métricas del Día (1 al 5)</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>🔋 Energía Física</label>
+                        <input type="range" id="journal-energy" min="1" max="5" value="3" class="journal-slider">
+                        <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);"><span>1</span><span>5</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label>🧠 Enfoque</label>
+                        <input type="range" id="journal-focus" min="1" max="5" value="3" class="journal-slider">
+                        <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);"><span>1</span><span>5</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label>🌪️ Estrés</label>
+                        <input type="range" id="journal-stress" min="1" max="5" value="3" class="journal-slider">
+                        <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);"><span>1</span><span>5</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label>🛌 Sueño (horas)</label>
+                        <input type="number" id="journal-sleep" min="0" max="24" step="0.5" value="7" style="width:100%;padding:0.4rem;background:var(--bg-card-hover);border:1px solid var(--border);border-radius:4px;color:var(--text);">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>😊 Emoción principal</label>
+                    <div class="mood-selector" style="display:flex;gap:0.8rem;justify-content:center;margin:0.5rem 0;">
+                        <button class="mood-btn" data-mood="😊" onclick="window.selectMood('😊', this)">😊</button>
+                        <button class="mood-btn" data-mood="😐" onclick="window.selectMood('😐', this)">😐</button>
+                        <button class="mood-btn" data-mood="😔" onclick="window.selectMood('😔', this)">😔</button>
+                        <button class="mood-btn" data-mood="😤" onclick="window.selectMood('😤', this)">😤</button>
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="btn-ghost" onclick="window.journalGoToStep(1)" style="flex:1;">← Atrás</button>
+                    <button class="btn-primary" onclick="window.journalGoToStep(3)" style="flex:2;">Siguiente →</button>
+                </div>
+            </div>
+
+            <!-- Paso 3: Reflexión -->
+            <div id="journal-step-3" style="display:none;">
+                <div class="form-group">
+                    <label>🏆 3 cosas que agradezco hoy</label>
+                    <input type="text" id="journal-grat1" placeholder="1. ..." style="width:100%;margin-bottom:0.3rem;padding:0.5rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+                    <input type="text" id="journal-grat2" placeholder="2. ..." style="width:100%;margin-bottom:0.3rem;padding:0.5rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+                    <input type="text" id="journal-grat3" placeholder="3. ..." style="width:100%;padding:0.5rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+                </div>
+                <div class="form-group">
+                    <label>🌱 Si vivieras hoy de nuevo, ¿qué harías diferente?</label>
+                    <textarea id="journal-lesson" placeholder="Aprendizaje del día..." rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>🗑️ ¿Qué necesitas soltar?</label>
+                    <textarea id="journal-frustrations" placeholder="Escríbelo y déjalo ir..." rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>❤️ ¿Cómo impactaste a tu familia/mundo hoy?</label>
+                    <textarea id="journal-family" placeholder="Una sonrisa, un favor..." rows="2"></textarea>
+                </div>
+
+                <!-- Plan vs Realidad -->
+                <h4 style="margin: 1rem 0 0.5rem; color: var(--accent);">📅 ¿Seguiste tu plan hoy?</h4>
+                <div id="journal-plan-review" style="margin-bottom:1rem;">
+                    <p style="color:var(--text-dim);font-size:0.8rem;">Cargando plan...</p>
+                </div>
+
+                <!-- Estudio -->
+                <h4 style="margin: 1rem 0 0.5rem; color: var(--primary);">📚 Estudio</h4>
+                <div class="form-group">
+                    <label>¿Tarjetas estudiadas hoy?</label>
+                    <input type="number" id="journal-cards-studied" min="0" value="0" style="width:100%;padding:0.4rem;background:var(--bg-card-hover);border:1px solid var(--border);border-radius:4px;color:var(--text);">
+                </div>
+                <div class="form-group">
+                    <label>¿Temas?</label>
+                    <input type="text" id="journal-study-topics" placeholder="Guitarra, Japonés..." style="width:100%;padding:0.4rem;background:var(--bg-card-hover);border:1px solid var(--border);border-radius:4px;color:var(--text);">
+                </div>
+
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="btn-ghost" onclick="window.journalGoToStep(2)" style="flex:1;">← Atrás</button>
+                    <button class="btn-primary" onclick="saveDailyJournal()" style="flex:3;">✅ Guardar Cierre</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== FAB RÁPIDO ========== -->
+            <div id="routine-modal" class="modal">
+                <div class="modal-content modal-sm">
+                    <h3 id="routine-modal-title">🔒 Nueva Rutina</h3>
+                    <input type="hidden" id="routine-id">
+                    
+                    <div class="form-row" style="display:flex; gap:0.5rem; margin-bottom: 0.8rem;">
+    <input type="text" id="routine-emoji" placeholder="🎯" maxlength="2" style="width: 3.5rem; text-align: center; font-size: 1.2rem;" class="plan-select">
+    <input type="text" id="routine-name" placeholder="Nombre de la rutina..." style="flex:1;" class="plan-select" list="routine-suggestions" oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1)">
+    <datalist id="routine-suggestions"></datalist>
+</div>
+
+                    <div class="quick-emojis" style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom: 1rem; justify-content: center;">
+                        <span onclick="$('routine-emoji').value='💼'">💼</span>
+                        <span onclick="$('routine-emoji').value='⚡'">⚡</span>
+                        <span onclick="$('routine-emoji').value='🧘'">🧘</span>
+                        <span onclick="$('routine-emoji').value='🛌'">🛌</span>
+                        <span onclick="$('routine-emoji').value='🎯'">🎯</span>
+                        <span onclick="$('routine-emoji').value='💪'">💪</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="input-label">🕒 Inicio</label>
+                            <input type="time" id="routine-time" class="plan-time-input" value="06:00">
+                        </div>
+                        <div>
+    <label class="input-label">⏳ Duración</label>
+    <div style="display:flex; gap:0.2rem; align-items:center;">
+        <input type="number" id="routine-hours" value="1" min="0" max="23" style="width:100%" class="plan-select">
+        <span style="font-size:0.6rem; font-weight:700; color:var(--text); text-transform:uppercase;">Hrs</span>
+        <input type="number" id="routine-minutes" value="0" min="0" max="59" style="width:100%" class="plan-select">
+        <span style="font-size:0.6rem; font-weight:700; color:var(--text); text-transform:uppercase;">Min</span>
+    </div>
+</div>
+                    </div>
+
+                    <div class="days-shortcut-group" style="display:flex; gap:0.3rem; margin-bottom: 0.8rem; flex-wrap: wrap; justify-content: center;">
+                        <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('all')">Todos</button>
+                        <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('weekdays')">L-V</button>
+                        <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('weekend')">S-D</button>
+                        <button type="button" class="btn-shortcut" onclick="window.selectRoutineDays('none')" style="color:var(--danger)">Limpiar</button>
+                    </div>
+
+                    <div id="routine-days-container" class="days-grid" style="display:flex; justify-content:center; gap:0.3rem; margin-bottom:1.5rem;">
+                        <label class="day-check"><input type="checkbox" value="1"><span>L</span></label>
+                        <label class="day-check"><input type="checkbox" value="2"><span>M</span></label>
+                        <label class="day-check"><input type="checkbox" value="3"><span>X</span></label>
+                        <label class="day-check"><input type="checkbox" value="4"><span>J</span></label>
+                        <label class="day-check"><input type="checkbox" value="5"><span>V</span></label>
+                        <label class="day-check"><input type="checkbox" value="6"><span>S</span></label>
+                        <label class="day-check"><input type="checkbox" value="0"><span>D</span></label>
+                    </div>
+
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-outline" style="flex:1" id="close-routine-modal">Cancelar</button>
+                        <button class="btn btn-primary" id="save-routine" style="flex:2">Guardar Rutina</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== VISTA ESTADÍSTICAS ========== -->
+            <section id="view-stats" class="view">
+                <div class="stats-header-actions" style="margin-bottom: 1.5rem; display: flex; justify-content: center;">
+                    <div class="profile-selector">
+                        <button class="profile-btn active" data-profile="Pipe">👨 Pipe</button>
+                        <button class="profile-btn" data-profile="Tati">👩 Tati</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card stat-primary">
+                        <div class="stat-number" id="stat-total-pomodoros">0</div>
+                        <div class="stat-label">Pomodoros Totales</div>
+                    </div>
+                    <div class="stat-card stat-accent">
+                        <div class="stat-number" id="stat-streak">0</div>
+                        <div class="stat-label">Racha Actual (días)</div>
+                    </div>
+                    <div class="stat-card stat-success">
+                        <div class="stat-number" id="stat-completion">0%</div>
+                        <div class="stat-label">Tasa de Completado</div>
+                    </div>
+                    <div class="stat-card stat-warm">
+                        <div class="stat-number" id="stat-focus-hours">0h</div>
+                        <div class="stat-label">Horas de Enfoque</div>
+                    </div>
+                </div>
+
+                <div class="couple-stats-container" id="couple-stats">
+                    <h3>👩‍🤝‍👨 Marcador de la Pareja</h3>
+                    <div class="couple-cards">
+                        <div class="couple-card pipe-card">
+                            <div class="couple-header">👨 Pipe</div>
+                            <div class="couple-stat"><span class="couple-icon">🍅</span> <span id="pipe-pomos">0</span> pomodoros hoy</div>
+                            <div class="couple-stat"><span class="couple-icon">✅</span> <span id="pipe-tasks">0</span> tareas</div>
+                            <div class="couple-stat"><span class="couple-icon">💧</span> <span id="pipe-water">0</span>L agua</div>
+                            <div class="couple-fire" id="pipe-fire" style="display:none;">🔥 ¡En llamas!</div>
+                        </div>
+                        <div class="couple-vs">VS</div>
+                        <div class="couple-card tati-card">
+                            <div class="couple-header">👩 Tati</div>
+                            <div class="couple-stat"><span class="couple-icon">🍅</span> <span id="tati-pomos">0</span> pomodoros hoy</div>
+                            <div class="couple-stat"><span class="couple-icon">✅</span> <span id="tati-tasks">0</span> tareas</div>
+                            <div class="couple-stat"><span class="couple-icon">💧</span> <span id="tati-water">0</span>L agua</div>
+                            <div class="couple-fire" id="tati-fire" style="display:none;">🔥 ¡En llamas!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="weekly-summary-section" id="weekly-summary">
+                    <h3>📅 Resumen Semanal</h3>
+                    <div id="weekly-summary-content">
+                        <p style="color:var(--text-dim);font-size:0.8rem;">Completa tus cierres cognitivos durante la semana para ver tu resumen.</p>
+                    </div>
+                </div>
+
+                <div class="journal-stats-container">
+                    <div class="chart-section journal-metrics">
+                        <h3>🧠 Métricas de Bienestar (Últimos 7 días)</h3>
+                        <div id="journal-metrics-chart" class="journal-metrics-grid">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <h3>📊 Actividad de Pomodoros</h3>
+                    <div id="weekly-chart" class="weekly-chart"></div>
+                </div>
+
+                <div class="recent-sessions">
+                    <h3>📝 Reflexiones Recientes</h3>
+                    <div id="journal-list" class="journal-list"></div>
+                </div>
+
+                <div class="recent-sessions">
+                    <h3>🕒 Sesiones Recientes</h3>
+                    <div id="sessions-list" class="sessions-list"></div>
+                </div>
+            </section>
+        </main>
+
+      <!-- ========== INBOX / BANDEJA ========== -->
+      <section id="view-inbox" class="view">
+        <div class="plan-header">
+          <h2>Bandeja de Entrada</h2>
+          <p class="plan-subtitle">Ideas capturadas rápidamente para procesar después.</p>
+        </div>
+        <div id="inbox-list" class="inbox-list">
+            <!-- Inbox items injected here -->
+        </div>
+      </section>
+
+      <!-- ========== CEREBRO / VAULT ========== -->
+      <section id="view-vault" class="view">
+        <div class="plan-header">
+          <h2>Tu Cerebro</h2>
+          <button class="btn btn-primary" onclick="openVaultModal()">+ Nuevo Documento</button>
+        </div>
+        
+        <h3 style="margin-top: 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="book-open"></i> Documentos del Vault</h3>
+                <div class="vault-grid" id="vault-list">
+          <!-- Vault docs will be injected here -->
+        </div>
+      </section>
+
+      <!-- ========== AXON CARDS VIEW ========== -->
+      <section id="view-cards" class="view">
+        <div class="plan-header">
+            <h2>Axon Cards (Estudio Polímata)</h2>
+            <div style="display:flex; gap:0.5rem;">
+                 <button class="btn btn-outline" onclick="window.startStudySession()"><i data-lucide="book-open"></i> Estudiar Hoy</button>
+                 <button class="btn btn-primary" onclick="window.openCardModal()"><i data-lucide="plus"></i> Nueva Tarjeta</button>
+                 <button class="btn btn-secondary" onclick="window.openMarkdownImportModal()" title="Importar tarjetas desde Markdown"><i data-lucide="file-text"></i> MD</button>
+                 <button class="btn btn-secondary" onclick="window.openJsonImportModal()" title="Importar tarjetas desde JSON"><i data-lucide="braces"></i> JSON</button>
+            </div>
+        </div>
+        
+        <div class="cards-dashboard" style="margin-top: 1.5rem;">
+            <div class="stat-card" style="padding: 1rem;">
+                <div class="stat-number" id="cards-due-count" style="font-size: 1.5rem;">0</div>
+                <div class="stat-label" style="font-size: 0.7rem;">Pendientes hoy</div>
+            </div>
+            <div class="stat-card" style="padding: 1rem;">
+                <div class="stat-number" id="cards-total-count" style="font-size: 1.5rem;">0</div>
+                <div class="stat-label" style="font-size: 0.7rem;">Total Tarjetas</div>
+            </div>
+        </div>
+
+        <!-- Study Dashboard -->
+        <div class="study-dashboard" id="study-dashboard" style="display:none;">
+            <div class="dashboard-section">
+                <h3 style="font-size:0.9rem; margin-bottom:0.8rem;">📊 Resumen de Estudio</h3>
+                <div class="level-summary" id="level-summary">
+                    <div class="level-badge level-mastered">🟢 <span id="count-mastered">0</span> Dominado</div>
+                    <div class="level-badge level-progress">🟡 <span id="count-progress">0</span> En progreso</div>
+                    <div class="level-badge level-weak">🔴 <span id="count-weak">0</span> Débil</div>
+                </div>
+                <div id="category-progress-list" class="category-progress-list"></div>
+            </div>
+        </div>
+
+        <!-- XP Widget -->
+        <div class="xp-widget" id="xp-widget" style="display:none;">
+            <div class="xp-header">
+                <span id="xp-level-emoji">🌱</span>
+                <span id="xp-level-name">Novato</span>
+                <span class="xp-total"><span id="xp-total">0</span> XP</span>
+            </div>
+            <div class="progress-bar-container" style="height:6px;">
+                <div class="progress-bar-fill" id="xp-progress-fill" style="width:0%; background: linear-gradient(90deg, #f59e0b, #ef4444, #8b5cf6);"></div>
+            </div>
+            <div id="xp-next-label" style="font-size:0.7rem; color:var(--text-dim); text-align:right; margin-top:0.2rem;">100 XP para Aprendiz</div>
+        </div>
+
+        <div class="cards-filter-bar" id="cards-filter-bar" style="margin-bottom: 1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; margin-top: 1rem;">
+            <!-- Filtros generados dinámicamente por renderCards() -->
+        </div>
+
+        <div class="cards-grid" id="cards-list">
+            <!-- Cards injected here -->
+        </div>
+      </section>
+
+      <!-- ========== MODAL ESTUDIO FLASHCARDS ========== -->
+      <div id="study-modal" class="modal">
+          <div class="modal-content" style="max-width: 600px; padding: 1.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                   <span id="study-card-category" class="card-category-tag">General</span>
+                   <button class="btn-icon" onclick="window.closeModal('study-modal')"><i data-lucide="x"></i></button>
+              </div>
+              
+              <div class="flashcard-container">
+                  <div class="flashcard" id="current-flashcard" onclick="window.flipCard()">
+                      <div class="flashcard-front">
+                          <div id="card-front-text">Front</div>
+                      </div>
+                      <div class="flashcard-back">
+                          <div id="card-back-text">Back</div>
+                      </div>
+                  </div>
+              </div>
+
+              <div id="study-actions" class="study-actions" style="display:none;">
+                  <button class="btn-srs hard" onclick="window.answerCard('difficult')">Difícil <span id="srs-hard-label">Nivel 0</span></button>
+                  <button class="btn-srs good" onclick="window.answerCard('good')">Bien <span id="srs-good-label">1d</span></button>
+                  <button class="btn-srs easy" onclick="window.answerCard('easy')">Fácil <span id="srs-easy-label">3d</span></button>
+              </div>
+              <div id="study-card-level" style="text-align:center; font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;"></div>
+              
+              <div id="flip-hint" class="flip-hint">Toca la tarjeta para voltear</div>
+          </div>
+      </div>
+
+      <!-- ========== MODAL SELECTOR DE MODO DE ESTUDIO ========== -->
+      <div id="study-mode-modal" class="modal">
+          <div class="modal-content modal-sm" style="text-align:center;">
+              <h3 style="margin-bottom:1rem;">⚡ Elige tu sesión de estudio</h3>
+              <p id="study-mode-pending" style="font-size:0.8rem; color:var(--text-dim); margin-bottom:1.2rem;"></p>
+              <div style="display:flex; flex-direction:column; gap:0.6rem;">
+                  <button class="btn-session-mode btn-primary" onclick="window.startStudyWithMode('normal')">
+                      📚 Normal <span style="font-size:0.7rem; opacity:0.8;">— Todas las pendientes</span>
+                  </button>
+                  <button class="btn-session-mode" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:var(--danger);" onclick="window.startStudyWithMode('weak')">
+                      🎯 Solo Difíciles <span style="font-size:0.7rem; opacity:0.8;">— Nivel 0-1</span>
+                  </button>
+                  <button class="btn-session-mode" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:var(--success);" onclick="window.startStudyWithMode('quick')">
+                      ⚡ Repaso Rápido <span style="font-size:0.7rem; opacity:0.8;">— Nivel 3+</span>
+                  </button>
+              </div>
+              <button class="btn-ghost" style="margin-top:1rem; width:100%;" onclick="window.closeModal('study-mode-modal')">Cancelar</button>
+          </div>
+      </div>
+
+      <!-- ========== MODAL CREAR/EDITAR TARJETA ========== -->
+      <div id="card-modal" class="modal">
+          <div class="modal-content">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                  <h3 id="card-modal-title" style="margin:0;">✨ Nueva Tarjeta de Estudio</h3>
+                  <button class="btn-icon" onclick="window.closeModal('card-modal')"><i data-lucide="x"></i></button>
+              </div>
+              <input type="hidden" id="edit-card-id">
+              
+              <label class="input-label">Categoría</label>
+              <select id="card-category" class="plan-time-input" style="margin-bottom: 0.5rem;" onchange="window.toggleCustomCategory()">
+                  <option value="Languages">🌍 Idiomas</option>
+                  <option value="Health">🩺 Salud</option>
+                  <option value="General">🧠 General</option>
+                  <option value="Music">🎸 Música</option>
+                  <option value="Tech">💻 Tecnología</option>
+                  <option value="__custom__">✨ Otra (personalizada)...</option>
+              </select>
+              <input type="text" id="card-category-custom" placeholder="Escribe tu categoría..." style="display:none; width:100%; margin-bottom:0.5rem; padding:0.7rem 1rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:var(--font); font-size:0.9rem;">
+
+              <label class="input-label">Anverso (Pregunta / Palabra)</label>
+              <textarea id="card-front" placeholder="Ej: Challenge / Epigenética" style="min-height: 80px;"></textarea>
+              
+              <label class="input-label">Reverso (Respuesta / Significado)</label>
+              <textarea id="card-back" placeholder="Ej: Desafío / Estudio de cambios en la función de los genes..." style="min-height: 80px;"></textarea>
+
+              <div class="modal-actions">
+                  <button class="btn-ghost" onclick="window.closeModal('card-modal')">Cancelar</button>
+                  <button class="btn-primary" onclick="window.saveCard()">Guardar Tarjeta</button>
+              </div>
+          </div>
+      </div>
+
+      <!-- ========== MODAL IMPORTAR MARKDOWN ========== -->
+      <div id="md-import-modal" class="modal">
+          <div class="modal-content" style="max-width: 700px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                  <h3 style="margin:0;">📄 Importar Tarjetas desde Markdown</h3>
+                  <button class="btn-icon" onclick="window.closeModal('md-import-modal')"><i data-lucide="x"></i></button>
+              </div>
+              <p style="font-size:0.8rem; color:var(--text-dim); margin-bottom:1rem;">
+                  Formato esperado: <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">**Q:** pregunta</code> y <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">**A:** respuesta</code>
+              </p>
+              <textarea id="md-import-input" placeholder="Pega aquí tu archivo Markdown..." style="width:100%; min-height:300px; font-family:monospace; font-size:0.85rem; background:var(--bg-deep); color:var(--text); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; resize:vertical;"></textarea>
+              <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                  <select id="md-import-category" class="plan-select" style="flex:1;">
+                      <option value="Languages">🌍 Idiomas</option>
+                      <option value="Health">🩺 Salud</option>
+                      <option value="General" selected>🧠 General</option>
+                  </select>
+                  <button class="btn-primary" onclick="window.processMarkdownImport()" style="flex:1;">⚡ Procesar e Importar</button>
+              </div>
+              <div id="md-import-result" style="margin-top:1rem; text-align:center; font-weight:600;"></div>
+          </div>
+      </div>
+
+      <!-- ========== JSON IMPORT MODAL ========== -->
+      <div id="json-import-modal" class="modal">
+          <div class="modal-content" style="max-width: 700px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                  <h3 style="margin:0;">📄 Importar Tarjetas desde JSON</h3>
+                  <button class="btn-icon" onclick="window.closeModal('json-import-modal')"><i data-lucide="x"></i></button>
+              </div>
+              <p style="font-size:0.8rem; color:var(--text-dim); margin-bottom:1rem;">
+                  Formato esperado: array de objetos con <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">front</code> / <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">back</code>
+                  (o <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">question</code> / <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">answer</code>).
+                  <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">category</code> opcional por tarjeta.
+              </p>
+              <textarea id="json-import-input" placeholder='Pega aquí tu JSON...
+Ejemplo:
+[
+  {
+    "front": "¿Qué es...?",
+    "back": "Es una...",
+    "category": "General"
+  }
+]' style="width:100%; min-height:300px; font-family:monospace; font-size:0.85rem; background:var(--bg-deep); color:var(--text); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; resize:vertical;"></textarea>
+              <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                  <select id="json-import-category" class="plan-select" style="flex:1;">
+                      <option value="Languages">🌍 Idiomas</option>
+                      <option value="Health">🩺 Salud</option>
+                      <option value="General" selected>🧠 General</option>
+                  </select>
+                  <button class="btn-primary" onclick="window.processJsonImport()" style="flex:1;">⚡ Procesar e Importar</button>
+              </div>
+              <div id="json-import-result" style="margin-top:1rem; text-align:center; font-weight:600;"></div>
+          </div>
+      </div>
+
+      <!-- ========== MODAL RESUMEN MULTIPOTENCIAL ========== -->
+    <div id="stats-summary-modal" class="modal">
+        <div class="modal-content">
+            <div style="text-align:center">
+                <div style="font-size:4rem; margin-bottom:1rem">🏆</div>
+                <h2 style="margin-bottom:0.5rem">¡Increíble Jornada Polímata!</h2>
+                <p style="color:var(--text-dim); margin-bottom:2rem">Has navegado exitosamente entre varios mundos hoy.</p>
+                
+                <div id="multipotential-summary-content" style="background:rgba(255,255,255,0.03); padding:1.5rem; border-radius:var(--radius); margin-bottom:2rem; text-align:left;">
+                    <!-- Se inyecta por JS -->
+                </div>
+
+                <button class="btn-primary" style="width:100%" onclick="window.closeModal('stats-summary-modal')">¡Seguir Brillando! ✨</button>
+            </div>
+        </div>
+    </div>
+
+      <!-- ========== MODALES ========== -->
+        <div id="task-modal" class="modal">
+            <div class="modal-content modal-lg">
+                <h3>✨ Nuevo Proyecto</h3>
+<input type="text" id="new-task-title" placeholder="Nombre del proyecto" oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1)">
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1rem; margin-bottom: 0.3rem;">
+                  <label class="input-label" style="margin:0">Descripción o Idea bruta</label>
+                  <button class="btn-mini" onclick="window.suggestWithAI(event)" style="background:rgba(14,165,233,0.1); color:var(--primary); border:1px solid var(--primary); padding:2px 8px; font-size:0.7em; cursor:pointer;">💡 Sugerir con IA</button>
+                </div>
+                <textarea id="new-task-desc" placeholder="Pega aquí tu idea de Grok o lo que tengas en mente..."></textarea>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+                    <div>
+                        <label class="input-label">Nivel de Energía</label>
+                        <select id="new-task-energy" class="plan-select" style="width: 100%; padding: 0.8rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);">
+                            <option value="high">⚡ Alta</option>
+                            <option value="medium" selected>🔋 Media</option>
+                            <option value="low">🪫 Baja</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="input-label">Responsable</label>
+                        <select id="new-task-assignee" class="plan-select" style="width: 100%; padding: 0.8rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);">
+                            <option value="Ambos" selected>🤝 Juntos</option>
+                            <option value="Pipe">👨 Pipe</option>
+                            <option value="Tati">👩 Tati</option>
+                            <option value="Robot">🤖 Robot</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin: 0.5rem 0;">
+                    <label class="input-label">Categoría</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center;">
+                            <input type="radio" name="task-category" value="Personal" checked style="accent-color:var(--primary);"> 🏠 Personal
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center;">
+                            <input type="radio" name="task-category" value="Trabajo" style="accent-color:var(--accent);"> 💼 Trabajo
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-steps-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem">
+                        <h4 style="margin:0">Pasos del proyecto</h4>
+                        <div style="display:flex; gap:0.3rem;">
+                            <button class="btn-mini" onclick="toggleJsonImport()" style="background:var(--bg-card); color:var(--text); font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem;">📄 JSON</button>
+                            <button class="btn-mini" onclick="window.sliceWithAI()" style="background:var(--accent); color:black; font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem; font-weight:700">🔪 IA: Rebanar</button>
+                        </div>
+                    </div>
+                    <div id="json-import-container" style="display:none; margin-bottom:1rem;">
+                        <textarea id="json-import-input" placeholder='Pega tu JSON aquí... ej: [{"text": "Tarea 1"}]' style="width:100%; height:100px; font-family:monospace; font-size:0.75rem; background:var(--bg-deep); color:var(--success); border:1px solid var(--success);"></textarea>
+                        <button onclick="processJsonImport()" class="btn-primary" style="width:100%; margin-top:0.5rem; font-size:0.8rem; padding:0.4rem;">Confirmar Importación</button>
+                    </div>
+                    <div id="modal-steps-list"></div>
+                    <div class="step-input-group" style="display: flex; gap: 0.5rem;">
+                        <select id="step-assignee" class="plan-select" style="padding: 0.5rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text); width: 60px;" title="Responsable">
+                            <option value="Ambos" selected>🤝</option>
+                            <option value="Pipe">👨</option>
+                            <option value="Tati">👩</option>
+                            <option value="Robot">🤖</option>
+                        </select>
+                        <input type="text" id="step-input" placeholder="Añadir un paso..." style="flex: 1;">
+                        <input type="number" id="step-duration" placeholder="Min" style="width: 70px; padding: 0.5rem; background: var(--bg-deep); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);" title="Minutos estimados">
+                        <button id="add-step-to-list" class="btn-secondary">+</button>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="close-modal" class="btn-ghost">Cancelar</button>
+                    <button id="save-task" class="btn-primary">Crear Proyecto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== MODAL INTERROGATORIO AXON ========== -->
+        <div id="interrogation-modal" class="modal">
+          <div class="modal-content" style="max-width:650px; max-height:90vh; overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+              <h3 id="interr-title">🧠 Interrogatorio Axon</h3>
+              <button class="btn-icon" onclick="closeInterrogation()"><i data-lucide="x"></i></button>
+            </div>
+            <div id="interr-progress" style="display:flex;gap:0.4rem;margin-bottom:1.2rem">
+              <div class="interr-step active" data-step="1">1. Descubrir</div>
+              <div class="interr-step" data-step="2">2. Profundizar</div>
+              <div class="interr-step" data-step="3">3. Generar</div>
+            </div>
+            <div id="interr-status" style="text-align:center;padding:2rem;color:var(--text-dim)">
+              ⏳ El Arquitecto está pensando...
+            </div>
+            <div id="interr-questions" style="display:none"></div>
+            <div id="interr-actions" style="display:none;margin-top:1rem;gap:0.5rem;justify-content:flex-end">
+              <button class="btn-ghost" onclick="closeInterrogation()">Cancelar</button>
+              <button id="interr-next-btn" class="btn-primary" onclick="advanceInterrogation()">Siguiente Ronda →</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="schedule-modal" class="modal">
+            <div class="modal-content modal-sm">
+                <h3>📅 Agendar Recordatorio</h3>
+                <p id="schedule-task-name" class="schedule-name"></p>
+                <div class="time-picker">
+                    <input type="datetime-local" id="schedule-time">
+                </div>
+                <div class="modal-actions">
+                    <button id="close-schedule-modal" class="btn-ghost">Cancelar</button>
+                    <button id="confirm-schedule" class="btn-primary">Agendar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="plan-block-modal" class="modal">
+            <div class="modal-content modal-sm">
+                <h3>📌 Agregar Bloque</h3>
+                <p id="plan-block-day-label" class="schedule-name"></p>
+                <input type="text" id="plan-task-input" class="plan-select" placeholder="¿Qué vas a hacer?" list="plan-task-suggestions">
+                <datalist id="plan-task-suggestions"></datalist>
+                
+                <div style="display:flex; gap:0.5rem; margin-top:0.5rem; margin-bottom: 0.5rem;">
+                    <div style="flex:1">
+                        <label class="input-label" style="font-size:0.8rem">Hora</label>
+                        <input type="time" id="plan-block-time" class="plan-time-input" style="width:100%; margin-top:0">
+                    </div>
+                    <div style="flex:1">
+                        <label class="input-label" style="font-size:0.8rem">Duración (min)</label>
+                        <input type="number" id="plan-block-duration" class="plan-select" value="30" min="5" style="width:100%">
+                    </div>
+                </div>
+
+                <label class="input-label" style="font-size:0.8rem">Área de vida</label>
+                <div id="plan-area-selector" style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.8rem;">
+                    <button class="area-pill area-salud active" onclick="window.selectPlanArea('Salud', this)">🩺 Salud</button>
+                    <button class="area-pill area-trabajo" onclick="window.selectPlanArea('Trabajo', this)">💼 Trabajo</button>
+                    <button class="area-pill area-creativo" onclick="window.selectPlanArea('Creativo', this)">🎨 Creativo</button>
+                    <button class="area-pill area-familia" onclick="window.selectPlanArea('Familia', this)">❤️ Familia</button>
+                    <button class="area-pill area-estudio" onclick="window.selectPlanArea('Estudio', this)">📚 Estudio</button>
+                    <button class="area-pill area-otro" onclick="window.selectPlanArea('Otro', this)">📌 Otro</button>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="close-plan-modal" class="btn-ghost">Cancelar</button>
+                    <button id="save-plan-block" class="btn-primary">Agregar</button>
+                </div>
+            </div>
+        </div>
+
+    <!-- Modals Plantillas Cloud -->
+    <div id="save-template-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <h3>☁️ Guardar en la Nube</h3>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">Se guardarán tus rutinas actuales y bloques inamovibles.</p>
+            <input type="text" id="template-name-input" class="plan-select" placeholder="Ej: Semana Base, Semana Lanzamiento...">
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="document.getElementById('save-template-modal').style.display='none'">Cancelar</button>
+                <button class="btn-primary" onclick="window.confirmSaveTemplate()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-template-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <h3>☁️ Mis Plantillas</h3>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">Selecciona una plantilla para sobreescribir tu semana actual.</p>
+            <div id="templates-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; margin-bottom: 1rem;">
+                <p style="color:var(--text-muted); font-size: 0.8rem; text-align: center;">Cargando...</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" onclick="window.closeModal('load-template-modal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cerebro / Vault -->
+    <div id="vault-modal" class="modal">
+      <div class="modal-content">
+        <h3 id="vault-modal-title">🧠 Nuevo Documento</h3>
+        <input type="hidden" id="edit-vault-id">
+        <input type="text" id="vault-title" placeholder="Título (Ej. Letra de Canción)...">
+        <textarea id="vault-content" placeholder="Escribe aquí tu inspiración..." rows="8"></textarea>
+        <input type="text" id="vault-image" placeholder="URL de imagen (Opcional)">
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeVaultModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveVaultDoc()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Capture Bar (Inbox) -->
+    <div id="quick-capture-modal" class="quick-capture-bar">
+      <div class="quick-capture-content">
+        <div class="quick-capture-header">
+           <span class="quick-capture-title">⚡ Captura Rápida</span>
+           <button class="btn-close-capture" onclick="closeQuickCapture()">✕</button>
+        </div>
+        <div class="quick-capture-body">
+            <input type="text" id="inbox-content" placeholder="Escribe tu idea y presiona Enter..." onkeydown="if(event.key==='Enter') saveInbox()">
+            <button class="btn-save-capture" onclick="saveInbox()"><i data-lucide="send"></i></button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ========== FAB RÁPIDO ========== -->
+    <div class="fab-container">
+        <button id="add-task-btn" class="fab fab-primary" onclick="window.openAddSelector()" title="Agregar">
+            <i data-lucide="plus"></i>
+        </button>
+        <button id="quick-capture-fab" class="fab fab-secondary" onclick="openQuickCapture()" title="Captura Rápida">
+            <i data-lucide="zap"></i>
+        </button>
+    </div>
+
+    <div id="motivation-toast" class="motivation-toast">¡Genial!</div>
+    
+    <!-- ========== MODAL SELECTOR (+) ========== -->
+<div id="add-selector-modal" class="modal">
+    <div class="modal-content modal-sm" style="text-align:center;">
+        <h3 style="margin-bottom:1.5rem;">¿Qué quieres crear?</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <button class="btn-primary" style="flex-direction:column; padding:1.5rem; gap:0.5rem;" onclick="window.closeModal('add-selector-modal'); window.openAddTaskModal();">
+                <i data-lucide="layers" style="width:32px; height:32px;"></i>
+                <span>Proyecto</span>
+            </button>
+            <button class="btn-secondary" style="flex-direction:column; padding:1.5rem; gap:0.5rem; border-color:var(--primary);" onclick="window.closeModal('add-selector-modal'); window.openCardModal();">
+                <i data-lucide="brain" style="width:32px; height:32px; color:var(--primary);"></i>
+                <span>Tarjeta</span>
+            </button>
+        </div>
+        <button class="btn-ghost" style="margin-top:1.5rem; width:100%;" onclick="window.closeModal('add-selector-modal')">Cancelar</button>
+    </div>
+</div>
+
+<!-- ========== SOS ZEN MODE OVERLAY ========== -->
+    <div id="sos-overlay" class="sos-overlay" style="display:none">
+        <div class="sos-content">
+            <div class="sos-label">🆘 MODO SOS ACTIVADO</div>
+            <h1 id="sos-task-title">Título de la tarea</h1>
+            <p id="sos-task-desc">Enfócate solo en esto por ahora.</p>
+            <div class="sos-timer-display" id="sos-timer-display">25:00</div>
+            <div class="sos-controls">
+                <button onclick="window.exitSOSMode()" class="btn btn-outline" style="color: white; border-color: white;">🚪 Salir de SOS</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+</body>
+</html>
