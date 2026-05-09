@@ -1713,6 +1713,22 @@ body.immersive-mode .active-task-container {
 
 .routine-check-item:hover { background: var(--bg-card-hover); border-radius: 6px; padding-left: 0.5rem !important; }
 
+/* GCal view buttons */
+.gcal-view-btn {
+    padding: 0.35rem 0.7rem; border-radius: 16px; border: 1px solid var(--border);
+    background: var(--surface-light); color: var(--text-dim); font-size: 0.7rem;
+    cursor: pointer; transition: all 0.2s; font-family: var(--font); font-weight: 500;
+}
+.gcal-view-btn:hover { background: var(--bg-card-hover); color: var(--text); }
+.gcal-view-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+/* GCal responsive */
+@media (max-width: 768px) {
+    #gcal-iframe { height: 400px !important; }
+    #gcal-container { border-radius: 0.5rem; }
+    .gcal-view-btn { font-size: 0.65rem; padding: 0.3rem 0.5rem; }
+}
+
 /* Morning comparison */
 #morning-comparison {
     color: var(--accent);

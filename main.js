@@ -1453,16 +1453,17 @@ window.selectRoutineDays = (mode) => {
 };
 
 // ==================== GOOGLE CALENDAR EMBED ====================
-let gcalId1 = localStorage.getItem('axon_gcal_id_1') || '';
-let gcalId2 = localStorage.getItem('axon_gcal_id_2') || '';
+let gcalId1 = localStorage.getItem('axon_gcal_id_1') || 'bffs.16.04.95@gmail.com';
+let gcalId2 = localStorage.getItem('axon_gcal_id_2') || 'ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com';
+let gcalId3 = localStorage.getItem('axon_gcal_id_3') || '42ed8e94b879dca88ae92956a9bf0f4780da36fbbde26f849aabb32a437c2e13@group.calendar.google.com';
+let gcalViewMode = localStorage.getItem('axon_gcal_view') || 'WEEK';
 
 function buildGCalUrl() {
-    if (!gcalId1 && !gcalId2) return '';
     const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Bogota');
-    let url = `https://calendar.google.com/calendar/embed?showTitle=0&showNav=1&showDate=1&showTabs=0&showCalendars=0&mode=WEEK&height=600&wkst=1&bgcolor=%23ffffff&ctz=${tz}`;
-    if (gcalId1) url += `&src=${encodeURIComponent(gcalId1)}`;
-    if (gcalId2) url += `&src=${encodeURIComponent(gcalId2)}`;
-    url += '&color=%234285F4&color=%23E67C73';
+    let url = `https://calendar.google.com/calendar/embed?showTitle=0&showNav=1&showDate=1&showTabs=0&showCalendars=0&mode=${gcalViewMode}&wkst=1&bgcolor=%23ffffff&ctz=${tz}`;
+    if (gcalId1) url += `&src=${encodeURIComponent(gcalId1)}&color=%234285F4`;
+    if (gcalId2) url += `&src=${encodeURIComponent(gcalId2)}&color=%23E67C73`;
+    if (gcalId3) url += `&src=${encodeURIComponent(gcalId3)}&color=%237986CB`;
     return url;
 }
 
@@ -1470,31 +1471,37 @@ function loadGCal() {
     const iframe = $('gcal-iframe');
     if (!iframe) return;
     const url = buildGCalUrl();
-    if (!url) {
-        iframe.style.display = 'none';
-        return;
-    }
-    iframe.style.display = 'block';
     iframe.src = url;
+    // Ajustar altura según viewport
+    iframe.style.height = window.innerWidth < 768 ? '450px' : '600px';
 }
 
+window.setGCalView = (mode) => {
+    gcalViewMode = mode;
+    localStorage.setItem('axon_gcal_view', mode);
+    document.querySelectorAll('.gcal-view-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    loadGCal();
+};
+
 window.refreshGCal = () => {
-    const iframe = $('gcal-iframe');
-    if (iframe) iframe.src = buildGCalUrl();
+    loadGCal();
     showToast('🔄 Calendario actualizado');
 };
 
 window.openGCalSettings = () => {
     $('gcal-id-1').value = gcalId1;
     $('gcal-id-2').value = gcalId2;
+    $('gcal-id-3').value = gcalId3;
     $('gcal-settings-modal').style.display = 'flex';
 };
 
 window.saveGCalUrl = () => {
     gcalId1 = $('gcal-id-1').value.trim();
     gcalId2 = $('gcal-id-2').value.trim();
+    gcalId3 = $('gcal-id-3').value.trim();
     localStorage.setItem('axon_gcal_id_1', gcalId1);
     localStorage.setItem('axon_gcal_id_2', gcalId2);
+    localStorage.setItem('axon_gcal_id_3', gcalId3);
     $('gcal-settings-modal').style.display = 'none';
     loadGCal();
     showToast('✅ Calendarios guardados');
@@ -3338,7 +3345,7 @@ window.loadTemplateById = async (id) => {
     let template = null;
     try {
         const { data, error } = await supabase.from('weekly_templates').select('*').eq('id', id).maybeSingle();
-        if (error) console.error('Supabase load template error:', error.message);
+        if (error) console.error('Supabase load error:', error.message);
         if (data) template = data;
     } catch(e) {
         console.error('Template load exception:', e);
@@ -3351,19 +3358,47 @@ window.loadTemplateById = async (id) => {
 
     if (!template) { showToast('⚠️ Plantilla no encontrada'); return; }
 
-    // Manejar tanto { routines, weekPlan } como datos crudos
-    const snapshot = typeof template.data === 'string' ? JSON.parse(template.data) : template.data;
-    if (!snapshot || typeof snapshot !== 'object') { showToast('⚠️ Formato de plantilla inválido'); return; }
+    // DEBUG: ver la estructura real
+    console.log('Template loaded:', template);
+    console.log('Template.data type:', typeof template.data);
+    console.log('Template.data:', template.data);
+
+    // Intentar múltiples formatos de data
+    let snapshot = template.data;
+    if (typeof snapshot === 'string') {
+        try { snapshot = JSON.parse(snapshot); } catch(e) { console.error('JSON parse failed:', e); }
+    }
+
+    // Si data no es el objeto directo, buscar en otras claves
+    if (!snapshot || typeof snapshot !== 'object' || (!snapshot.routines && !snapshot.weekPlan)) {
+        // Intentar con template completo como snapshot
+        if (template.routines || template.weekPlan) {
+            snapshot = template;
+        }
+    }
+
+    if (!snapshot || typeof snapshot !== 'object') {
+        console.error('Template data is not an object:', template);
+        showToast('⚠️ Formato de plantilla inválido — revisa la consola');
+        return;
+    }
 
     if (snapshot.routines && Array.isArray(snapshot.routines)) {
         routines.length = 0;
         routines.push(...snapshot.routines);
         localStorage.setItem('axon_routines', JSON.stringify(routines));
+        console.log('Loaded', snapshot.routines.length, 'routines');
+    } else {
+        console.warn('No routines array found in template');
     }
+
     if (snapshot.weekPlan && Array.isArray(snapshot.weekPlan)) {
         weekPlan.length = 0;
         weekPlan.push(...snapshot.weekPlan);
         localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+        console.log('Loaded', snapshot.weekPlan.length, 'plan blocks');
+    } else {
+        console.warn('No weekPlan array found in template');
     }
 
     $('load-template-modal').style.display = 'none';

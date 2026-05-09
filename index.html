@@ -156,7 +156,13 @@
                 </div>
 
                 <!-- Google Calendar Embed -->
-                <div id="gcal-container" style="position:relative; width:100%; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); margin-bottom:1rem;">
+                <div id="gcal-container" style="position:relative; width:100%; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); margin-bottom:0.5rem;">
+                    <div style="display:flex;gap:0.3rem;padding:0.5rem;background:var(--bg-card);justify-content:center;">
+                        <button class="gcal-view-btn" data-mode="DAY" onclick="window.setGCalView('DAY')">📆 Día</button>
+                        <button class="gcal-view-btn active" data-mode="WEEK" onclick="window.setGCalView('WEEK')">📅 Semana</button>
+                        <button class="gcal-view-btn" data-mode="MONTH" onclick="window.setGCalView('MONTH')">🗓️ Mes</button>
+                        <button class="gcal-view-btn" data-mode="AGENDA" onclick="window.setGCalView('AGENDA')">📋 Agenda</button>
+                    </div>
                     <iframe id="gcal-iframe" src="" style="width:100%; height:600px; border:0;" frameborder="0" scrolling="no"></iframe>
                 </div>
 
@@ -180,24 +186,21 @@
                 </div>
             </section>
 
-            <!-- Modal configurar Google Calendar URL -->
+            <!-- Modal configurar Google Calendar -->
             <div id="gcal-settings-modal" class="modal">
                 <div class="modal-content modal-sm">
-                    <h3>⚙️ Configurar Google Calendar</h3>
+                    <h3>⚙️ Configurar Calendarios</h3>
                     <p style="font-size:0.7rem;color:var(--text-dim);margin-bottom:0.8rem;">
-                        Buscá el ID de cada calendario en:<br>
-                        Google Calendar → ⚙️ Configuración → Calendario → Integrar calendario<br>
-                        El ID es el texto después de <code>src=</code> (ej: <code>tucorreo@gmail.com</code>)
+                        Google Calendar → ⚙️ Configuración → Calendario → Integrar<br>
+                        Copiá el ID después de <code>src=</code>
                     </p>
-                    <label class="input-label">Calendario #1 (ej: Pipe)</label>
-                    <input type="text" id="gcal-id-1" placeholder="tucorreo@gmail.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.6rem;">
-
-                    <label class="input-label">Calendario #2 (ej: Tati)</label>
-                    <input type="text" id="gcal-id-2" placeholder="otrocorreo@gmail.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.8rem;">
-
-                    <p style="font-size:0.65rem;color:var(--text-dim);margin-bottom:0.8rem;">
-                        ⚠️ Cada calendario debe ser <strong>público</strong> o compartido para que aparezca aquí.
-                    </p>
+                    <label class="input-label">📅 Principal (bffs.16.04.95)</label>
+                    <input type="text" id="gcal-id-1" placeholder="bffs.16.04.95@gmail.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.5rem;">
+                    <label class="input-label">🔒 Rutinas</label>
+                    <input type="text" id="gcal-id-2" placeholder="...@group.calendar.google.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.5rem;">
+                    <label class="input-label">📌 Tercero</label>
+                    <input type="text" id="gcal-id-3" placeholder="...@group.calendar.google.com" style="width:100%;padding:0.7rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;margin-bottom:0.8rem;">
+                    <p style="font-size:0.65rem;color:var(--text-dim);margin-bottom:0.5rem;">⚠️ Deben ser públicos en Google Calendar</p>
                     <div class="modal-actions">
                         <button class="btn-ghost" onclick="window.closeModal('gcal-settings-modal')">Cancelar</button>
                         <button class="btn-primary" onclick="window.saveGCalUrl()">Guardar</button>
