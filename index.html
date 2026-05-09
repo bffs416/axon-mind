@@ -82,6 +82,10 @@
                             <span class="water-label">💧 Bio-Axon: Hidratación</span>
                             <span class="water-stats"><span id="water-current">0</span> / 3L</span>
                         </div>
+                        <div style="display:flex; gap:0.3rem; justify-content:center; margin-bottom:0.5rem;">
+                            <button class="water-profile-btn active" data-water-profile="Pipe" onclick="window.switchWaterProfile('Pipe', this)">👨 Pipe</button>
+                            <button class="water-profile-btn" data-water-profile="Tati" onclick="window.switchWaterProfile('Tati', this)">👩 Tati</button>
+                        </div>
                         <div class="water-progress-bar">
                             <div id="water-fill" class="water-progress-fill" style="width: 0%"></div>
                         </div>
@@ -90,6 +94,7 @@
                             <button onclick="window.addWater(0.25)" class="btn-water" title="Sorbito (250ml)">🥤 +250ml</button>
                             <button onclick="window.addWater(0.5)" class="btn-water" title="Vaso (500ml)">🥛 +500ml</button>
                             <button onclick="window.resetWater()" class="btn-water-reset" title="Reiniciar">🔄</button>
+                            <button onclick="window.saveWater()" class="btn-water-save" title="Guardar hidratación del día">💾</button>
                         </div>
                     </div>
                 </div>
@@ -160,8 +165,8 @@
             </section>
 
             <!-- ========== MODAL DIARIO (CIERRE COGNITIVO) ========== -->
-    <div id="journal-modal" class="modal">
-        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+    <div id="journal-modal" class="modal journal-modal">
+        <div class="modal-content journal-modal-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
                 <h2>📔 Diario de Pareja</h2>
                 <button class="btn-icon" onclick="document.getElementById('journal-modal').style.display='none'"><i data-lucide="x"></i></button>
@@ -324,6 +329,27 @@
                     </div>
                 </div>
 
+                <div class="couple-stats-container" id="couple-stats">
+                    <h3>👩‍🤝‍👨 Marcador de la Pareja</h3>
+                    <div class="couple-cards">
+                        <div class="couple-card pipe-card">
+                            <div class="couple-header">👨 Pipe</div>
+                            <div class="couple-stat"><span class="couple-icon">🍅</span> <span id="pipe-pomos">0</span> pomodoros hoy</div>
+                            <div class="couple-stat"><span class="couple-icon">✅</span> <span id="pipe-tasks">0</span> tareas</div>
+                            <div class="couple-stat"><span class="couple-icon">💧</span> <span id="pipe-water">0</span>L agua</div>
+                            <div class="couple-fire" id="pipe-fire" style="display:none;">🔥 ¡En llamas!</div>
+                        </div>
+                        <div class="couple-vs">VS</div>
+                        <div class="couple-card tati-card">
+                            <div class="couple-header">👩 Tati</div>
+                            <div class="couple-stat"><span class="couple-icon">🍅</span> <span id="tati-pomos">0</span> pomodoros hoy</div>
+                            <div class="couple-stat"><span class="couple-icon">✅</span> <span id="tati-tasks">0</span> tareas</div>
+                            <div class="couple-stat"><span class="couple-icon">💧</span> <span id="tati-water">0</span>L agua</div>
+                            <div class="couple-fire" id="tati-fire" style="display:none;">🔥 ¡En llamas!</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="journal-stats-container">
                     <div class="chart-section journal-metrics">
                         <h3>🧠 Métricas de Bienestar (Últimos 7 días)</h3>
@@ -381,6 +407,7 @@
             <div style="display:flex; gap:0.5rem;">
                  <button class="btn btn-outline" onclick="window.startStudySession()"><i data-lucide="book-open"></i> Estudiar Hoy</button>
                  <button class="btn btn-primary" onclick="window.openCardModal()"><i data-lucide="plus"></i> Nueva Tarjeta</button>
+                 <button class="btn btn-secondary" onclick="window.openMarkdownImportModal()" title="Importar tarjetas desde Markdown"><i data-lucide="file-text"></i> Importar MD</button>
             </div>
         </div>
         
@@ -395,11 +422,8 @@
             </div>
         </div>
 
-        <div class="cards-filter-bar" style="margin-bottom: 1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; margin-top: 1rem;">
-            <button class="filter-chip active" onclick="window.filterCards('All', this)">Todas</button>
-            <button class="filter-chip" onclick="window.filterCards('Languages', this)">🌍 Idiomas</button>
-            <button class="filter-chip" onclick="window.filterCards('Health', this)">🩺 Salud</button>
-            <button class="filter-chip" onclick="window.filterCards('General', this)">🧠 General</button>
+        <div class="cards-filter-bar" id="cards-filter-bar" style="margin-bottom: 1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; margin-top: 1rem;">
+            <!-- Filtros generados dinámicamente por renderCards() -->
         </div>
 
         <div class="cards-grid" id="cards-list">
@@ -446,11 +470,15 @@
               <input type="hidden" id="edit-card-id">
               
               <label class="input-label">Categoría</label>
-              <select id="card-category" class="plan-time-input" style="margin-bottom: 1rem;">
+              <select id="card-category" class="plan-time-input" style="margin-bottom: 0.5rem;" onchange="window.toggleCustomCategory()">
                   <option value="Languages">🌍 Idiomas</option>
                   <option value="Health">🩺 Salud</option>
                   <option value="General">🧠 General</option>
+                  <option value="Music">🎸 Música</option>
+                  <option value="Tech">💻 Tecnología</option>
+                  <option value="__custom__">✨ Otra (personalizada)...</option>
               </select>
+              <input type="text" id="card-category-custom" placeholder="Escribe tu categoría..." style="display:none; width:100%; margin-bottom:0.5rem; padding:0.7rem 1rem; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:var(--font); font-size:0.9rem;">
 
               <label class="input-label">Anverso (Pregunta / Palabra)</label>
               <textarea id="card-front" placeholder="Ej: Challenge / Epigenética" style="min-height: 80px;"></textarea>
@@ -462,6 +490,29 @@
                   <button class="btn-ghost" onclick="window.closeModal('card-modal')">Cancelar</button>
                   <button class="btn-primary" onclick="window.saveCard()">Guardar Tarjeta</button>
               </div>
+          </div>
+      </div>
+
+      <!-- ========== MODAL IMPORTAR MARKDOWN ========== -->
+      <div id="md-import-modal" class="modal">
+          <div class="modal-content" style="max-width: 700px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                  <h3 style="margin:0;">📄 Importar Tarjetas desde Markdown</h3>
+                  <button class="btn-icon" onclick="window.closeModal('md-import-modal')"><i data-lucide="x"></i></button>
+              </div>
+              <p style="font-size:0.8rem; color:var(--text-dim); margin-bottom:1rem;">
+                  Formato esperado: <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">**Q:** pregunta</code> y <code style="background:var(--surface-light); padding:2px 6px; border-radius:4px;">**A:** respuesta</code>
+              </p>
+              <textarea id="md-import-input" placeholder="Pega aquí tu archivo Markdown..." style="width:100%; min-height:300px; font-family:monospace; font-size:0.85rem; background:var(--bg-deep); color:var(--text); border:1px solid var(--border); border-radius:var(--radius-sm); padding:1rem; resize:vertical;"></textarea>
+              <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                  <select id="md-import-category" class="plan-select" style="flex:1;">
+                      <option value="Languages">🌍 Idiomas</option>
+                      <option value="Health">🩺 Salud</option>
+                      <option value="General" selected>🧠 General</option>
+                  </select>
+                  <button class="btn-primary" onclick="window.processMarkdownImport()" style="flex:1;">⚡ Procesar e Importar</button>
+              </div>
+              <div id="md-import-result" style="margin-top:1rem; text-align:center; font-weight:600;"></div>
           </div>
       </div>
 
@@ -511,6 +562,18 @@
                             <option value="Tati">👩 Tati</option>
                             <option value="Robot">🤖 Robot</option>
                         </select>
+                    </div>
+                </div>
+
+                <div style="margin: 0.5rem 0;">
+                    <label class="input-label">Categoría</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center;">
+                            <input type="radio" name="task-category" value="Personal" checked style="accent-color:var(--primary);"> 🏠 Personal
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center;">
+                            <input type="radio" name="task-category" value="Trabajo" style="accent-color:var(--accent);"> 💼 Trabajo
+                        </label>
                     </div>
                 </div>
 

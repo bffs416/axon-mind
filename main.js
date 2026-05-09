@@ -205,8 +205,11 @@ async function startTimer() {
       clearInterval(timerId); timerId = null;
       playSound('workEnd');
       document.body.classList.remove('immersive-mode');
-      document.querySelector('.timer-container').classList.add('timer-alarm');
-      setTimeout(() => document.querySelector('.timer-container').classList.remove('timer-alarm'), 3000);
+      const tc = document.querySelector('.timer-container');
+      tc.classList.add('timer-alarm', 'glow-pulse');
+      setTimeout(() => {
+        tc.classList.remove('timer-alarm', 'glow-pulse');
+      }, 4500);
       showNotification('¡Pomodoro Completado!', selectedTaskTitle);
       showToast(motivations[Math.floor(Math.random()*motivations.length)]);
       // Complete session
@@ -328,6 +331,44 @@ window.selectTask = (id, title) => {
   activeTaskStatus.textContent = 'Enfoque actual';
 };
 
+function updateProgressDashboard(tasks) {
+  const dash = $('progress-dashboard');
+  if (!dash) return;
+
+  const active = tasks.filter(t => t.status !== 'done' && t.status !== 'frozen');
+  const done = tasks.filter(t => t.status === 'done');
+  const frozen = tasks.filter(t => t.status === 'frozen');
+  const total = active.length + done.length;
+  const pct = total > 0 ? Math.round((done.length / total) * 100) : 0;
+
+  const messages = {
+    0: '¡Empieza tu primer proyecto hoy! 🚀',
+    25: 'Vas arrancando, ¡mantén el ritmo! 💪',
+    50: '¡A mitad de camino, crack! ⚡',
+    75: '¡Casi lo tienes! No te detengas 🔥',
+    100: '¡Todo completado! Mereces un descanso 🏆'
+  };
+
+  let msg = messages[0];
+  if (pct >= 100) msg = messages[100];
+  else if (pct >= 75) msg = messages[75];
+  else if (pct >= 50) msg = messages[50];
+  else if (pct >= 25) msg = messages[25];
+
+  const frozenNote = frozen.length > 0 ? ` · ❄️ ${frozen.length} congelado${frozen.length > 1 ? 's' : ''}` : '';
+
+  dash.innerHTML = `
+    <div class="progress-header">
+      <span class="progress-title">📊 Progreso General</span>
+      <span class="progress-stats"><span>${done.length}</span> / ${total} proyecto${total !== 1 ? 's' : ''}${frozenNote}</span>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" style="width:${pct}%"></div>
+    </div>
+    <div class="progress-message">${msg}</div>
+  `;
+}
+
 async function fetchTasks() {
   const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
   if (error || !data) return;
@@ -363,14 +404,15 @@ async function fetchTasks() {
   });
 
   const taskList = $('task-list');
-  taskList.innerHTML = filteredTasks.map(task => {
+
+  // Helper: render a single task card
+  const renderTaskCard = (task) => {
     const steps = task.steps || [], doneCount = steps.filter(s=>s.done).length;
     const prog = steps.length ? (doneCount/steps.length)*100 : (task.status==='done'?100:0);
     const stale = staleDays(task);
     const staleClass = (task.status !== 'done' && task.status !== 'frozen') ? (stale >= 5 ? 'stale-danger' : stale >= 2 ? 'stale-warning' : '') : '';
     const sel = selectedTaskId === task.id ? 'selected' : '';
-    
-    // Energy & Assignee Tags
+
     const eLvl = task.energy_level || 'medium';
     let energyTag = '';
     if(eLvl === 'high') energyTag = '<span class="energy-tag high">⚡ Alta</span>';
@@ -399,8 +441,8 @@ async function fetchTasks() {
             </div>
           </div>
           <div class="action-btns" style="display:flex; gap:0.2rem;">
-            ${task.status !== 'frozen' ? 
-               `<button class="btn-mini" onclick="event.stopPropagation();window.toggleFreezeTask('${task.id}', '${task.status}')" title="A la Nevera">❄️</button>` : 
+            ${task.status !== 'frozen' ?
+               `<button class="btn-mini" onclick="event.stopPropagation();window.toggleFreezeTask('${task.id}', '${task.status}')" title="A la Nevera">❄️</button>` :
                `<button class="btn-mini" onclick="event.stopPropagation();window.toggleFreezeTask('${task.id}', '${task.status}')" title="Descongelar">🔥</button>`
             }
             <button class="btn-mini" onclick="event.stopPropagation();window.editTask('${task.id}', event)" title="Editar"><i data-lucide="edit-2"></i></button>
@@ -412,10 +454,10 @@ async function fetchTasks() {
         </div>
         ${(() => {
           if (!steps.length) return '';
-          
+
           const groups = [];
           let currentGroup = null;
-          
+
           steps.forEach((s, i) => {
             const stepWithIdx = { ...s, originalIndex: i };
             if (s.isHeader || !currentGroup) {
@@ -433,20 +475,20 @@ async function fetchTasks() {
                 const headerHtml = group.header ? `<div class="step-header" style="margin-top: 15px; margin-bottom: 5px; font-weight: 700; color: var(--accent); font-size: 0.9em; border-bottom: 1px solid var(--border); padding-bottom: 3px;">
                     ${group.header.text}
                 </div>` : '';
-                
+
                 const actionsHtml = group.actions.map(s => {
                   const i = s.originalIndex;
                   let sAssignee = '🤝';
                   if(s.assignee === 'Pipe') sAssignee = '👨';
                   else if(s.assignee === 'Tati') sAssignee = '👩';
                   else if(s.assignee === 'Robot') sAssignee = '🤖';
-                  
+
                   const assigneeHtml = `<span onclick="event.stopPropagation();window.cycleStepAssignee('${task.id}', ${i}, '${s.assignee || 'Ambos'}')" title="Cambiar responsable del paso" style="cursor:pointer; margin-right:4px;">${sAssignee}</span>`;
                   let sDuration = s.duration ? `<span style="font-size: 0.8em; opacity: 0.6; margin-left: 5px;">⏱️ ${formatDuration(s.duration)}</span>` : '';
-                  
+
                   const isAction = s.text.includes('🎨') || s.text.includes('🚀');
-                  const displayStyle = isAction 
-                    ? 'display: inline-flex; align-items: center; width: auto; margin-right: 10px; margin-bottom: 5px; opacity: 0.9; font-size: 0.85em; background: var(--bg-card); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); cursor:pointer; gap: 8px;' 
+                  const displayStyle = isAction
+                    ? 'display: inline-flex; align-items: center; width: auto; margin-right: 10px; margin-bottom: 5px; opacity: 0.9; font-size: 0.85em; background: var(--bg-card); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); cursor:pointer; gap: 8px;'
                     : 'margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;';
 
                   return `<div class="step-item ${s.done?'done':''}" style="${displayStyle}" onclick="window.toggleStep('${task.id}',${i})">
@@ -461,13 +503,48 @@ async function fetchTasks() {
                       <span style="display: flex; align-items: center; gap: 4px;">${assigneeHtml}${s.text}${sDuration}</span>
                     </div>`;
                 }).join('');
-                
+
                 return headerHtml + actionsHtml;
               }).join('')}
             </div>`;
         })()}
       </div></div>`;
-  }).join('') || `<p style="color:var(--text-muted);text-align:center;padding:2rem;">No hay tareas en esta vista.</p>`;
+  };
+
+  // Group by category
+  const personalTasks = filteredTasks.filter(t => getTaskCategory(t) === 'Personal');
+  const workTasks = filteredTasks.filter(t => getTaskCategory(t) === 'Trabajo');
+  const otherTasks = filteredTasks.filter(t => {
+    const cat = getTaskCategory(t);
+    return cat && cat !== 'Personal' && cat !== 'Trabajo';
+  });
+
+  let html = '';
+
+  const renderGroup = (title, icon, tasks, catClass) => {
+    const count = tasks.length;
+    const doneCount = tasks.filter(t => t.status === 'done').length;
+    return `
+      <div class="category-group">
+        <details ${count > 0 ? 'open' : ''}>
+          <summary>
+            ${icon} ${title}
+            <span class="category-badge ${catClass}">${doneCount}/${count}</span>
+          </summary>
+          <div class="task-list-inner">
+            ${tasks.map(renderTaskCard).join('') || '<p style="color:var(--text-muted);text-align:center;padding:1rem;font-size:0.8rem;">Vacío</p>'}
+          </div>
+        </details>
+      </div>`;
+  };
+
+  html += renderGroup('Personal', '🏠', personalTasks, 'personal');
+  html += renderGroup('Trabajo', '💼', workTasks, 'trabajo');
+  if (otherTasks.length > 0) {
+    html += renderGroup('Otros', '📂', otherTasks, 'trabajo');
+  }
+
+  taskList.innerHTML = html || `<p style="color:var(--text-muted);text-align:center;padding:2rem;">No hay tareas en esta vista.</p>`;
 
   // Actualizar contador en el encabezado
   const projectHeader = document.querySelector('.section-header h2');
@@ -476,7 +553,7 @@ async function fetchTasks() {
   }
 
   // Actualizar Dashboard de Progreso
-  // updateProgressDashboard(data);
+  updateProgressDashboard(data);
 
   initIcons();
   document.querySelectorAll('.task-card').forEach(card => {
@@ -504,6 +581,16 @@ window.toggleStep = async (id, idx) => {
 };
 window.toggleTask = async (id, st) => {
   const done = st !== 'done';
+
+  // Dopamina: animación de vibración en la tarjeta antes de desaparecer
+  if (done) {
+    const card = document.querySelector(`.task-card[data-id="${id}"]`);
+    if (card) {
+      card.classList.add('completing');
+      await new Promise(r => setTimeout(r, 800));
+    }
+  }
+
   await supabase.from('tasks').update({ status: done?'done':'pending', ...(done?{completed_at:new Date().toISOString()}:{completed_at:null}) }).eq('id', id);
   if (done) { fireConfetti(); showToast("🎉 ¡Tarea completada!"); }
   fetchTasks(); loadStats();
@@ -533,6 +620,7 @@ window.deleteTask = async (id) => {
   if (!window.confirm('¿Eliminar esta tarea permanentemente?')) return;
   try {
     await supabase.from('tasks').delete().eq('id', id);
+    removeTaskCategory(id);
     showToast('🗑️ Tarea eliminada');
     fetchTasks(); loadStats();
   } catch (e) {
@@ -548,7 +636,11 @@ window.editTask = async (id) => {
   $('new-task-desc').value = task.description || '';
   $('new-task-energy').value = task.energy_level || 'medium';
   if ($('new-task-assignee')) $('new-task-assignee').value = task.assignee || 'Ambos';
-  currentStepsInModal = JSON.parse(JSON.stringify(task.steps || [])); // Deep copy para evitar mutar el original antes de guardar
+  // Set category radio
+  const cat = getTaskCategory(task);
+  const radio = document.querySelector(`input[name="task-category"][value="${cat}"]`);
+  if (radio) radio.checked = true;
+  currentStepsInModal = JSON.parse(JSON.stringify(task.steps || []));
   renderModalSteps();
   $('save-task').textContent = 'Actualizar Proyecto';
   taskModal.style.display = 'flex';
@@ -558,6 +650,8 @@ window.editTask = async (id) => {
     const title = capitalizeFirstLetter($('new-task-title').value); if (!title) return;
     const energy = $('new-task-energy').value;
     const assignee = $('new-task-assignee') ? $('new-task-assignee').value : 'Ambos';
+    const category = getSelectedCategory();
+    setTaskCategory(id, category);
     const { error } = await supabase.from('tasks').update({ title, description: capitalizeFirstLetter($('new-task-desc').value), energy_level: energy, assignee: assignee, steps: currentStepsInModal }).eq('id', id);
     if (error) {
       console.error("Error al actualizar tarea:", error);
@@ -666,15 +760,18 @@ document.querySelectorAll('.assignee-filter').forEach(btn => {
 });
 
 // ==================== MODALS ====================
-window.openAddTaskModal = () => { 
-    vaultDocToConvert = null; // Limpiamos si es una creación manual
-    currentStepsInModal = []; 
-    $('modal-steps-list').innerHTML = ''; 
-    $('new-task-title').value = ''; 
-    $('new-task-desc').value = ''; 
+window.openAddTaskModal = () => {
+    vaultDocToConvert = null;
+    currentStepsInModal = [];
+    $('modal-steps-list').innerHTML = '';
+    $('new-task-title').value = '';
+    $('new-task-desc').value = '';
     $('new-task-energy').value = 'medium';
-    $('save-task').onclick = createProject; // Restaura la función de crear
-    $('task-modal').style.display = 'flex'; 
+    // Reset category to Personal
+    const radio = document.querySelector('input[name="task-category"][value="Personal"]');
+    if (radio) radio.checked = true;
+    $('save-task').onclick = createProject;
+    $('task-modal').style.display = 'flex';
     if(window.lucide) lucide.createIcons();
 };
 // El FAB ya tiene onclick="window.openAddSelector()" en el HTML — no sobrescribir
@@ -1066,22 +1163,51 @@ $('add-step-to-list').onclick = () => {
   renderModalSteps();
   initIcons();
 };
+// ==================== TASK CATEGORIES (localStorage-backed, no DB column needed) ====================
+const taskCategories = JSON.parse(localStorage.getItem('axon_task_categories') || '{}');
+
+const getTaskCategory = (task) => {
+  // Use stored category or default to Personal
+  return taskCategories[task.id] || task.category || 'Personal';
+};
+
+const setTaskCategory = (taskId, category) => {
+  taskCategories[taskId] = category;
+  localStorage.setItem('axon_task_categories', JSON.stringify(taskCategories));
+};
+
+const removeTaskCategory = (taskId) => {
+  delete taskCategories[taskId];
+  localStorage.setItem('axon_task_categories', JSON.stringify(taskCategories));
+};
+
+const getSelectedCategory = () => {
+  const checked = document.querySelector('input[name="task-category"]:checked');
+  return checked ? checked.value : 'Personal';
+};
+
 const createProject = async () => {
   const title = capitalizeFirstLetter($('new-task-title').value); if(!title) return;
   const energy = $('new-task-energy').value;
   const assignee = $('new-task-assignee') ? $('new-task-assignee').value : 'Ambos';
-  const { error } = await supabase.from('tasks').insert([{ 
-    title, 
-    description: capitalizeFirstLetter($('new-task-desc').value), 
-    energy_level: energy, 
+  const category = getSelectedCategory();
+  const { data, error } = await supabase.from('tasks').insert([{
+    title,
+    description: capitalizeFirstLetter($('new-task-desc').value),
+    energy_level: energy,
     assignee: assignee,
-    status: 'todo', 
+    status: 'todo',
     steps: currentStepsInModal
-  }]);
+  }]).select();
   if (error) {
     console.error("Error al crear tarea:", error);
     showToast("Error al crear: " + error.message);
     return;
+  }
+
+  // Guardar categoría en localStorage
+  if (data && data[0]) {
+    setTaskCategory(data[0].id, category);
   }
   
   // Si venía del Cerebro (Vault), eliminamos la nota original
@@ -1529,8 +1655,20 @@ function renderCards() {
     const list = $('cards-list');
     if (!list) return;
 
-    const filtered = currentFilter === 'All' 
-        ? allCards 
+    // Reconstruir filtros dinámicamente
+    const uniqueCategories = [...new Set(allCards.map(c => c.category).filter(Boolean))];
+    const filterBar = $('cards-filter-bar');
+    if (filterBar) {
+        filterBar.innerHTML = `
+            <button class="filter-chip ${currentFilter === 'All' ? 'active' : ''}" onclick="window.filterCards('All', this)">Todas</button>
+            ${uniqueCategories.map(cat => `
+                <button class="filter-chip ${currentFilter === cat ? 'active' : ''}" onclick="window.filterCards('${cat.replace(/'/g, "\\'")}', this)">${cat}</button>
+            `).join('')}
+        `;
+    }
+
+    const filtered = currentFilter === 'All'
+        ? allCards
         : allCards.filter(c => c.category === currentFilter);
 
     list.innerHTML = filtered.map(card => `
@@ -1548,7 +1686,7 @@ function renderCards() {
             </div>
         </div>
     `).join('');
-    
+
     initIcons();
 }
 
@@ -1568,20 +1706,53 @@ window.filterCards = (category, btn) => {
     renderCards();
 };
 
+window.toggleCustomCategory = () => {
+    const sel = $('card-category');
+    const custom = $('card-category-custom');
+    if (sel.value === '__custom__') {
+        custom.style.display = 'block';
+        custom.focus();
+    } else {
+        custom.style.display = 'none';
+        custom.value = '';
+    }
+};
+
+window.getCardCategory = () => {
+    const sel = $('card-category');
+    if (sel.value === '__custom__') {
+        const custom = $('card-category-custom').value.trim();
+        return custom || 'General';
+    }
+    return sel.value;
+};
+
 window.openCardModal = (id = null) => {
     const modal = $('card-modal');
     const title = $('card-modal-title');
     const front = $('card-front');
     const back = $('card-back');
     const category = $('card-category');
+    const custom = $('card-category-custom');
     const idInput = $('edit-card-id');
+
+    custom.style.display = 'none';
+    custom.value = '';
 
     if (id) {
         const card = allCards.find(c => c.id === id);
         title.textContent = '📝 Editar Tarjeta';
         front.value = card.front;
         back.value = card.back;
-        category.value = card.category;
+        // Check if category matches preset options
+        const presets = ['Languages', 'Health', 'General', 'Music', 'Tech'];
+        if (presets.includes(card.category)) {
+            category.value = card.category;
+        } else {
+            category.value = '__custom__';
+            custom.style.display = 'block';
+            custom.value = card.category || '';
+        }
         idInput.value = card.id;
     } else {
         title.textContent = '✨ Nueva Tarjeta de Estudio';
@@ -1598,7 +1769,7 @@ window.saveCard = async () => {
     const id = $('edit-card-id').value;
     const front = capitalizeFirstLetter($('card-front').value.trim());
     const back = capitalizeFirstLetter($('card-back').value.trim());
-    const category = $('card-category').value;
+    const category = window.getCardCategory();
 
     if (!front || !back) {
         showToast('⚠️ Por favor completa ambos lados.');
@@ -1640,6 +1811,72 @@ window.deleteCard = async (id) => {
         showToast('🗑️ Tarjeta eliminada.');
         window.loadCards();
     }
+};
+
+// --- MARKDOWN IMPORT ---
+window.openMarkdownImportModal = () => {
+    $('md-import-input').value = '';
+    $('md-import-result').innerHTML = '';
+    $('md-import-modal').style.display = 'flex';
+};
+
+window.processMarkdownImport = async () => {
+    const input = $('md-import-input').value.trim();
+    const category = $('md-import-category').value;
+    const resultEl = $('md-import-result');
+
+    if (!input) {
+        resultEl.innerHTML = '<span style="color:var(--danger);">⚠️ Pega contenido Markdown primero.</span>';
+        return;
+    }
+
+    // Parse pairs: **Q:** ... **A:** ...
+    const pairs = [];
+    const lines = input.split('\n');
+    let currentQ = null;
+
+    for (const line of lines) {
+        const qMatch = line.match(/^\*\*Q:\*\*\s*(.+)/i);
+        const aMatch = line.match(/^\*\*A:\*\*\s*(.+)/i);
+
+        if (qMatch) {
+            currentQ = qMatch[1].trim();
+        } else if (aMatch && currentQ) {
+            pairs.push({ front: currentQ, back: aMatch[1].trim() });
+            currentQ = null;
+        }
+    }
+
+    if (pairs.length === 0) {
+        resultEl.innerHTML = '<span style="color:var(--warning);">⚠️ No se encontraron pares Q/A. Usa el formato: **Q:** pregunta **A:** respuesta</span>';
+        return;
+    }
+
+    resultEl.innerHTML = `<span style="color:var(--text-dim);">⏳ Importando ${pairs.length} tarjetas...</span>`;
+
+    const cards = pairs.map(p => ({
+        front: p.front,
+        back: p.back,
+        category,
+        next_review: new Date().toISOString()
+    }));
+
+    let imported = 0;
+    for (const card of cards) {
+        const { error } = await supabase.from('flashcards').insert([card]);
+        if (!error) imported++;
+    }
+
+    resultEl.innerHTML = `<span style="color:var(--success);">✅ Se importaron ${imported} de ${pairs.length} tarjetas con éxito.</span>`;
+
+    if (imported > 0) {
+        setTimeout(() => {
+            $('md-import-modal').style.display = 'none';
+            window.loadCards();
+        }, 1500);
+    }
+
+    showToast(`📄 ${imported} tarjetas importadas a ${category}`);
 };
 
 // --- STUDY SESSION LOGIC ---
@@ -1803,8 +2040,101 @@ async function loadStats() {
     <div class="chart-bar" style="height:${Math.max(d.count/maxCount*100, 4)}%"></div>
     <div class="chart-bar-label">${d.label}</div>
   </div>`).join('');
+
+  updateStreak(completed);
+  updateCoupleStats(allTasks, completed);
 }
 window.loadStats = loadStats;
+
+function updateStreak(completedSessions) {
+  const dates = new Set();
+  completedSessions.forEach(s => {
+    if (s.started_at) dates.add(new Date(s.started_at).toDateString());
+  });
+
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const check = new Date(today);
+    check.setDate(today.getDate() - i);
+    if (dates.has(check.toDateString())) {
+      streak++;
+    } else if (i === 0) {
+      continue;
+    } else {
+      break;
+    }
+  }
+
+  const streakBadge = $('streak-count');
+  if (streakBadge) streakBadge.textContent = streak;
+
+  const statStreak = $('stat-streak');
+  if (statStreak) statStreak.textContent = streak;
+
+  localStorage.setItem('axon_streak', streak);
+}
+
+async function updateCoupleStats(tasks, completedSessions) {
+  const today = new Date().toDateString();
+
+  // Si no hay tareas cargadas, consultarlas ahora
+  if (!tasks || tasks.length === 0) {
+    try {
+      const { data } = await supabase.from('tasks').select('*');
+      if (data) tasks = data;
+    } catch(e) { tasks = []; }
+  }
+
+  // Pomodoros por persona desde sesiones completadas hoy
+  const todaySessions = completedSessions.filter(s =>
+    s.started_at && new Date(s.started_at).toDateString() === today
+  );
+
+  let pipePomos = 0, tatiPomos = 0;
+  todaySessions.forEach(s => {
+    const title = (s.task_title || '').toLowerCase();
+    if (title.includes('pipe') || title.includes('👨')) pipePomos++;
+    else if (title.includes('tati') || title.includes('👩')) tatiPomos++;
+  });
+
+  // Si no se puede determinar por título, contar por assignee de las tareas
+  if (pipePomos === 0 && tatiPomos === 0 && todaySessions.length > 0) {
+    pipePomos = Math.floor(todaySessions.length / 2);
+    tatiPomos = todaySessions.length - pipePomos;
+  }
+
+  // Tareas completadas hoy por persona
+  let pipeTasks = 0, tatiTasks = 0;
+  tasks.forEach(t => {
+    if (t.status === 'done' && t.completed_at && new Date(t.completed_at).toDateString() === today) {
+      if (t.assignee === 'Pipe') pipeTasks++;
+      else if (t.assignee === 'Tati') tatiTasks++;
+      else { pipeTasks++; tatiTasks++; }
+    }
+  });
+
+  // Agua por perfil (del localStorage - mismo formato que getWaterKey)
+  const pipeWater = parseFloat(localStorage.getItem('axon_water_Pipe_' + today) || '0');
+  const tatiWater = parseFloat(localStorage.getItem('axon_water_Tati_' + today) || '0');
+
+  // Mostrar quién va ganando
+  const pipeScore = pipePomos + pipeTasks + Math.floor(pipeWater);
+  const tatiScore = tatiPomos + tatiTasks + Math.floor(tatiWater);
+
+  const pipeFire = $('pipe-fire');
+  const tatiFire = $('tati-fire');
+  if (pipeFire) pipeFire.style.display = pipeScore > tatiScore ? 'block' : 'none';
+  if (tatiFire) tatiFire.style.display = tatiScore > pipeScore ? 'block' : 'none';
+
+  const pp = $('pipe-pomos'); if (pp) pp.textContent = pipePomos;
+  const pt = $('pipe-tasks'); if (pt) pt.textContent = pipeTasks;
+  const pw = $('pipe-water'); if (pw) pw.textContent = pipeWater.toFixed(1);
+
+  const tp = $('tati-pomos'); if (tp) tp.textContent = tatiPomos;
+  const tt = $('tati-tasks'); if (tt) tt.textContent = tatiTasks;
+  const tw = $('tati-water'); if (tw) tw.textContent = tatiWater.toFixed(1);
+}
 
 // ==================== DIARIO DE PAREJA ====================
 let selectedMood = '😊';
@@ -1988,18 +2318,61 @@ window.deleteInboxItem = async (id) => {
 };
 
 // ==================== WATER TRACKER ====================
-let waterTotal = parseFloat(localStorage.getItem('axon_water_' + new Date().toDateString()) || '0');
+let waterProfile = localStorage.getItem('axon_water_profile') || 'Pipe';
+
+const getWaterKey = () => `axon_water_${waterProfile}_` + new Date().toDateString();
+let waterTotal = parseFloat(localStorage.getItem(getWaterKey()) || '0');
+
+window.switchWaterProfile = (profile, btn) => {
+    waterProfile = profile;
+    localStorage.setItem('axon_water_profile', profile);
+
+    // Update active button
+    document.querySelectorAll('.water-profile-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    // Reload water total for this profile
+    waterTotal = parseFloat(localStorage.getItem(getWaterKey()) || '0');
+    updateWaterDisplay();
+};
 
 window.addWater = (amount) => {
+    const before = waterTotal;
     waterTotal += amount;
-    localStorage.setItem('axon_water_' + new Date().toDateString(), waterTotal.toString());
+    localStorage.setItem(getWaterKey(), waterTotal.toString());
     updateWaterDisplay();
-    showToast(`💧 +${amount.toFixed(2)}L | Total: ${waterTotal.toFixed(1)}L`);
+    showToast(`💧 ${waterProfile}: +${amount.toFixed(2)}L | Total: ${waterTotal.toFixed(1)}L`);
+
+    // Dopamina: confeti al llegar a 3L
+    if (before < 3 && waterTotal >= 3) {
+        fireConfetti();
+        setTimeout(() => fireConfetti(), 400);
+        showToast(`🏆 ¡${waterProfile} LLEGÓ A 3L! ¡Hidratación óptima! 🎉`);
+    }
 };
 
 window.resetWater = () => {
     waterTotal = 0;
-    localStorage.setItem('axon_water_' + new Date().toDateString(), '0');
+    localStorage.setItem(getWaterKey(), '0');
+    updateWaterDisplay();
+};
+
+window.saveWater = () => {
+    const litros = waterTotal.toFixed(1);
+    const hoy = new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    // Guardar en localStorage por perfil
+    const historial = JSON.parse(localStorage.getItem('axon_water_history') || '{}');
+    const key = `${waterProfile}_${new Date().toDateString()}`;
+    historial[key] = waterTotal;
+    localStorage.setItem('axon_water_history', JSON.stringify(historial));
+
+    // Notificación visual
+    showToast(`💧 ${waterProfile}: ¡Hidratación guardada! ${litros}L — ${hoy}`);
+
+    // Reiniciar contador para mañana
+    waterTotal = 0;
+    localStorage.setItem(getWaterKey(), '0');
     updateWaterDisplay();
 };
 
@@ -2009,6 +2382,12 @@ function updateWaterDisplay() {
     if (current) current.textContent = waterTotal.toFixed(1);
     if (fill) fill.style.width = Math.min((waterTotal / 3) * 100, 100) + '%';
 }
+
+// Init water profile button on load
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.querySelector(`.water-profile-btn[data-water-profile="${waterProfile}"]`);
+    if (btn) { btn.classList.add('active'); }
+});
 
 // ==================== JSON IMPORT ====================
 window.toggleJsonImport = () => {
