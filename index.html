@@ -21,6 +21,7 @@
                         <button onclick="setTheme('dark')" title="Deep Night">🌑</button>
                         <button onclick="setTheme('twilight')" title="Twilight">🌗</button>
                         <button onclick="setTheme('light')" title="Morning Glow">☀️</button>
+                        <button onclick="setTheme('barbie')" title="Barbie Mode">🌸</button>
                     </div>
                     <div class="streak-badge" id="streak-badge">🔥 <span id="streak-count">0</span> días</div>
                     <div class="status-badge"><i data-lucide="calendar"></i> <span id="calendar-status">Standby</span></div>
@@ -32,7 +33,7 @@
                 <button class="tab-btn" data-view="plan"><i data-lucide="calendar"></i> Planificar</button>
                 <button class="tab-btn" data-view="inbox"><i data-lucide="zap"></i> Inbox</button>
                 <button class="tab-btn" data-view="vault"><i data-lucide="brain"></i> Cerebro</button>
-                <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards</button>
+                <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards <span id="cards-pending-badge" class="tab-badge" style="display:none;">0</span></button>
                 <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
@@ -236,6 +237,17 @@
                 <textarea id="journal-frustrations" placeholder="Escríbelo aquí para que no te acompañe a dormir..." rows="3"></textarea>
             </div>
 
+            <h4 style="margin: 1.5rem 0 1rem; color: var(--accent);">📚 Estudio con Axon Cards</h4>
+
+            <div class="form-group">
+                <label>¿Estudiaste tarjetas hoy? ¿Cuántas?</label>
+                <input type="number" id="journal-cards-studied" min="0" value="0" style="width:100%; padding:0.5rem; background:var(--bg-card-hover); border:1px solid var(--border); border-radius:4px; color:var(--text);">
+            </div>
+            <div class="form-group">
+                <label>¿Qué temas estudiaste?</label>
+                <input type="text" id="journal-study-topics" placeholder="Ej: Guitarra, Japonés, Neurociencia..." style="width:100%; padding:0.5rem; background:var(--bg-card-hover); border:1px solid var(--border); border-radius:4px; color:var(--text);">
+            </div>
+
             <button class="btn-primary" style="width:100%; padding: 1rem; font-size: 1.1rem; margin-top: 1rem;" onclick="saveDailyJournal()">✅ Guardar Cierre Cognitivo</button>
         </div>
     </div>
@@ -422,6 +434,32 @@
             </div>
         </div>
 
+        <!-- Study Dashboard -->
+        <div class="study-dashboard" id="study-dashboard" style="display:none;">
+            <div class="dashboard-section">
+                <h3 style="font-size:0.9rem; margin-bottom:0.8rem;">📊 Resumen de Estudio</h3>
+                <div class="level-summary" id="level-summary">
+                    <div class="level-badge level-mastered">🟢 <span id="count-mastered">0</span> Dominado</div>
+                    <div class="level-badge level-progress">🟡 <span id="count-progress">0</span> En progreso</div>
+                    <div class="level-badge level-weak">🔴 <span id="count-weak">0</span> Débil</div>
+                </div>
+                <div id="category-progress-list" class="category-progress-list"></div>
+            </div>
+        </div>
+
+        <!-- XP Widget -->
+        <div class="xp-widget" id="xp-widget" style="display:none;">
+            <div class="xp-header">
+                <span id="xp-level-emoji">🌱</span>
+                <span id="xp-level-name">Novato</span>
+                <span class="xp-total"><span id="xp-total">0</span> XP</span>
+            </div>
+            <div class="progress-bar-container" style="height:6px;">
+                <div class="progress-bar-fill" id="xp-progress-fill" style="width:0%; background: linear-gradient(90deg, #f59e0b, #ef4444, #8b5cf6);"></div>
+            </div>
+            <div id="xp-next-label" style="font-size:0.7rem; color:var(--text-dim); text-align:right; margin-top:0.2rem;">100 XP para Aprendiz</div>
+        </div>
+
         <div class="cards-filter-bar" id="cards-filter-bar" style="margin-bottom: 1.5rem; display:flex; gap:0.5rem; flex-wrap:wrap; margin-top: 1rem;">
             <!-- Filtros generados dinámicamente por renderCards() -->
         </div>
@@ -451,12 +489,33 @@
               </div>
 
               <div id="study-actions" class="study-actions" style="display:none;">
-                  <button class="btn-srs hard" onclick="window.answerCard('hard')">Difícil <span>1d</span></button>
-                  <button class="btn-srs good" onclick="window.answerCard('good')">Bien <span>3d</span></button>
-                  <button class="btn-srs easy" onclick="window.answerCard('easy')">Fácil <span>7d</span></button>
+                  <button class="btn-srs hard" onclick="window.answerCard('difficult')">Difícil <span id="srs-hard-label">Nivel 0</span></button>
+                  <button class="btn-srs good" onclick="window.answerCard('good')">Bien <span id="srs-good-label">1d</span></button>
+                  <button class="btn-srs easy" onclick="window.answerCard('easy')">Fácil <span id="srs-easy-label">3d</span></button>
               </div>
+              <div id="study-card-level" style="text-align:center; font-size:0.7rem; color:var(--text-dim); margin-top:0.3rem;"></div>
               
               <div id="flip-hint" class="flip-hint">Toca la tarjeta para voltear</div>
+          </div>
+      </div>
+
+      <!-- ========== MODAL SELECTOR DE MODO DE ESTUDIO ========== -->
+      <div id="study-mode-modal" class="modal">
+          <div class="modal-content modal-sm" style="text-align:center;">
+              <h3 style="margin-bottom:1rem;">⚡ Elige tu sesión de estudio</h3>
+              <p id="study-mode-pending" style="font-size:0.8rem; color:var(--text-dim); margin-bottom:1.2rem;"></p>
+              <div style="display:flex; flex-direction:column; gap:0.6rem;">
+                  <button class="btn-session-mode btn-primary" onclick="window.startStudyWithMode('normal')">
+                      📚 Normal <span style="font-size:0.7rem; opacity:0.8;">— Todas las pendientes</span>
+                  </button>
+                  <button class="btn-session-mode" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:var(--danger);" onclick="window.startStudyWithMode('weak')">
+                      🎯 Solo Difíciles <span style="font-size:0.7rem; opacity:0.8;">— Nivel 0-1</span>
+                  </button>
+                  <button class="btn-session-mode" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:var(--success);" onclick="window.startStudyWithMode('quick')">
+                      ⚡ Repaso Rápido <span style="font-size:0.7rem; opacity:0.8;">— Nivel 3+</span>
+                  </button>
+              </div>
+              <button class="btn-ghost" style="margin-top:1rem; width:100%;" onclick="window.closeModal('study-mode-modal')">Cancelar</button>
           </div>
       </div>
 

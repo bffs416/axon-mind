@@ -14,7 +14,7 @@ window.setTheme = (theme) => {
 };
 
 // Initialize theme
-const savedTheme = localStorage.getItem('axon_theme') || 'dark';
+const savedTheme = localStorage.getItem('axon_theme') || 'light';
 window.setTheme(savedTheme);
 
 // ==================== STATE ====================
@@ -775,41 +775,10 @@ window.openAddTaskModal = () => {
     if(window.lucide) lucide.createIcons();
 };
 // El FAB ya tiene onclick="window.openAddSelector()" en el HTML — no sobrescribir
-let journalMood = 'neutral';
-document.querySelectorAll('.mood-btn').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelectorAll('.mood-btn').forEach(b => b.style.filter = 'grayscale(1)');
-        btn.style.filter = 'none';
-        btn.style.transform = 'scale(1.2)';
-        journalMood = btn.dataset.mood;
-    };
-});
-
-window.saveDailyJournal = async () => {
-    const wins = $('journal-wins').value;
-    const frustrations = $('journal-frustrations').value;
-    
-    showToast("📔 Guardando cierre cognitivo...");
-    
-    // Intento de guardado en Supabase
-    const { error } = await supabase.from('daily_journal').insert([{
-        mood: journalMood, wins, frustrations
-    }]);
-    
-    if(error) {
-        console.warn("No se pudo guardar en Supabase, usando backup local.");
-        localStorage.setItem('axon_journal_' + new Date().toDateString(), JSON.stringify({journalMood, wins, frustrations}));
-    }
-    
-    $('journal-modal').style.display = 'none';
-    showMultipotentialSummary();
-};
 
 window.showMultipotentialSummary = () => {
     const finishedToday = allTasks.filter(t => t.status === 'done' && t.completed_at && new Date(t.completed_at).toDateString() === new Date().toDateString());
-    
     const worlds = [...new Set(finishedToday.map(t => t.energy_level || 'medium'))];
-    
     let html = `
         <div style="margin-bottom:1rem"><strong>Proyectos Completados:</strong> ${finishedToday.length}</div>
         <div style="margin-bottom:1rem"><strong>Mundos explorados hoy:</strong> ${worlds.length}</div>
@@ -818,7 +787,6 @@ window.showMultipotentialSummary = () => {
         </ul>
         ${finishedToday.length === 0 ? '<p>Hoy fue un día de siembra. ¡Mañana cosecharás!</p>' : ''}
     `;
-    
     $('multipotential-summary-content').innerHTML = html;
     $('stats-summary-modal').style.display = 'flex';
 };
@@ -1635,20 +1603,80 @@ let studyQueue = [];
 let currentCardIndex = -1;
 let currentFilter = 'All';
 
-window.loadCards = async () => {
-    const { data, error } = await supabase
-        .from('flashcards')
-        .select('*')
-        .order('created_at', { ascending: false });
+// ==================== SRS ALGORITHM (Graduated Intervals) ====================
+const SRS_INTERVALS = [0.00694, 1, 3, 7, 14, 30, 90]; // índice = nivel (0=10min, 6=90días)
+const MAX_SRS_LEVEL = 6;
 
-    if (error) {
-        console.error('Error loading cards:', error);
-        return;
+const SRS_XP = { difficult: 10, good: 5, easy: 2 };
+
+function computeSRSInterval(card, difficulty) {
+  const prevLevel = card.srs_level ?? 0;
+  let newLevel;
+  if (difficulty === 'difficult') newLevel = 0;
+  else if (difficulty === 'good') newLevel = Math.min(prevLevel + 1, MAX_SRS_LEVEL);
+  else if (difficulty === 'easy') newLevel = Math.min(prevLevel + 2, MAX_SRS_LEVEL);
+  else newLevel = prevLevel;
+
+  const intervalDays = SRS_INTERVALS[newLevel];
+  const nextReview = new Date();
+  if (intervalDays < 1) nextReview.setMinutes(nextReview.getMinutes() + Math.round(intervalDays * 24 * 60));
+  else nextReview.setDate(nextReview.getDate() + intervalDays);
+
+  return { newLevel, intervalDays, nextReview, xp: SRS_XP[difficulty] || 0 };
+}
+
+function getCardLevelColor(level) {
+  if (level >= 5) return { color: '#10b981', label: 'Dominado', cssClass: 'level-mastered' };
+  if (level >= 2) return { color: '#f59e0b', label: 'En progreso', cssClass: 'level-progress' };
+  return { color: '#ef4444', label: 'Débil', cssClass: 'level-weak' };
+}
+
+function getIntervalLabel(days) {
+  if (days < 1) return '10 min';
+  if (days === 1) return '1 día';
+  return `${days} días`;
+}
+
+// ==================== STUDY SESSION STATE ====================
+window._studySessionXP = 0;
+window._studySessionMode = 'normal';
+window._studySessionStart = null;
+let studyStreakDays = parseInt(localStorage.getItem('axon_study_streak') || '0');
+
+window.loadCards = async () => {
+    let supabaseCards = [];
+    try {
+        const { data, error } = await supabase
+            .from('flashcards')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (!error && data) {
+            supabaseCards = data;
+        } else if (error) {
+            console.warn('Supabase cards unavailable, using local backup:', error.message);
+        }
+    } catch (e) {
+        console.warn('Supabase connection failed, using local backup.');
     }
 
-    allCards = data || [];
+    // Merge con backup local
+    const localCards = JSON.parse(localStorage.getItem('axon_cards_backup') || '[]');
+    const localIds = new Set(localCards.map(c => c.id));
+    // Solo agregar locales que NO existan ya en Supabase
+    const missingLocals = localCards.filter(c => !supabaseCards.some(sc => sc.id === c.id));
+
+    allCards = [...supabaseCards, ...missingLocals].sort((a, b) => {
+        const da = new Date(a.created_at || 0);
+        const db = new Date(b.created_at || 0);
+        return db - da;
+    });
+
     renderCards();
     updateCardStats();
+    renderStudyDashboard();
+    updateXPDisplay();
+    updateCardsBadge();
 };
 
 function renderCards() {
@@ -1697,6 +1725,152 @@ function updateCardStats() {
 
     if ($('cards-total-count')) $('cards-total-count').textContent = total;
     if ($('cards-due-count')) $('cards-due-count').textContent = due;
+
+    updateCardsBadge();
+}
+
+// ==================== STUDY DASHBOARD ====================
+function renderStudyDashboard() {
+    const dash = $('study-dashboard');
+    if (!dash) return;
+
+    const mastered = allCards.filter(c => (c.srs_level ?? 0) >= 5);
+    const inProgress = allCards.filter(c => { const l = c.srs_level ?? 0; return l >= 2 && l <= 4; });
+    const weak = allCards.filter(c => (c.srs_level ?? 0) <= 1);
+
+    if (allCards.length > 0) dash.style.display = 'block';
+
+    if ($('count-mastered')) $('count-mastered').textContent = mastered.length;
+    if ($('count-progress')) $('count-progress').textContent = inProgress.length;
+    if ($('count-weak')) $('count-weak').textContent = weak.length;
+
+    // Per-category progress
+    const categories = [...new Set(allCards.map(c => c.category).filter(Boolean))];
+    const catList = $('category-progress-list');
+    if (catList) {
+        catList.innerHTML = categories.map(cat => {
+            const catCards = allCards.filter(c => c.category === cat);
+            const catMastered = catCards.filter(c => (c.srs_level ?? 0) >= 5).length;
+            const pct = catCards.length > 0 ? Math.round((catMastered / catCards.length) * 100) : 0;
+            return `<div class="category-progress-item">
+                <div class="category-progress-label"><span>${cat}</span><span>${catMastered}/${catCards.length}</span></div>
+                <div class="progress-bar-container" style="height:5px;"><div class="progress-bar-fill" style="width:${pct}%; background:linear-gradient(90deg, var(--success), var(--accent));"></div></div>
+            </div>`;
+        }).join('') || '<p style="opacity:0.5;text-align:center;font-size:0.8rem;">Sin categorías</p>';
+    }
+}
+
+function updateStudyStreak() {
+    const today = new Date().toDateString();
+    const lastDate = localStorage.getItem('axon_last_study_date');
+    if (lastDate !== today) {
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        if (lastDate === yesterday.toDateString()) studyStreakDays++;
+        else if (lastDate !== today) studyStreakDays = 1;
+        localStorage.setItem('axon_study_streak', studyStreakDays.toString());
+        localStorage.setItem('axon_last_study_date', today);
+    }
+}
+
+// ==================== CARDS BADGE ====================
+function updateCardsBadge() {
+    const now = new Date().toISOString();
+    const due = allCards.filter(c => c.next_review <= now).length;
+    const weak = allCards.filter(c => c.next_review <= now && (c.srs_level ?? 0) <= 1).length;
+
+    // Update document title
+    if (due > 0) document.title = `(${due}) Axon Flow - ${weak} débiles`;
+    else document.title = 'Axon Flow';
+
+    // Update tab badge
+    const badge = $('cards-pending-badge');
+    if (badge) {
+        badge.textContent = due;
+        badge.style.display = due > 0 ? 'inline-block' : 'none';
+    }
+}
+
+// ==================== NOTIFICATIONS ====================
+window.requestNotificationPermission = async () => {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+};
+
+function sendSmartNotification(title, body) {
+    if (timerId && currentMode === 'pomodoro') return;
+    if ($('study-modal') && $('study-modal').style.display === 'flex') return;
+    showNotification(title, body);
+}
+
+let studyReminderTimeout = null;
+window.scheduleStudyReminder = (hour = 10, minute = 0) => {
+    if (studyReminderTimeout) clearTimeout(studyReminderTimeout);
+    const now = new Date();
+    const target = new Date();
+    target.setHours(hour, minute, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+
+    studyReminderTimeout = setTimeout(async () => {
+        const dueNow = allCards.filter(c => c.next_review <= new Date().toISOString()).length;
+        if (dueNow > 0) {
+            const granted = await window.requestNotificationPermission();
+            if (granted) sendSmartNotification(`${dueNow} tarjetas por estudiar`, '¡5 minutos y brillas! 🧠');
+        }
+        window.scheduleStudyReminder(hour, minute);
+    }, target - now);
+
+    localStorage.setItem('axon_reminder_hour', hour.toString());
+    localStorage.setItem('axon_reminder_minute', minute.toString());
+};
+
+// ==================== GAMIFICATION ====================
+const POLYMATH_LEVELS = [
+    { name: 'Novato', minXP: 0, emoji: '🌱' },
+    { name: 'Aprendiz', minXP: 100, emoji: '📚' },
+    { name: 'Explorador', minXP: 300, emoji: '🔍' },
+    { name: 'Erudito', minXP: 1000, emoji: '🧠' },
+    { name: 'Maestro', minXP: 3000, emoji: '👨‍🏫' },
+    { name: 'Polímata', minXP: 10000, emoji: '🌟' }
+];
+
+let userXP = parseInt(localStorage.getItem('axon_user_xp') || '0');
+
+function getPolymathLevel(xp) {
+    let level = POLYMATH_LEVELS[0];
+    for (const l of POLYMATH_LEVELS) if (xp >= l.minXP) level = l;
+    return level;
+}
+
+function getXPForNextLevel(xp) {
+    for (const l of POLYMATH_LEVELS) if (xp < l.minXP) return { next: l.name, remaining: l.minXP - xp, nextMin: l.minXP };
+    return { next: 'Máximo', remaining: 0, nextMin: xp + 1000 };
+}
+
+function checkLevelUp(oldXP, newXP) {
+    const oldLevel = getPolymathLevel(oldXP);
+    const newLevel = getPolymathLevel(newXP);
+    if (newLevel.name !== oldLevel.name) {
+        fireConfetti();
+        showToast(`🎉 ¡Subiste a ${newLevel.emoji} ${newLevel.name}!`);
+    }
+}
+
+function updateXPDisplay() {
+    const level = getPolymathLevel(userXP);
+    const { next, remaining, nextMin } = getXPForNextLevel(userXP);
+    const currentMin = level.minXP;
+    const pct = Math.min(100, Math.round(((userXP - currentMin) / (nextMin - currentMin)) * 100));
+
+    const widget = $('xp-widget');
+    if (widget && userXP > 0) widget.style.display = 'block';
+    if ($('xp-level-emoji')) $('xp-level-emoji').textContent = level.emoji;
+    if ($('xp-level-name')) $('xp-level-name').textContent = level.name;
+    if ($('xp-total')) $('xp-total').textContent = userXP;
+    if ($('xp-progress-fill')) $('xp-progress-fill').style.width = pct + '%';
+    if ($('xp-next-label')) $('xp-next-label').textContent = remaining > 0 ? `${remaining} XP para ${next}` : '¡Nivel máximo!';
 }
 
 window.filterCards = (category, btn) => {
@@ -1720,11 +1894,13 @@ window.toggleCustomCategory = () => {
 
 window.getCardCategory = () => {
     const sel = $('card-category');
+    if (!sel) return 'General';
     if (sel.value === '__custom__') {
-        const custom = $('card-category-custom').value.trim();
+        const customInput = $('card-category-custom');
+        const custom = customInput ? customInput.value.trim() : '';
         return custom || 'General';
     }
-    return sel.value;
+    return sel.value || 'General';
 };
 
 window.openCardModal = (id = null) => {
@@ -1766,9 +1942,15 @@ window.openCardModal = (id = null) => {
 };
 
 window.saveCard = async () => {
-    const id = $('edit-card-id').value;
-    const front = capitalizeFirstLetter($('card-front').value.trim());
-    const back = capitalizeFirstLetter($('card-back').value.trim());
+    const id = $('edit-card-id')?.value || '';
+    const frontEl = $('card-front');
+    const backEl = $('card-back');
+    if (!frontEl || !backEl) {
+        showToast('⚠️ Error: no se encontraron los campos.');
+        return;
+    }
+    const front = capitalizeFirstLetter(frontEl.value.trim());
+    const back = capitalizeFirstLetter(backEl.value.trim());
     const category = window.getCardCategory();
 
     if (!front || !back) {
@@ -1780,22 +1962,59 @@ window.saveCard = async () => {
         front,
         back,
         category,
+        srs_level: 0,
+        reviews_count: 0,
+        last_review: null,
         next_review: new Date().toISOString()
     };
 
-    let error;
-    if (id) {
-        const { error: err } = await supabase.from('flashcards').update(cardData).eq('id', id);
-        error = err;
-    } else {
-        const { error: err } = await supabase.from('flashcards').insert([cardData]);
-        error = err;
-    }
+    // Guardar en localStorage SIEMPRE como backup
+    const localCards = JSON.parse(localStorage.getItem('axon_cards_backup') || '[]');
 
-    if (error) {
-        showToast('❌ Error al guardar tarjeta.');
-    } else {
+    try {
+        let error;
+        if (id) {
+            const result = await supabase.from('flashcards').update(cardData).eq('id', id);
+            error = result.error;
+            // Actualizar también en backup local
+            const idx = localCards.findIndex(c => c.id === id);
+            if (idx >= 0) localCards[idx] = { ...localCards[idx], ...cardData };
+        } else {
+            const result = await supabase.from('flashcards').insert([cardData]).select();
+            error = result.error;
+            // Guardar en backup local con ID temporal
+            if (!error && result.data?.[0]) {
+                cardData.id = result.data[0].id;
+                localCards.push(cardData);
+            } else if (error) {
+                // Si Supabase falla, guardar con ID local
+                cardData.id = 'local_' + Date.now();
+                cardData.created_at = new Date().toISOString();
+                localCards.push(cardData);
+            }
+        }
+
+        localStorage.setItem('axon_cards_backup', JSON.stringify(localCards));
+
+        if (error) {
+            console.error('Supabase card save error:', error.message);
+            showToast('💾 Guardado localmente (DB no disponible).');
+            $('card-modal').style.display = 'none';
+            window.loadCards();
+            return;
+        }
+
         showToast('✅ Tarjeta guardada con éxito.');
+        $('card-modal').style.display = 'none';
+        window.loadCards();
+    } catch (e) {
+        // Fallback total: guardar solo en localStorage
+        console.error('Card save exception:', e);
+        cardData.id = 'local_' + Date.now();
+        cardData.created_at = new Date().toISOString();
+        localCards.push(cardData);
+        localStorage.setItem('axon_cards_backup', JSON.stringify(localCards));
+        showToast('💾 Guardado localmente (sin conexión).');
         $('card-modal').style.display = 'none';
         window.loadCards();
     }
@@ -1804,13 +2023,19 @@ window.saveCard = async () => {
 window.deleteCard = async (id) => {
     if (!confirm('¿Seguro que quieres eliminar esta tarjeta?')) return;
 
-    const { error } = await supabase.from('flashcards').delete().eq('id', id);
-    if (error) {
-        showToast('❌ Error al eliminar.');
-    } else {
-        showToast('🗑️ Tarjeta eliminada.');
-        window.loadCards();
-    }
+    // Eliminar de backup local siempre
+    const localCards = JSON.parse(localStorage.getItem('axon_cards_backup') || '[]');
+    const filtered = localCards.filter(c => c.id !== id);
+    localStorage.setItem('axon_cards_backup', JSON.stringify(filtered));
+
+    // Intentar eliminar de Supabase
+    try {
+        const { error } = await supabase.from('flashcards').delete().eq('id', id);
+        if (error) console.warn('Supabase delete error:', error.message);
+    } catch (e) {}
+
+    showToast('🗑️ Tarjeta eliminada.');
+    window.loadCards();
 };
 
 // --- MARKDOWN IMPORT ---
@@ -1858,6 +2083,9 @@ window.processMarkdownImport = async () => {
         front: p.front,
         back: p.back,
         category,
+        srs_level: 0,
+        reviews_count: 0,
+        last_review: null,
         next_review: new Date().toISOString()
     }));
 
@@ -1882,23 +2110,78 @@ window.processMarkdownImport = async () => {
 // --- STUDY SESSION LOGIC ---
 window.startStudySession = () => {
     const now = new Date().toISOString();
-    studyQueue = allCards.filter(c => c.next_review <= now);
+    const allDue = allCards.filter(c => c.next_review <= now);
+    const weakDue = allDue.filter(c => (c.srs_level ?? 0) <= 1);
+    const quickDue = allDue.filter(c => (c.srs_level ?? 0) >= 3);
 
-    if (studyQueue.length === 0) {
+    if (allDue.length === 0) {
         showToast('🎉 ¡No tienes tarjetas pendientes por hoy!');
         return;
     }
 
+    // Show mode selector
+    if ($('study-mode-pending')) {
+        $('study-mode-pending').textContent =
+            `${allDue.length} pendientes · ${weakDue.length} débiles · ${quickDue.length} repaso rápido`;
+    }
+    $('study-mode-modal').style.display = 'flex';
+};
+
+window.startStudyWithMode = (mode) => {
+    const now = new Date().toISOString();
+    const allDue = allCards.filter(c => c.next_review <= now);
+
+    switch (mode) {
+        case 'weak':
+            studyQueue = allDue.filter(c => (c.srs_level ?? 0) <= 1);
+            break;
+        case 'quick':
+            studyQueue = allDue.filter(c => (c.srs_level ?? 0) >= 3);
+            break;
+        default:
+            studyQueue = allDue;
+    }
+
+    if (studyQueue.length === 0) {
+        showToast('🎉 ¡No hay tarjetas en este modo! Prueba otro.');
+        return;
+    }
+
+    // Initialize session tracking
+    window._studySessionXP = 0;
+    window._studySessionMode = mode;
+    window._studySessionStart = new Date().toISOString();
+
     currentCardIndex = 0;
+    $('study-mode-modal').style.display = 'none';
     $('study-modal').style.display = 'flex';
+    $('study-modal').setAttribute('data-mode', mode);
     renderStudyCard();
+
+    // Request notification permission on first study
+    requestNotificationPermission();
 };
 
 function renderStudyCard() {
     const card = studyQueue[currentCardIndex];
     if (!card) {
+        // End of session
+        const xp = window._studySessionXP || 0;
+        const mode = window._studySessionMode || 'normal';
         $('study-modal').style.display = 'none';
-        showToast('🏆 ¡Sesión completada!');
+
+        // Save session
+        try {
+            supabase.from('study_sessions').insert([{
+                cards_studied: studyQueue.length,
+                xp_earned: xp,
+                session_mode: mode,
+                ended_at: new Date().toISOString()
+            }]);
+        } catch(e) {}
+
+        showToast(`🏆 ¡Sesión ${mode} completada! +${xp} XP`);
+        updateCardsBadge();
         window.loadCards();
         return;
     }
@@ -1909,6 +2192,22 @@ function renderStudyCard() {
     $('study-card-category').textContent = card.category;
     $('study-actions').style.display = 'none';
     $('flip-hint').style.display = 'block';
+
+    // Update SRS button labels dynamically
+    const lvl = card.srs_level ?? 0;
+    if ($('srs-hard-label')) $('srs-hard-label').textContent = 'Nivel 0 (10 min)';
+    if ($('srs-good-label')) {
+        const goodLvl = Math.min(lvl + 1, MAX_SRS_LEVEL);
+        $('srs-good-label').textContent = `${getIntervalLabel(SRS_INTERVALS[goodLvl])} → Nvl ${goodLvl}`;
+    }
+    if ($('srs-easy-label')) {
+        const easyLvl = Math.min(lvl + 2, MAX_SRS_LEVEL);
+        $('srs-easy-label').textContent = `${getIntervalLabel(SRS_INTERVALS[easyLvl])} → Nvl ${easyLvl}`;
+    }
+
+    // Show card level
+    const levelInfo = getCardLevelColor(lvl);
+    if ($('study-card-level')) $('study-card-level').textContent = `${levelInfo.label} (Nvl ${lvl})`;
 }
 
 window.flipCard = () => {
@@ -1922,29 +2221,54 @@ window.flipCard = () => {
 
 window.answerCard = async (difficulty) => {
     const card = studyQueue[currentCardIndex];
-    let interval = 1; // days
+    if (!card) return;
 
-    if (difficulty === 'hard') interval = 1;
-    else if (difficulty === 'good') interval = 3;
-    else if (difficulty === 'easy') interval = 7;
+    const { newLevel, intervalDays, nextReview, xp } = computeSRSInterval(card, difficulty);
+    const now = new Date().toISOString();
 
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + interval);
+    const updates = {
+        srs_level: newLevel,
+        next_review: nextReview.toISOString(),
+        last_interval: intervalDays,
+        last_review: now,
+        reviews_count: (card.reviews_count ?? 0) + 1
+    };
 
-    const { error } = await supabase
-        .from('flashcards')
-        .update({ 
-            next_review: nextReview.toISOString(),
-            last_interval: interval 
-        })
-        .eq('id', card.id);
+    // Update in-memory (allCards + studyQueue)
+    const acIdx = allCards.findIndex(c => c.id === card.id);
+    if (acIdx >= 0) Object.assign(allCards[acIdx], updates);
+    Object.assign(card, updates);
 
-    if (error) {
-        showToast('❌ Error al actualizar SRS.');
-    } else {
-        currentCardIndex++;
-        renderStudyCard();
-    }
+    // Persist to localStorage
+    const localCards = JSON.parse(localStorage.getItem('axon_cards_backup') || '[]');
+    const lcIdx = localCards.findIndex(c => c.id === card.id);
+    if (lcIdx >= 0) Object.assign(localCards[lcIdx], updates);
+    localStorage.setItem('axon_cards_backup', JSON.stringify(localCards));
+
+    // Persist to Supabase (silent fail)
+    try {
+        await supabase.from('flashcards').update(updates).eq('id', card.id);
+    } catch (e) {}
+
+    // Accumulate XP
+    window._studySessionXP = (window._studySessionXP || 0) + xp;
+
+    // Update gamification
+    userXP += xp;
+    localStorage.setItem('axon_user_xp', userXP.toString());
+    checkLevelUp(userXP - xp, userXP);
+    updateXPDisplay();
+
+    // Update study streak
+    updateStudyStreak();
+
+    // Dynamic toast
+    const labels = { difficult: 'Difícil', good: 'Bien', easy: 'Fácil' };
+    const levelInfo = getCardLevelColor(newLevel);
+    showToast(`${labels[difficulty]} | Nivel ${newLevel} ${levelInfo.label} | +${xp} XP`);
+
+    currentCardIndex++;
+    renderStudyCard();
 };
 window.openVaultModal = () => {
   $('vault-title').value = '';
@@ -2041,8 +2365,14 @@ async function loadStats() {
     <div class="chart-bar-label">${d.label}</div>
   </div>`).join('');
 
+  // Fix stat-completion
+  const totalSessions = sessions.length || 1;
+  const completionRate = Math.round((completed.length / totalSessions) * 100);
+  if ($('stat-completion')) $('stat-completion').textContent = completionRate + '%';
+
   updateStreak(completed);
   updateCoupleStats(allTasks, completed);
+  renderJournalMetricsChart();
 }
 window.loadStats = loadStats;
 
@@ -2073,6 +2403,37 @@ function updateStreak(completedSessions) {
   if (statStreak) statStreak.textContent = streak;
 
   localStorage.setItem('axon_streak', streak);
+}
+
+function renderJournalMetricsChart() {
+    const container = $('journal-metrics-chart');
+    if (!container) return;
+
+    const localJournals = JSON.parse(localStorage.getItem('axon_journals') || '[]');
+    const last7 = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - 6 + i); return d;
+    });
+
+    const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const dailyData = last7.map(d => {
+        const dateStr = d.toISOString().slice(0, 10);
+        const entries = localJournals.filter(j => j.created_at && j.created_at.startsWith(dateStr));
+        const avg = (field) => entries.length > 0
+            ? Math.round(entries.reduce((s, e) => s + (e[field] || 0), 0) / entries.length)
+            : 0;
+        return { label: dayNames[d.getDay()], energy: avg('energy_level'), focus: avg('focus_level'), stress: avg('stress_level') };
+    });
+
+    container.innerHTML = dailyData.map(d => `
+        <div class="metric-day-column">
+            <span style="font-size:0.65rem; color:var(--text-dim); margin-bottom:0.3rem;">${d.label}</span>
+            <div class="metric-bar-stack">
+                ${d.energy > 0 ? `<div class="metric-segment segment-energy" style="height:${d.energy * 20}%;" title="Energía: ${d.energy}"></div>` : ''}
+                ${d.focus > 0 ? `<div class="metric-segment segment-focus" style="height:${d.focus * 20}%;" title="Enfoque: ${d.focus}"></div>` : ''}
+                ${d.stress > 0 ? `<div class="metric-segment segment-stress" style="height:${d.stress * 20}%;" title="Estrés: ${d.stress}"></div>` : ''}
+            </div>
+        </div>
+    `).join('') || '<p style="text-align:center;opacity:0.5;padding:1rem;">Haz tu primer Cierre Cognitivo para ver métricas</p>';
 }
 
 async function updateCoupleStats(tasks, completedSessions) {
@@ -2114,9 +2475,13 @@ async function updateCoupleStats(tasks, completedSessions) {
     }
   });
 
-  // Agua por perfil (del localStorage - mismo formato que getWaterKey)
-  const pipeWater = parseFloat(localStorage.getItem('axon_water_Pipe_' + today) || '0');
-  const tatiWater = parseFloat(localStorage.getItem('axon_water_Tati_' + today) || '0');
+  // Agua por perfil (formato ISO YYYY-MM-DD, igual que getWaterKey)
+  const todayISO = new Date().toISOString().slice(0, 10);
+  let pipeWater = parseFloat(localStorage.getItem('axon_water_Pipe_' + todayISO) || '0');
+  let tatiWater = parseFloat(localStorage.getItem('axon_water_Tati_' + todayISO) || '0');
+  // Fallback: intentar formato viejo toDateString
+  if (pipeWater === 0) pipeWater = parseFloat(localStorage.getItem('axon_water_Pipe_' + today) || '0');
+  if (tatiWater === 0) tatiWater = parseFloat(localStorage.getItem('axon_water_Tati_' + today) || '0');
 
   // Mostrar quién va ganando
   const pipeScore = pipePomos + pipeTasks + Math.floor(pipeWater);
@@ -2146,23 +2511,39 @@ window.selectMood = (mood, btn) => {
 
 window.saveDailyJournal = async () => {
   const profile = $('journal-profile').value;
-  const wins = $('journal-wins').value;
-  const lesson = $('journal-lesson').value;
+  const wins = $('journal-wins').value.trim();
+  const lesson = $('journal-lesson').value.trim();
+  const family = $('journal-family').value.trim();
+  const frustrations = $('journal-frustrations').value.trim();
+  const sleep = parseFloat($('journal-sleep').value) || 7;
+  const cardsStudied = parseInt($('journal-cards-studied')?.value) || 0;
+  const studyTopics = $('journal-study-topics')?.value.trim() || '';
 
   const entry = {
     profile, mood: selectedMood, wins, life_lesson: lesson,
+    family_impact: family, frustrations, sleep_hours: sleep,
+    cards_studied: cardsStudied, study_topics: studyTopics,
     energy_level: parseInt($('journal-energy').value),
     focus_level: parseInt($('journal-focus').value),
-    stress_level: parseInt($('journal-stress').value)
+    stress_level: parseInt($('journal-stress').value),
+    created_at: new Date().toISOString()
   };
+
+  // Always save locally
+  const localJournals = JSON.parse(localStorage.getItem('axon_journals') || '[]');
+  localJournals.push(entry);
+  if (localJournals.length > 90) localJournals.splice(0, localJournals.length - 90);
+  localStorage.setItem('axon_journals', JSON.stringify(localJournals));
 
   try {
     await supabase.from('daily_journal').insert([entry]);
     showToast("✅ ¡Cierre Cognitivo Guardado!");
   } catch (e) {
-    showToast("⚠️ Guardado Localmente");
+    console.warn('Journal Supabase failed, saved locally:', e);
+    showToast("💾 Guardado Localmente");
   }
   $('journal-modal').style.display = 'none';
+  showMultipotentialSummary();
 };
 
 // ==================== MODAL STEPS ====================
@@ -2320,8 +2701,25 @@ window.deleteInboxItem = async (id) => {
 // ==================== WATER TRACKER ====================
 let waterProfile = localStorage.getItem('axon_water_profile') || 'Pipe';
 
-const getWaterKey = () => `axon_water_${waterProfile}_` + new Date().toDateString();
-let waterTotal = parseFloat(localStorage.getItem(getWaterKey()) || '0');
+const getWaterKey = () => {
+  const iso = new Date().toISOString().slice(0, 10); // YYYY-MM-DD locale-independent
+  return `axon_water_${waterProfile}_${iso}`;
+};
+
+// Migrar de formato viejo (toDateString) a ISO si es necesario
+const migrateWaterKey = (profile) => {
+  const today = new Date();
+  const iso = today.toISOString().slice(0, 10);
+  const oldKey = `axon_water_${profile}_` + today.toDateString();
+  const newKey = `axon_water_${profile}_${iso}`;
+  const oldVal = localStorage.getItem(oldKey);
+  if (oldVal !== null && localStorage.getItem(newKey) === null) {
+    localStorage.setItem(newKey, oldVal);
+  }
+  return parseFloat(localStorage.getItem(newKey) || '0');
+};
+
+let waterTotal = migrateWaterKey(waterProfile);
 
 window.switchWaterProfile = (profile, btn) => {
     waterProfile = profile;
@@ -2516,11 +2914,24 @@ updateWaterDisplay();
 document.addEventListener('DOMContentLoaded', () => {
     renderRoutines();
     renderPlanner();
+    // Restore study reminder
+    const savedHour = localStorage.getItem('axon_reminder_hour');
+    const savedMinute = localStorage.getItem('axon_reminder_minute');
+    if (savedHour && savedMinute) {
+        window.scheduleStudyReminder(parseInt(savedHour), parseInt(savedMinute));
+    } else {
+        window.scheduleStudyReminder(10, 0); // Default: 10am
+    }
     setTimeout(() => {
         fetchInbox();
         fetchTasks();
         if (window.loadCards) window.loadCards();
         initIcons();
+        // Request notification permission on load
+        window.requestNotificationPermission();
+        // Reset water daily
+        waterTotal = migrateWaterKey(waterProfile);
+        updateWaterDisplay();
     }, 1000);
 });
 

@@ -41,6 +41,29 @@
     --ring-bg: rgba(255, 255, 255, 0.1);
 }
 
+/* BARBIE THEME */
+[data-theme="barbie"] {
+    --bg-deep: #ffe4ec;
+    --bg-card: #ffffff;
+    --bg-card-hover: #ffd6e8;
+    --primary: #db2777;
+    --primary-low: rgba(219, 39, 119, 0.12);
+    --primary-glow: rgba(219, 39, 119, 0.2);
+    --accent: #ec4899;
+    --accent-glow: rgba(236, 72, 153, 0.2);
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --text: #4a0025;
+    --text-dim: #831843;
+    --text-muted: #be185d;
+    --border: #f9a8d4;
+    --surface-light: #fce7f3;
+    --shadow-md: 0 10px 40px rgba(236, 72, 153, 0.15);
+    --shadow-sm: 0 2px 8px rgba(236, 72, 153, 0.1);
+    --ring-bg: #fce7f3;
+}
+
 /* LIGHT THEME */
 [data-theme="light"] {
     --bg-deep: #f1f5f9;
@@ -135,6 +158,7 @@ body {
 /* Adjust for other themes */
 [data-theme="twilight"] .top-sticky-container { background: rgba(15, 23, 42, 0.8); }
 [data-theme="light"] .top-sticky-container { background: rgba(241, 245, 249, 0.8); }
+[data-theme="barbie"] .top-sticky-container { background: rgba(255, 240, 245, 0.85); }
 
 /* ========== HEADER ========== */
 header {
@@ -914,10 +938,17 @@ input::placeholder, textarea::placeholder {
     background: var(--bg-card-hover);
     color: var(--text);
 }
-.water-profile-btn.active {
-    background: var(--primary);
+.water-profile-btn[data-water-profile="Pipe"].active {
+    background: #3b82f6;
     color: white;
-    border-color: var(--primary);
+    border-color: #3b82f6;
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.4);
+}
+.water-profile-btn[data-water-profile="Tati"].active {
+    background: #ec4899;
+    color: white;
+    border-color: #ec4899;
+    box-shadow: 0 0 14px rgba(236, 72, 153, 0.4);
 }
 
 .btn-water {
@@ -1086,10 +1117,375 @@ input::placeholder, textarea::placeholder {
   margin-right: 0.3rem;
 }
 
-@media (max-width: 600px) {
-    .stats-grid { grid-template-columns: 1fr 1fr; }
-    .timer-display { font-size: 3rem; }
-    .modal-content { padding: 1.5rem; }
+/* ========== MOBILE RESPONSIVE ========== */
+@media (max-width: 768px) {
+    #app {
+        padding: 0.75rem;
+        max-width: 100%;
+    }
+
+    /* Header */
+    header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .logo {
+        font-size: 1.1rem;
+    }
+    .header-right {
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+    .streak-badge, .status-badge {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.5rem;
+    }
+    .theme-switcher button {
+        width: 26px;
+        height: 26px;
+        font-size: 0.85rem;
+    }
+
+    /* Tab nav - scrollable */
+    .tab-nav {
+        gap: 0.15rem;
+        padding: 0.2rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .tab-btn {
+        font-size: 0.72rem;
+        padding: 0.5rem 0.45rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+        gap: 0.2rem;
+    }
+    .tab-btn svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    /* Focus view - stack vertically */
+    #view-focus.active {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Timer */
+    .timer-container {
+        width: 220px;
+        height: 220px;
+    }
+    .timer-display {
+        font-size: 2.8rem;
+    }
+    .progress-ring {
+        width: 220px;
+        height: 220px;
+    }
+    .timer-controls {
+        gap: 0.5rem;
+    }
+    .timer-controls button {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    .mode-btn {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .active-task-container {
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
+    }
+
+    /* Water tracker */
+    .water-tracker-container {
+        max-width: 100%;
+        padding: 0.75rem;
+    }
+    .water-actions {
+        flex-wrap: wrap;
+    }
+    .btn-water {
+        font-size: 0.7rem;
+        padding: 0.35rem 0.55rem;
+    }
+
+    /* Tasks section */
+    .task-card {
+        padding: 0.75rem;
+    }
+    .task-card h4 {
+        font-size: 0.85rem;
+        flex-wrap: wrap;
+    }
+    .action-btns {
+        gap: 0.1rem;
+    }
+    .btn-mini svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Quick actions toolbar */
+    .quick-actions button {
+        font-size: 0.72rem;
+        padding: 0.3rem;
+    }
+
+    /* Filters */
+    .assignee-filters, .energy-filters {
+        gap: 0.3rem;
+    }
+    .assignee-filter, .energy-filter {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+
+    /* Progress dashboard */
+    .progress-dashboard {
+        padding: 0.8rem;
+    }
+
+    /* Modals */
+    .modal {
+        padding: 0.5rem;
+        align-items: flex-start;
+    }
+    .modal-content {
+        padding: 1.25rem;
+        max-width: 100%;
+        max-height: 85vh;
+        border-radius: 0.75rem;
+    }
+    .modal-lg, .journal-modal-content {
+        max-width: 100% !important;
+    }
+    .modal-sm {
+        max-width: 95%;
+    }
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .modal-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Journal modal */
+    .journal-modal-content {
+        padding: 1.25rem;
+    }
+    #journal-modal .modal-content h2 {
+        font-size: 1rem;
+    }
+
+    /* Task modal grid */
+    #task-modal [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Stats */
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    .stat-card {
+        padding: 0.75rem;
+    }
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    .stat-label {
+        font-size: 0.65rem;
+    }
+
+    /* Couple stats */
+    .couple-cards {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem;
+    }
+    .couple-vs {
+        transform: rotate(90deg);
+        padding: 0.2rem 0.6rem;
+    }
+    .couple-card {
+        padding: 0.75rem;
+    }
+
+    /* Vault / Cerebro */
+    .vault-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    #view-vault {
+        max-width: 100%;
+    }
+
+    /* Axon Cards */
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    .cards-dashboard {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    #view-cards {
+        max-width: 100%;
+    }
+    .cards-filter-bar {
+        gap: 0.3rem;
+    }
+    .filter-chip {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.7rem;
+    }
+    .flashcard-container {
+        height: 220px;
+        margin: 1rem 0;
+    }
+    .flashcard-front, .flashcard-back {
+        font-size: 1rem;
+        padding: 1rem;
+    }
+
+    /* Planner */
+    .week-grid {
+        gap: 0.5rem;
+    }
+    .day-column {
+        min-width: 250px;
+        padding: 0.75rem;
+    }
+    .plan-block {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.5rem;
+    }
+
+    /* Inbox */
+    #view-inbox {
+        max-width: 100%;
+    }
+    .inbox-item {
+        padding: 0.75rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    /* Chart */
+    .weekly-chart {
+        height: 80px;
+        gap: 0.3rem;
+    }
+    .journal-metrics-grid {
+        gap: 0.5rem;
+    }
+    .metric-day-column {
+        min-width: 45px;
+    }
+    .metric-bar-stack {
+        height: 80px;
+        width: 18px;
+    }
+
+    /* SOS overlay */
+    .sos-content h1 {
+        font-size: 1.8rem;
+    }
+    .sos-timer-display {
+        font-size: 5rem;
+    }
+
+    /* FAB */
+    .fab-container {
+        bottom: 1rem;
+        right: 1rem;
+        gap: 0.8rem;
+    }
+    .fab {
+        width: 50px;
+        height: 50px;
+        border-radius: 25px;
+    }
+    .fab svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* Quick capture bar */
+    .quick-capture-bar {
+        width: 95%;
+        bottom: 1rem;
+    }
+
+    /* Study modal */
+    .study-actions {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    .btn-srs {
+        padding: 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    /* Category radios */
+    #task-modal [style*="grid-template-columns:1fr 1fr"] {
+        flex-direction: column;
+    }
+
+    /* Collapsible categories */
+    .category-group summary {
+        font-size: 0.85rem;
+        padding: 0.7rem 1rem;
+    }
+    .task-list-inner {
+        padding: 0 0.25rem 0.25rem;
+    }
+
+    /* Recents */
+    .session-item {
+        flex-direction: column;
+        gap: 0.3rem;
+        align-items: flex-start;
+    }
+}
+
+/* Small phones */
+@media (max-width: 400px) {
+    .tab-btn {
+        font-size: 0.65rem;
+        padding: 0.4rem 0.3rem;
+    }
+    .timer-container {
+        width: 180px;
+        height: 180px;
+    }
+    .timer-display {
+        font-size: 2.2rem;
+    }
+    .progress-ring {
+        width: 180px;
+        height: 180px;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .cards-dashboard {
+        grid-template-columns: 1fr;
+    }
+    .water-actions {
+        justify-content: center;
+    }
+    .fab {
+        width: 44px;
+        height: 44px;
+        border-radius: 22px;
+    }
 }
 
 /* ========== IMMERSIVE MODE ========== */
@@ -1418,6 +1814,98 @@ body.immersive-mode .active-task-container {
 .progress-message strong {
     color: var(--success);
     font-style: normal;
+}
+
+/* ========== STUDY DASHBOARD ========== */
+.study-dashboard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+.level-summary {
+    display: flex;
+    gap: 0.75rem;
+    margin: 0.75rem 0;
+    flex-wrap: wrap;
+}
+.level-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    flex: 1;
+    text-align: center;
+    min-width: 100px;
+}
+.level-badge.level-mastered { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: var(--success); }
+.level-badge.level-progress { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--warning); }
+.level-badge.level-weak     { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: var(--danger); }
+
+.category-progress-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+.category-progress-item { display: flex; flex-direction: column; gap: 0.25rem; }
+.category-progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-dim); }
+
+/* Tab badge */
+.tab-badge {
+    background: var(--danger);
+    color: white;
+    font-size: 0.6rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 10px;
+    font-weight: 700;
+    vertical-align: middle;
+    min-width: 16px;
+    text-align: center;
+}
+
+/* XP Widget */
+.xp-widget {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.xp-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+.xp-total {
+    margin-left: auto;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 0.9rem;
+}
+
+/* Session mode buttons */
+.btn-session-mode {
+    width: 100%;
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+.btn-session-mode:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Card level indicator in study modal */
+#study-card-level {
+    font-weight: 600;
 }
 
 /* ========== INTERROGATORIO AXON ========== */
