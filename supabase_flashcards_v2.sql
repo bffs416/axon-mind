@@ -42,5 +42,11 @@ CREATE INDEX IF NOT EXISTS idx_user_progress_profile ON public.user_progress(pro
 ALTER TABLE public.study_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Allow all for anon" ON public.study_sessions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "Allow all for anon" ON public.user_progress FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all for anon' AND tablename = 'study_sessions') THEN
+    CREATE POLICY "Allow all for anon" ON public.study_sessions FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all for anon' AND tablename = 'user_progress') THEN
+    CREATE POLICY "Allow all for anon" ON public.user_progress FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
