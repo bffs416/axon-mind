@@ -1,15 +1,42 @@
 -- ============================================================
--- AXON CARDS V2: SRS Migration
+-- AXON CARDS V2: Crear tablas base + columnas SRS
 -- Ejecutar en Supabase SQL Editor
 -- ============================================================
 
--- 1. Agregar columnas SRS a la tabla existente
+-- 0. Crear tabla flashcards (si no existe)
+CREATE TABLE IF NOT EXISTS public.flashcards (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    front TEXT NOT NULL,
+    back TEXT NOT NULL,
+    category TEXT DEFAULT 'General',
+    next_review TIMESTAMPTZ DEFAULT NOW(),
+    last_interval INTEGER DEFAULT 0,
+    srs_level INTEGER DEFAULT 0,
+    reviews_count INTEGER DEFAULT 0,
+    last_review TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 0b. Si la tabla ya existía sin columnas SRS, agregarlas
 ALTER TABLE public.flashcards
-  ADD COLUMN IF NOT EXISTS srs_level INTEGER DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS reviews_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS srs_level INTEGER DEFAULT 0;
+ALTER TABLE public.flashcards
+  ADD COLUMN IF NOT EXISTS reviews_count INTEGER DEFAULT 0;
+ALTER TABLE public.flashcards
   ADD COLUMN IF NOT EXISTS last_review TIMESTAMPTZ;
 
--- 2. Tabla de sesiones de estudio (para XP y rachas)
+CREATE INDEX IF NOT EXISTS idx_flashcards_category ON public.flashcards(category);
+CREATE INDEX IF NOT EXISTS idx_flashcards_next_review ON public.flashcards(next_review);
+CREATE INDEX IF NOT EXISTS idx_flashcards_srs_level ON public.flashcards(srs_level);
+
+ALTER TABLE public.flashcards ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all for anon' AND tablename = 'flashcards') THEN
+    CREATE POLICY "Allow all for anon" ON public.flashcards FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- 1. Tabla de sesiones de estudio (para XP y rachas)
 CREATE TABLE IF NOT EXISTS public.study_sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   profile TEXT DEFAULT 'Pipe',
