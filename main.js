@@ -360,7 +360,8 @@ window.syncAllToCalendar = async () => {
           status: 'scheduled',
           startTime: startDate.toISOString(),
           endTime: endDate.toISOString(),
-          calendarId: calendarId
+          calendarId: calendarId,
+          isRoutine: block.isRoutine || false
         })
       });
 
@@ -1463,7 +1464,7 @@ let gcalViewMode = localStorage.getItem('axon_gcal_view') || 'WEEK';
 
 function buildGCalUrl() {
     const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Bogota');
-    let url = `https://calendar.google.com/calendar/embed?showTitle=0&showNav=1&showDate=1&showTabs=0&showCalendars=0&mode=${gcalViewMode}&wkst=1&bgcolor=%23ffffff&ctz=${tz}`;
+    let url = `https://calendar.google.com/calendar/embed?showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=1&showTz=0&mode=${gcalViewMode}&wkst=1&bgcolor=%23ffffff&ctz=${tz}`;
     if (gcalId1) url += `&src=${encodeURIComponent(gcalId1)}&color=%234285F4`;
     if (gcalId2) url += `&src=${encodeURIComponent(gcalId2)}&color=%23E67C73`;
     if (gcalId3) url += `&src=${encodeURIComponent(gcalId3)}&color=%237986CB`;
