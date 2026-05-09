@@ -312,6 +312,71 @@ async function syncCalendar(status, startTime = null, endTime = null) {
   } catch(e) { calStatus.textContent = 'Error'; }
 }
 
+// Sync ALL plan blocks to Google Calendar via n8n
+window.syncAllToCalendar = async () => {
+  const days = getWeekDays();
+  const allBlocks = [];
+
+  days.forEach(d => {
+    const dateStr = d.toISOString().slice(0, 10);
+    const routineBlocks = getRoutineBlocksForDay(d);
+    const workBlocks = weekPlan.filter(b => b.day === dateStr);
+    [...routineBlocks, ...workBlocks].forEach(b => {
+      allBlocks.push({
+        day: dateStr,
+        time: b.time,
+        title: b.taskTitle,
+        duration: b.duration || 30,
+        isRoutine: b.isRoutine || false
+      });
+    });
+  });
+
+  if (allBlocks.length === 0) {
+    showToast('⚠️ No hay bloques para sincronizar. Agrega bloques en la semana.');
+    return;
+  }
+
+  calStatus.textContent = 'Syncing all...';
+  showToast(`⏳ Sincronizando ${allBlocks.length} bloques...`);
+
+  let synced = 0;
+  for (const block of allBlocks) {
+    try {
+      const url = new URL(N8N_URL);
+      const startDate = new Date(block.day + 'T' + block.time + ':00');
+      const endDate = new Date(startDate.getTime() + (block.duration || 30) * 60000);
+      url.searchParams.append('startTime', startDate.toISOString());
+      url.searchParams.append('endTime', endDate.toISOString());
+      url.searchParams.append('taskId', block.title);
+
+      await fetch(url.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: block.title,
+          status: 'scheduled',
+          startTime: startDate.toISOString(),
+          endTime: endDate.toISOString()
+        })
+      });
+
+      // Mark as synced
+      const idx = weekPlan.findIndex(b => b.day === block.day && b.taskTitle === block.title && b.time === block.time);
+      if (idx >= 0) weekPlan[idx].synced = true;
+
+      synced++;
+    } catch (e) {
+      console.error('Sync error for block:', block.title, e);
+    }
+  }
+
+  localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+  renderPlanner();
+  calStatus.textContent = `${synced}/${allBlocks.length} synced`;
+  showToast(`✅ ${synced} bloques sincronizados con Google Calendar`);
+};
+
 // ==================== TASKS ====================
 function staleDays(task) {
   if (!task.last_activity_at || task.status === 'done') return 0;

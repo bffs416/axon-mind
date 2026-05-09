@@ -149,7 +149,7 @@
                         <button id="save-template-btn" class="btn-secondary" onclick="window.openSaveTemplateModal()"><i data-lucide="cloud"></i> Guardar en la Nube</button>
                         <button id="load-template-btn" class="btn-secondary" onclick="window.openLoadTemplateModal()"><i data-lucide="download-cloud"></i> Cargar Plantilla</button>
                     </div>
-                    <button id="sync-all-btn" class="btn-primary btn-sync-all" style="margin-bottom: 0.5rem;"><i data-lucide="upload-cloud"></i> Subir Todo a Calendar</button>
+                    <button id="sync-all-btn" class="btn-primary btn-sync-all" style="margin-bottom: 0.5rem;" onclick="window.syncAllToCalendar()"><i data-lucide="upload-cloud"></i> Subir Todo a Calendar</button>
                     <button id="clear-week-btn" class="btn-danger" style="background: var(--danger); width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.8rem; border-radius: var(--radius); margin-top: 0.5rem; font-weight: 600;" onclick="window.clearEntireWeek()">
                         <i data-lucide="trash-2" style="width: 18px;"></i> Limpiar Semana Completa
                     </button>
