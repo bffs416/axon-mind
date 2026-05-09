@@ -257,7 +257,10 @@ async function startTimer() {
         switchMode('pomodoro');
       }
 
-      // syncCalendar('free'); // Desactivado para no saturar el calendario
+      // Micro check-in opcional (solo en modo pomodoro, no en breaks)
+      if (currentMode === 'pomodoro') showMicroCheckin();
+
+      // syncCalendar('free');
       fetchTasks(); loadStats();
       startBtn.disabled = false; pauseBtn.disabled = true;
     }
@@ -1446,10 +1449,11 @@ function renderPlanner() {
           </div>`;
         }
 
-        blocksHtml += `<div class="plan-block ${b.isRoutine?'routine':''} ${b.synced?'synced':''}">
+        const areaClass = b.area && !b.isRoutine ? `area-${b.area.toLowerCase()}` : '';
+        blocksHtml += `<div class="plan-block ${b.isRoutine?'routine':''} ${b.synced?'synced':''} ${areaClass}">
           <div class="plan-block-info">
             <span class="plan-block-time">${format12h(b.time)}</span>
-            <span class="plan-block-title">${b.taskTitle}${b.duration ? ` (${formatDuration(b.duration)})`:''}</span>
+            <span class="plan-block-title">${b.area && !b.isRoutine ? getAreaEmoji(b.area) + ' ' : ''}${b.taskTitle}${b.duration ? ` (${formatDuration(b.duration)})`:''}</span>
           </div>
           ${b.isRoutine ? '<span class="plan-block-lock">🔒</span>' : b.synced ? '<span class="plan-block-synced-icon">✓</span>' : `<button class="plan-block-remove" onclick="window.removePlanBlock('${b.id}')">✕</button>`}
         </div>`;
@@ -1473,6 +1477,25 @@ function renderPlanner() {
     </div>`;
   }).join('');
 }
+
+let selectedPlanArea = 'Salud';
+const AREA_COLORS = {
+    Salud: { color: '#10b981', bg: 'rgba(16,185,129,0.08)', emoji: '🩺' },
+    Trabajo: { color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', emoji: '💼' },
+    Creativo: { color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', emoji: '🎨' },
+    Familia: { color: '#ec4899', bg: 'rgba(236,72,153,0.08)', emoji: '❤️' },
+    Estudio: { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', emoji: '📚' },
+    Otro: { color: '#64748b', bg: 'rgba(100,116,139,0.08)', emoji: '📌' }
+};
+function getAreaEmoji(area) { return AREA_COLORS[area]?.emoji || ''; }
+function getAreaColor(area) { return AREA_COLORS[area]?.color || 'var(--border)'; }
+function getAreaBg(area) { return AREA_COLORS[area]?.bg || 'transparent'; }
+
+window.selectPlanArea = (area, btn) => {
+    selectedPlanArea = area;
+    document.querySelectorAll('.area-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+};
 
 window.addPlanBlock = (dateStr, label) => {
   $('plan-block-day-label').textContent = label;
@@ -1510,7 +1533,7 @@ window.addPlanBlock = (dateStr, label) => {
     const title = input.value, time = $('plan-block-time').value;
     const duration = parseInt($('plan-block-duration').value) || 30;
     if(!title||!time) return;
-    weekPlan.push({ id: Date.now().toString(), day: dateStr, time, taskTitle: title, synced: false, duration });
+    weekPlan.push({ id: Date.now().toString(), day: dateStr, time, taskTitle: title, synced: false, duration, area: selectedPlanArea });
     localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
     $('plan-block-modal').style.display = 'none';
     renderPlanner();
@@ -2373,6 +2396,7 @@ async function loadStats() {
   updateStreak(completed);
   updateCoupleStats(allTasks, completed);
   renderJournalMetricsChart();
+  renderWeeklySummary();
 }
 window.loadStats = loadStats;
 
@@ -2434,6 +2458,82 @@ function renderJournalMetricsChart() {
             </div>
         </div>
     `).join('') || '<p style="text-align:center;opacity:0.5;padding:1rem;">Haz tu primer Cierre Cognitivo para ver métricas</p>';
+}
+
+function renderWeeklySummary() {
+    const container = $('weekly-summary-content');
+    if (!container) return;
+
+    const journals = JSON.parse(localStorage.getItem('axon_journals') || '[]');
+    const last7 = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - 6 + i); return d;
+    });
+
+    const dailyData = last7.map(d => {
+        const dateStr = d.toISOString().slice(0, 10);
+        const entries = journals.filter(j => j.created_at && j.created_at.startsWith(dateStr));
+        const avg = (field) => entries.length > 0
+            ? Math.round(entries.reduce((s, e) => s + (e[field] || 0), 0) / entries.length * 10) / 10 : 0;
+        // Routine completion
+        const routineState = JSON.parse(localStorage.getItem('axon_routine_state_' + dateStr) || '{}');
+        const totalRoutines = Object.keys(routineState).length;
+        const doneRoutines = Object.values(routineState).filter(v => v === true).length;
+        const routinePct = totalRoutines > 0 ? Math.round((doneRoutines / totalRoutines) * 100) : null;
+        return { dateStr, label: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()],
+            energy: avg('energy_level'), focus: avg('focus_level'), stress: avg('stress_level'),
+            routines: routinePct, entries: entries.length };
+    });
+
+    const daysWithData = dailyData.filter(d => d.entries > 0);
+    if (daysWithData.length < 2) {
+        container.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem;">Necesitas al menos 2 cierres en la semana para ver el resumen. ¡Sigue así! 🌱</p>';
+        return;
+    }
+
+    const avgEnergy = Math.round(daysWithData.reduce((s, d) => s + d.energy, 0) / daysWithData.length * 10) / 10;
+    const avgFocus = Math.round(daysWithData.reduce((s, d) => s + d.focus, 0) / daysWithData.length * 10) / 10;
+    const totalRoutineDays = dailyData.filter(d => d.routines !== null).length;
+    const avgRoutines = totalRoutineDays > 0
+        ? Math.round(dailyData.filter(d => d.routines !== null).reduce((s, d) => s + (d.routines || 0), 0) / totalRoutineDays) : 0;
+
+    // Find best day
+    let bestDay = daysWithData[0];
+    daysWithData.forEach(d => { if (d.energy > bestDay.energy) bestDay = d; });
+
+    // Area balance from weekly plan blocks
+    const today = new Date();
+    const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay() + 1);
+    const areaCount = {};
+    weekPlan.forEach(b => {
+        const blockDate = new Date(b.day + 'T12:00:00');
+        if (blockDate >= weekStart && blockDate <= today && b.area) {
+            areaCount[b.area] = (areaCount[b.area] || 0) + 1;
+        }
+    });
+    const areaEntries = Object.entries(areaCount);
+    const maxArea = areaEntries.reduce((max, [, c]) => Math.max(max, c), 1);
+
+    container.innerHTML = `
+        <div class="weekly-stats-grid">
+            <div class="weekly-stat"><span class="weekly-stat-num">${avgEnergy}</span><span class="weekly-stat-label">Energía prom.</span></div>
+            <div class="weekly-stat"><span class="weekly-stat-num">${avgFocus}</span><span class="weekly-stat-label">Enfoque prom.</span></div>
+            <div class="weekly-stat"><span class="weekly-stat-num">${avgRoutines}%</span><span class="weekly-stat-label">Rutinas</span></div>
+        </div>
+        <p style="font-size:0.8rem;color:var(--text-dim);text-align:center;margin-top:0.5rem;">
+            🌟 Tu mejor día fue <strong>${bestDay.label}</strong> (energía ${bestDay.energy})
+        </p>
+        ${areaEntries.length > 0 ? `
+        <div style="margin-top:0.8rem;">
+            <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.3rem;">⚖️ Balance de Áreas</p>
+            ${areaEntries.map(([area, count]) => `
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                    <span style="font-size:0.75rem;width:60px;">${getAreaEmoji(area)} ${area}</span>
+                    <div class="progress-bar-container" style="height:4px;flex:1;"><div class="progress-bar-fill" style="width:${(count/maxArea)*100}%;background:${getAreaColor(area)};"></div></div>
+                    <span style="font-size:0.7rem;color:var(--text-dim);">${count}</span>
+                </div>
+            `).join('')}
+        </div>` : ''}
+    `;
 }
 
 async function updateCoupleStats(tasks, completedSessions) {
@@ -2504,14 +2604,246 @@ async function updateCoupleStats(tasks, completedSessions) {
 // ==================== DIARIO DE PAREJA ====================
 let selectedMood = '😊';
 window.selectMood = (mood, btn) => {
-    document.querySelectorAll('.mood-btn').forEach(b => b.style.transform = 'scale(1)');
+    document.querySelectorAll('.mood-btn').forEach(b => { b.style.transform = 'scale(1)'; b.style.filter = 'grayscale(1)'; });
     btn.style.transform = 'scale(1.3)';
+    btn.style.filter = 'none';
     selectedMood = mood;
 };
 
+// ==================== MICRO CHECKINS ====================
+function showMicroCheckin() {
+    const toast = $('motivation-toast');
+    if (!toast || toast.classList.contains('show')) return; // Ya hay un toast activo
+
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const checkins = JSON.parse(localStorage.getItem('axon_micro_' + todayISO) || '[]');
+    if (checkins.length >= 8) return; // Máximo 8 check-ins al día
+
+    toast.innerHTML = `
+        <span style="margin-right:0.5rem;">¿Cómo vas?</span>
+        <button onclick="window.microCheckin('high'); document.getElementById('motivation-toast').classList.remove('show');" style="background:transparent;border:none;font-size:1.3rem;cursor:pointer;padding:0 0.3rem;">⚡</button>
+        <button onclick="window.microCheckin('medium'); document.getElementById('motivation-toast').classList.remove('show');" style="background:transparent;border:none;font-size:1.3rem;cursor:pointer;padding:0 0.3rem;">🔋</button>
+        <button onclick="window.microCheckin('low'); document.getElementById('motivation-toast').classList.remove('show');" style="background:transparent;border:none;font-size:1.3rem;cursor:pointer;padding:0 0.3rem;">🪫</button>
+    `;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 6000);
+}
+
+window.microCheckin = (level) => {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const checkins = JSON.parse(localStorage.getItem('axon_micro_' + todayISO) || '[]');
+    checkins.push({ level, time: new Date().toISOString() });
+    localStorage.setItem('axon_micro_' + todayISO, JSON.stringify(checkins));
+
+    const labels = { high: '⚡ Alta', medium: '🔋 Media', low: '🪫 Baja' };
+    showToast(`Registrado: ${labels[level] || level}`);
+};
+
+// ==================== MORNING CHECKIN ====================
+let morningSleepQuality = 3;
+
+window.selectSleepQuality = (quality, btn) => {
+    morningSleepQuality = parseInt(quality);
+    document.querySelectorAll('.sleep-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+};
+
+window.openMorningCheckin = () => {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const saved = JSON.parse(localStorage.getItem('axon_morning_' + todayISO));
+
+    if (saved) {
+        // Ya hizo el check-in hoy — mostrar resumen
+        $('morning-form').style.display = 'none';
+        $('morning-done').style.display = 'block';
+        if ($('morning-intention-show')) $('morning-intention-show').textContent = '"' + (saved.intention || 'Sin intención específica') + '"';
+    } else {
+        $('morning-form').style.display = 'block';
+        $('morning-done').style.display = 'none';
+        // Reset defaults
+        morningSleepQuality = 3;
+        document.querySelectorAll('.sleep-btn').forEach(b => b.classList.toggle('active', b.dataset.sleep === '3'));
+        $('morning-sleep-hours').value = 7;
+        $('morning-intention').value = '';
+        $('morning-energy').value = 3;
+    }
+    $('morning-modal').style.display = 'flex';
+};
+
+window.saveMorningCheckin = () => {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const entry = {
+        sleep_quality: morningSleepQuality,
+        hours: parseFloat($('morning-sleep-hours').value) || 7,
+        intention: $('morning-intention').value.trim(),
+        energy_start: parseInt($('morning-energy').value),
+        timestamp: new Date().toISOString()
+    };
+    localStorage.setItem('axon_morning_' + todayISO, JSON.stringify(entry));
+
+    // Show done state
+    $('morning-form').style.display = 'none';
+    $('morning-done').style.display = 'block';
+    if ($('morning-intention-show')) $('morning-intention-show').textContent = '"' + (entry.intention || 'Sin intención específica') + '"';
+    showToast('☀️ ¡Día empezado con intención!');
+};
+
+// ==================== JOURNAL STEPS NAVIGATION ====================
+window.journalGoToStep = (step) => {
+    // Update step indicators
+    document.querySelectorAll('.journal-step').forEach(el => {
+        const elStep = parseInt(el.dataset.step);
+        el.classList.remove('active');
+        if (elStep === step) el.classList.add('active');
+        else if (elStep < step) el.classList.add('done');
+        else el.classList.remove('done');
+    });
+
+    // Show/hide step content
+    for (let s = 1; s <= 3; s++) {
+        const div = document.getElementById('journal-step-' + s);
+        if (div) div.style.display = s === step ? 'block' : 'none';
+    }
+
+    // Update title
+    const titles = { 1: '🏠 Rutinas', 2: '📊 Métricas', 3: '🧠 Reflexión' };
+    const titleEl = $('journal-step-title');
+    if (titleEl) titleEl.innerHTML = '🌙 Cierre — ' + (titles[step] || '');
+
+    // On step 2: show morning comparison
+    if (step === 2) showMorningComparison();
+    // On step 3: render plan review
+    if (step === 3) renderPlanReview();
+};
+
+// Auto-populate routine checklist when opening journal
+const journalModalObserver = new MutationObserver(() => {
+    const modal = $('journal-modal');
+    if (modal && modal.style.display === 'flex') {
+        renderRoutineChecklist();
+        window.journalGoToStep(1);
+    }
+});
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = $('journal-modal');
+    if (modal) journalModalObserver.observe(modal, { attributes: true, attributeFilter: ['style'] });
+});
+
+function renderRoutineChecklist() {
+    const container = $('journal-routine-checklist');
+    if (!container) return;
+
+    const today = new Date().getDay();
+    const todayRoutines = routines.filter(r => r.days.includes(today));
+
+    if (todayRoutines.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem;">🌈 Hoy no tenías rutinas planeadas. ¡Día libre!</p>';
+        return;
+    }
+
+    // Load saved state
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const savedState = JSON.parse(localStorage.getItem('axon_routine_state_' + todayISO) || '{}');
+
+    container.innerHTML = todayRoutines.map(r => {
+        const done = savedState[r.id] === true;
+        return `<div class="routine-check-item" style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid var(--border);">
+            <input type="checkbox" id="routine-check-${r.id}" ${done ? 'checked' : ''} onchange="window.toggleRoutineCheck('${r.id}', this.checked)" style="accent-color:var(--success);width:18px;height:18px;cursor:pointer;">
+            <label for="routine-check-${r.id}" style="cursor:pointer;flex:1;font-size:0.9rem;">${r.emoji} ${r.name} <span style="font-size:0.7rem;opacity:0.5;">${format12h(r.time)} (${formatDuration(r.duration)})</span></label>
+        </div>`;
+    }).join('');
+
+    // Update streak indicator
+    const totalDone = Object.values(savedState).filter(v => v === true).length;
+    const summary = document.createElement('div');
+    summary.style.cssText = 'text-align:center;font-size:0.75rem;color:var(--text-dim);margin-top:0.5rem;';
+    summary.textContent = `${totalDone}/${todayRoutines.length} completadas`;
+    container.appendChild(summary);
+}
+
+window.toggleRoutineCheck = (routineId, checked) => {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const state = JSON.parse(localStorage.getItem('axon_routine_state_' + todayISO) || '{}');
+    state[routineId] = checked;
+    localStorage.setItem('axon_routine_state_' + todayISO, JSON.stringify(state));
+
+    // Update streaks
+    if (checked) {
+        const streaks = JSON.parse(localStorage.getItem('axon_routine_streaks') || '{}');
+        const routine = routines.find(r => r.id === routineId);
+        const todayDate = new Date().toDateString();
+        if (!streaks[routineId]) streaks[routineId] = { streak: 1, last_date: todayDate, name: routine?.name || '' };
+        else {
+            const last = new Date(streaks[routineId].last_date);
+            const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+            if (last.toDateString() === yesterday.toDateString()) streaks[routineId].streak++;
+            else if (last.toDateString() !== todayDate) streaks[routineId].streak = 1;
+            streaks[routineId].last_date = todayDate;
+        }
+        localStorage.setItem('axon_routine_streaks', JSON.stringify(streaks));
+    }
+
+    renderRoutineChecklist();
+};
+
+window.checkAllRoutines = () => {
+    const today = new Date().getDay();
+    const todayRoutines = routines.filter(r => r.days.includes(today));
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const state = JSON.parse(localStorage.getItem('axon_routine_state_' + todayISO) || '{}');
+    todayRoutines.forEach(r => { state[r.id] = true; });
+    localStorage.setItem('axon_routine_state_' + todayISO, JSON.stringify(state));
+    renderRoutineChecklist();
+    showToast('✅ ¡Todas las rutinas marcadas!');
+};
+
+function showMorningComparison() {
+    const container = $('morning-comparison');
+    if (!container) return;
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const morning = JSON.parse(localStorage.getItem('axon_morning_' + todayISO));
+    if (!morning) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    container.innerHTML = `☀️ Esta mañana: energía <strong>${'⚡'.repeat(morning.energy_start)}</strong> · sueño <strong>${morning.hours}h</strong> · intención: "<em>${morning.intention || 'ninguna'}</em>"`;
+}
+
+function renderPlanReview() {
+    const container = $('journal-plan-review');
+    if (!container) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayBlocks = weekPlan.filter(b => b.day === today);
+    const routineBlocks = getRoutineBlocksForDay(new Date());
+
+    const allBlocks = [...routineBlocks.map(r => ({ ...r, isRoutine: true })), ...todayBlocks.map(b => ({ ...b, isRoutine: false }))];
+
+    if (allBlocks.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem;">No tenías bloques planeados para hoy.</p>';
+        return;
+    }
+
+    container.innerHTML = allBlocks.map(b => `
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;font-size:0.85rem;">
+            <select onchange="window.togglePlanFollowed('${b.id}', this.value)" style="padding:0.2rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:0.75rem;">
+                <option value="">--</option>
+                <option value="done">✅</option>
+                <option value="skip">❌</option>
+                <option value="changed">🔄</option>
+            </select>
+            <span style="flex:1;">${b.emoji || ''} ${b.taskTitle} <span style="opacity:0.4;font-size:0.7rem;">${format12h(b.time)}</span></span>
+            ${b.isRoutine ? '<span style="font-size:0.65rem;opacity:0.4;">🔒</span>' : ''}
+        </div>
+    `).join('');
+}
+
+window.togglePlanFollowed = (blockId, status) => { /* lightweeight - stored for future weekly summary */ };
+
 window.saveDailyJournal = async () => {
   const profile = $('journal-profile').value;
-  const wins = $('journal-wins').value.trim();
+  const grat1 = $('journal-grat1')?.value.trim() || '';
+  const grat2 = $('journal-grat2')?.value.trim() || '';
+  const grat3 = $('journal-grat3')?.value.trim() || '';
+  const wins = [grat1, grat2, grat3].filter(Boolean).join(' | ');
   const lesson = $('journal-lesson').value.trim();
   const family = $('journal-family').value.trim();
   const frustrations = $('journal-frustrations').value.trim();
@@ -2519,17 +2851,23 @@ window.saveDailyJournal = async () => {
   const cardsStudied = parseInt($('journal-cards-studied')?.value) || 0;
   const studyTopics = $('journal-study-topics')?.value.trim() || '';
 
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const routineState = JSON.parse(localStorage.getItem('axon_routine_state_' + todayISO) || '{}');
+  const routinesCompleted = routines.filter(r => r.days.includes(new Date().getDay())).map(r => ({
+      id: r.id, name: r.name, done: routineState[r.id] === true
+  }));
+
   const entry = {
-    profile, mood: selectedMood, wins, life_lesson: lesson,
-    family_impact: family, frustrations, sleep_hours: sleep,
+    profile, mood: selectedMood, wins, gratitudes: [grat1, grat2, grat3].filter(Boolean),
+    life_lesson: lesson, family_impact: family, frustrations, sleep_hours: sleep,
     cards_studied: cardsStudied, study_topics: studyTopics,
+    routines_completed: routinesCompleted,
     energy_level: parseInt($('journal-energy').value),
     focus_level: parseInt($('journal-focus').value),
     stress_level: parseInt($('journal-stress').value),
     created_at: new Date().toISOString()
   };
 
-  // Always save locally
   const localJournals = JSON.parse(localStorage.getItem('axon_journals') || '[]');
   localJournals.push(entry);
   if (localJournals.length > 90) localJournals.splice(0, localJournals.length - 90);

@@ -36,6 +36,7 @@
                 <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards <span id="cards-pending-badge" class="tab-badge" style="display:none;">0</span></button>
                 <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
                 <div style="flex:1"></div>
+                <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
             </nav>
         </div>
@@ -165,90 +166,167 @@
                 <div id="week-grid" class="week-grid"></div>
             </section>
 
-            <!-- ========== MODAL DIARIO (CIERRE COGNITIVO) ========== -->
+            <!-- ========== MODAL APERTURA MATUTINA ========== -->
+    <div id="morning-modal" class="modal">
+        <div class="modal-content" style="max-width:550px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                <h2>☀️ Buenos Días</h2>
+                <button class="btn-icon" onclick="window.closeModal('morning-modal')"><i data-lucide="x"></i></button>
+            </div>
+            <div id="morning-form">
+                <div class="form-group">
+                    <label>🛌 ¿Cómo dormiste?</label>
+                    <div id="sleep-quality-selector" style="display:flex; gap:0.5rem; justify-content:center; margin:0.5rem 0;">
+                        <button class="sleep-btn" data-sleep="1" onclick="window.selectSleepQuality(1, this)">😴</button>
+                        <button class="sleep-btn" data-sleep="2" onclick="window.selectSleepQuality(2, this)">💤</button>
+                        <button class="sleep-btn active" data-sleep="3" onclick="window.selectSleepQuality(3, this)">😐</button>
+                        <button class="sleep-btn" data-sleep="4" onclick="window.selectSleepQuality(4, this)">👍</button>
+                        <button class="sleep-btn" data-sleep="5" onclick="window.selectSleepQuality(5, this)">🌟</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+                        <input type="number" id="morning-sleep-hours" value="7" min="0" max="24" step="0.5" style="width:70px; text-align:center; padding:0.4rem; background:var(--bg-deep); border:1px solid var(--border); border-radius:6px; color:var(--text);">
+                        <span style="font-size:0.8rem; color:var(--text-dim);">horas</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🎯 Intención del día</label>
+                    <input type="text" id="morning-intention" placeholder="Hoy quiero..." style="width:100%; padding:0.7rem; background:var(--bg-deep); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font);">
+                </div>
+
+                <div class="form-group">
+                    <label>⚡ Energía al despertar</label>
+                    <input type="range" id="morning-energy" min="1" max="5" value="3" class="journal-slider">
+                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+                </div>
+
+                <button class="btn-primary" style="width:100%; padding:1rem; font-size:1.1rem;" onclick="window.saveMorningCheckin()">✨ Empezar el Día</button>
+                <p id="morning-saved-msg" style="display:none; text-align:center; color:var(--success); margin-top:0.5rem;">✅ Ya registraste tu apertura hoy</p>
+            </div>
+            <div id="morning-done" style="display:none; text-align:center;">
+                <div style="font-size:3rem; margin-bottom:1rem;">☀️</div>
+                <p style="color:var(--text-dim);">Ya empezaste tu día con intención.</p>
+                <p id="morning-intention-show" style="font-weight:600; color:var(--primary); font-size:1.1rem;"></p>
+                <button class="btn-ghost" style="margin-top:1rem;" onclick="window.closeModal('morning-modal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL DIARIO (CIERRE COGNITIVO) ========== -->
     <div id="journal-modal" class="modal journal-modal">
         <div class="modal-content journal-modal-content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-                <h2>📔 Diario de Pareja</h2>
-                <button class="btn-icon" onclick="document.getElementById('journal-modal').style.display='none'"><i data-lucide="x"></i></button>
-            </div>
-            
-            <div class="form-group" style="background: var(--bg-card); padding: 1rem; border-radius: 8px;">
-                <label>¿Quién escribe hoy?</label>
-                <select id="journal-profile" class="plan-select" style="margin-top: 0.5rem; width: 100%;">
-                    <option value="Tati">👱‍♀️ Tati</option>
-                    <option value="Pipe">👨 Pipe</option>
-                </select>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+                <h2 id="journal-step-title">🌙 Cierre Cognitivo</h2>
+                <button class="btn-icon" onclick="window.closeModal('journal-modal')"><i data-lucide="x"></i></button>
             </div>
 
-            <h4 style="margin: 1.5rem 0 1rem; color: var(--primary);">Métricas del Día (1 al 5)</h4>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-                <div class="form-group">
-                    <label>🔋 Energía Física</label>
-                    <input type="range" id="journal-energy" min="1" max="5" value="3" class="journal-slider">
-                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1 (Agotado)</span><span>5 (A tope)</span></div>
+            <!-- Step indicators -->
+            <div id="journal-steps" style="display:flex;gap:0.4rem;margin-bottom:1.2rem">
+                <div class="journal-step active" data-step="1">🏠 Rutinas</div>
+                <div class="journal-step" data-step="2">📊 Métricas</div>
+                <div class="journal-step" data-step="3">🧠 Reflexión</div>
+            </div>
+
+            <!-- Paso 1: Rutinas + Perfil -->
+            <div id="journal-step-1">
+                <div class="form-group" style="background: var(--bg-card); padding: 0.8rem; border-radius: 8px;">
+                    <label>¿Quién escribe hoy?</label>
+                    <select id="journal-profile" class="plan-select" style="margin-top: 0.3rem; width: 100%;">
+                        <option value="Tati">👱‍♀️ Tati</option>
+                        <option value="Pipe">👨 Pipe</option>
+                    </select>
+                </div>
+                <h4 style="margin: 1rem 0 0.5rem;">🔒 Rutinas de Hoy</h4>
+                <div id="journal-routine-checklist" style="margin-bottom:1rem;">
+                    <p style="color:var(--text-dim);font-size:0.8rem;">Cargando rutinas...</p>
+                </div>
+                <button class="btn-ghost" onclick="window.checkAllRoutines()" style="font-size:0.75rem; width:100%;">✅ Marcar todas</button>
+                <button class="btn-primary" onclick="window.journalGoToStep(2)" style="width:100%; margin-top:0.8rem;">Siguiente →</button>
+            </div>
+
+            <!-- Paso 2: Métricas -->
+            <div id="journal-step-2" style="display:none;">
+                <div id="morning-comparison" style="background:rgba(14,165,233,0.08); padding:0.6rem 1rem; border-radius:8px; margin-bottom:1rem; font-size:0.8rem; display:none;"></div>
+                <h4 style="margin: 0 0 0.8rem 0; color: var(--primary);">Métricas del Día (1 al 5)</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>🔋 Energía Física</label>
+                        <input type="range" id="journal-energy" min="1" max="5" value="3" class="journal-slider">
+                        <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);"><span>1</span><span>5</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label>🧠 Enfoque</label>
+                        <input type="range" id="journal-focus" min="1" max="5" value="3" class="journal-slider">
+                        <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);"><span>1</span><span>5</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label>🌪️ Estrés</label>
+                        <input type="range" id="journal-stress" min="1" max="5" value="3" class="journal-slider">
+                        <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);"><span>1</span><span>5</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label>🛌 Sueño (horas)</label>
+                        <input type="number" id="journal-sleep" min="0" max="24" step="0.5" value="7" style="width:100%;padding:0.4rem;background:var(--bg-card-hover);border:1px solid var(--border);border-radius:4px;color:var(--text);">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>🧠 Enfoque/Claridad</label>
-                    <input type="range" id="journal-focus" min="1" max="5" value="3" class="journal-slider">
-                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1 (Niebla)</span><span>5 (Láser)</span></div>
+                    <label>😊 Emoción principal</label>
+                    <div class="mood-selector" style="display:flex;gap:0.8rem;justify-content:center;margin:0.5rem 0;">
+                        <button class="mood-btn" data-mood="😊" onclick="window.selectMood('😊', this)">😊</button>
+                        <button class="mood-btn" data-mood="😐" onclick="window.selectMood('😐', this)">😐</button>
+                        <button class="mood-btn" data-mood="😔" onclick="window.selectMood('😔', this)">😔</button>
+                        <button class="mood-btn" data-mood="😤" onclick="window.selectMood('😤', this)">😤</button>
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="btn-ghost" onclick="window.journalGoToStep(1)" style="flex:1;">← Atrás</button>
+                    <button class="btn-primary" onclick="window.journalGoToStep(3)" style="flex:2;">Siguiente →</button>
+                </div>
+            </div>
+
+            <!-- Paso 3: Reflexión -->
+            <div id="journal-step-3" style="display:none;">
+                <div class="form-group">
+                    <label>🏆 3 cosas que agradezco hoy</label>
+                    <input type="text" id="journal-grat1" placeholder="1. ..." style="width:100%;margin-bottom:0.3rem;padding:0.5rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+                    <input type="text" id="journal-grat2" placeholder="2. ..." style="width:100%;margin-bottom:0.3rem;padding:0.5rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+                    <input type="text" id="journal-grat3" placeholder="3. ..." style="width:100%;padding:0.5rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:6px;color:var(--text);">
                 </div>
                 <div class="form-group">
-                    <label>🌪️ Nivel de Estrés</label>
-                    <input type="range" id="journal-stress" min="1" max="5" value="3" class="journal-slider">
-                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-dim);"><span>1 (Zen)</span><span>5 (Caos)</span></div>
+                    <label>🌱 Si vivieras hoy de nuevo, ¿qué harías diferente?</label>
+                    <textarea id="journal-lesson" placeholder="Aprendizaje del día..." rows="2"></textarea>
                 </div>
                 <div class="form-group">
-    <label>🛌 Horas de Sueño</label>
-    <input type="number" id="journal-sleep" min="0" max="24" step="0.5" value="7" style="width:100%; padding:0.5rem; background:var(--bg-card-hover); border:1px solid var(--border); border-radius:4px; color:var(--text);">
-</div>
+                    <label>🗑️ ¿Qué necesitas soltar?</label>
+                    <textarea id="journal-frustrations" placeholder="Escríbelo y déjalo ir..." rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>❤️ ¿Cómo impactaste a tu familia/mundo hoy?</label>
+                    <textarea id="journal-family" placeholder="Una sonrisa, un favor..." rows="2"></textarea>
                 </div>
 
-            <div class="form-group">
-                <label>¿Emoción principal?</label>
-                <div class="mood-selector" style="display:flex; gap:1rem; justify-content:center; margin:1rem 0;">
-                    <button class="mood-btn" data-mood="happy" style="font-size:2rem; background:none; border:none; cursor:pointer;">😊</button>
-                    <button class="mood-btn" data-mood="neutral" style="font-size:2rem; background:none; border:none; cursor:pointer;">😐</button>
-                    <button class="mood-btn" data-mood="sad" style="font-size:2rem; background:none; border:none; cursor:pointer;">😔</button>
-                    <button class="mood-btn" data-mood="angry" style="font-size:2rem; background:none; border:none; cursor:pointer;">😤</button>
+                <!-- Plan vs Realidad -->
+                <h4 style="margin: 1rem 0 0.5rem; color: var(--accent);">📅 ¿Seguiste tu plan hoy?</h4>
+                <div id="journal-plan-review" style="margin-bottom:1rem;">
+                    <p style="color:var(--text-dim);font-size:0.8rem;">Cargando plan...</p>
+                </div>
+
+                <!-- Estudio -->
+                <h4 style="margin: 1rem 0 0.5rem; color: var(--primary);">📚 Estudio</h4>
+                <div class="form-group">
+                    <label>¿Tarjetas estudiadas hoy?</label>
+                    <input type="number" id="journal-cards-studied" min="0" value="0" style="width:100%;padding:0.4rem;background:var(--bg-card-hover);border:1px solid var(--border);border-radius:4px;color:var(--text);">
+                </div>
+                <div class="form-group">
+                    <label>¿Temas?</label>
+                    <input type="text" id="journal-study-topics" placeholder="Guitarra, Japonés..." style="width:100%;padding:0.4rem;background:var(--bg-card-hover);border:1px solid var(--border);border-radius:4px;color:var(--text);">
+                </div>
+
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="btn-ghost" onclick="window.journalGoToStep(2)" style="flex:1;">← Atrás</button>
+                    <button class="btn-primary" onclick="saveDailyJournal()" style="flex:3;">✅ Guardar Cierre</button>
                 </div>
             </div>
-
-            <h4 style="margin: 1.5rem 0 1rem; color: var(--primary);">Reflexión Profunda</h4>
-
-            <div class="form-group">
-                <label>🏆 Gratitud: ¿De qué te sientes orgulloso hoy?</label>
-                <textarea id="journal-wins" placeholder="Pequeños o grandes logros..." rows="2"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label>❤️ Propósito: ¿Cómo impactaste a la familia o al mundo hoy?</label>
-                <textarea id="journal-family" placeholder="Una sonrisa, un favor, construir algo..." rows="2"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label>🌱 Crecimiento: Si vivieras hoy de nuevo, ¿qué harías diferente?</label>
-                <textarea id="journal-lesson" placeholder="Aprendizaje del día..." rows="2"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label>🗑️ Descarga Mental: ¿Qué te robó la paz o qué necesitas soltar?</label>
-                <textarea id="journal-frustrations" placeholder="Escríbelo aquí para que no te acompañe a dormir..." rows="3"></textarea>
-            </div>
-
-            <h4 style="margin: 1.5rem 0 1rem; color: var(--accent);">📚 Estudio con Axon Cards</h4>
-
-            <div class="form-group">
-                <label>¿Estudiaste tarjetas hoy? ¿Cuántas?</label>
-                <input type="number" id="journal-cards-studied" min="0" value="0" style="width:100%; padding:0.5rem; background:var(--bg-card-hover); border:1px solid var(--border); border-radius:4px; color:var(--text);">
-            </div>
-            <div class="form-group">
-                <label>¿Qué temas estudiaste?</label>
-                <input type="text" id="journal-study-topics" placeholder="Ej: Guitarra, Japonés, Neurociencia..." style="width:100%; padding:0.5rem; background:var(--bg-card-hover); border:1px solid var(--border); border-radius:4px; color:var(--text);">
-            </div>
-
-            <button class="btn-primary" style="width:100%; padding: 1rem; font-size: 1.1rem; margin-top: 1rem;" onclick="saveDailyJournal()">✅ Guardar Cierre Cognitivo</button>
         </div>
     </div>
 
@@ -359,6 +437,13 @@
                             <div class="couple-stat"><span class="couple-icon">💧</span> <span id="tati-water">0</span>L agua</div>
                             <div class="couple-fire" id="tati-fire" style="display:none;">🔥 ¡En llamas!</div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="weekly-summary-section" id="weekly-summary">
+                    <h3>📅 Resumen Semanal</h3>
+                    <div id="weekly-summary-content">
+                        <p style="color:var(--text-dim);font-size:0.8rem;">Completa tus cierres cognitivos durante la semana para ver tu resumen.</p>
                     </div>
                 </div>
 
@@ -721,6 +806,16 @@
                         <label class="input-label" style="font-size:0.8rem">Duración (min)</label>
                         <input type="number" id="plan-block-duration" class="plan-select" value="30" min="5" style="width:100%">
                     </div>
+                </div>
+
+                <label class="input-label" style="font-size:0.8rem">Área de vida</label>
+                <div id="plan-area-selector" style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.8rem;">
+                    <button class="area-pill area-salud active" onclick="window.selectPlanArea('Salud', this)">🩺 Salud</button>
+                    <button class="area-pill area-trabajo" onclick="window.selectPlanArea('Trabajo', this)">💼 Trabajo</button>
+                    <button class="area-pill area-creativo" onclick="window.selectPlanArea('Creativo', this)">🎨 Creativo</button>
+                    <button class="area-pill area-familia" onclick="window.selectPlanArea('Familia', this)">❤️ Familia</button>
+                    <button class="area-pill area-estudio" onclick="window.selectPlanArea('Estudio', this)">📚 Estudio</button>
+                    <button class="area-pill area-otro" onclick="window.selectPlanArea('Otro', this)">📌 Otro</button>
                 </div>
 
                 <div class="modal-actions">

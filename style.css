@@ -674,6 +674,30 @@ button { cursor: pointer; border: none; font-family: var(--font); }
 .plan-block.free .plan-block-time { color: var(--text-dim); font-size: 0.7rem; }
 .plan-block.free .plan-block-title { color: var(--text-muted); font-style: italic; font-size: 0.75rem; }
 
+/* Area pills */
+.area-pill {
+    padding: 0.3rem 0.6rem; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface-light); color: var(--text-dim); font-size: 0.7rem;
+    cursor: pointer; transition: all 0.2s; font-family: var(--font); font-weight: 500;
+}
+.area-pill:hover { background: var(--bg-card-hover); transform: translateY(-1px); }
+.area-pill.active { color: white; border-color: transparent; }
+
+.area-pill.area-salud.active { background: #10b981; }
+.area-pill.area-trabajo.active { background: #3b82f6; }
+.area-pill.area-creativo.active { background: #8b5cf6; }
+.area-pill.area-familia.active { background: #ec4899; }
+.area-pill.area-estudio.active { background: #f59e0b; }
+.area-pill.area-otro.active { background: #64748b; }
+
+/* Area-colored plan blocks */
+.plan-block.area-salud { border-left: 3px solid #10b981; background: rgba(16,185,129,0.06); }
+.plan-block.area-trabajo { border-left: 3px solid #3b82f6; background: rgba(59,130,246,0.06); }
+.plan-block.area-creativo { border-left: 3px solid #8b5cf6; background: rgba(139,92,246,0.06); }
+.plan-block.area-familia { border-left: 3px solid #ec4899; background: rgba(236,72,153,0.06); }
+.plan-block.area-estudio { border-left: 3px solid #f59e0b; background: rgba(245,158,11,0.06); }
+.plan-block.area-otro { border-left: 3px solid #64748b; background: rgba(100,116,139,0.06); }
+
 /* ========== STATS ========== */
 #view-stats { max-width: 650px; margin: 0 auto; }
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
@@ -1658,6 +1682,42 @@ body.immersive-mode .active-task-container {
     accent-color: var(--primary);
 }
 
+/* Sleep quality buttons */
+.sleep-btn {
+    font-size: 1.8rem;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    padding: 0.3rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.4;
+    filter: grayscale(30%);
+}
+.sleep-btn:hover { opacity: 0.7; transform: scale(1.1); }
+.sleep-btn.active { opacity: 1; border-color: var(--primary); filter: none; transform: scale(1.15); }
+
+/* Journal steps */
+.journal-step {
+    flex: 1; text-align: center; padding: 0.5rem 0.4rem;
+    border-radius: 8px; font-size: 0.75rem; background: var(--bg-card);
+    color: var(--text-dim); border: 2px solid var(--border); transition: all 0.3s;
+    font-weight: 500;
+}
+.journal-step.active {
+    background: var(--primary); color: white; border-color: var(--primary); font-weight: 700;
+}
+.journal-step.done {
+    background: rgba(16,185,129,0.1); color: var(--success); border-color: var(--success);
+}
+
+.routine-check-item:hover { background: var(--bg-card-hover); border-radius: 6px; padding-left: 0.5rem !important; }
+
+/* Morning comparison */
+#morning-comparison {
+    color: var(--accent);
+}
+
 /* Journal modal refinements */
 .journal-modal {
     background: rgba(0, 0, 0, 0.85) !important;
@@ -2094,6 +2154,22 @@ body.immersive-mode .active-task-container {
     border-color: var(--primary);
     box-shadow: 0 4px 14px var(--primary-glow);
 }
+
+/* Weekly Summary */
+.weekly-summary-section {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem;
+}
+.weekly-summary-section h3 {
+    font-size: 0.9rem; margin-bottom: 0.8rem; color: var(--primary);
+}
+.weekly-stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+.weekly-stat {
+    text-align: center; padding: 0.6rem; background: var(--surface-light);
+    border-radius: 8px;
+}
+.weekly-stat-num { display: block; font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+.weekly-stat-label { display: block; font-size: 0.65rem; color: var(--text-dim); margin-top: 0.15rem; }
 
 /* ========== COUPLE STATS (MARCADOR DE LA PAREJA) ========== */
 .couple-stats-container {
