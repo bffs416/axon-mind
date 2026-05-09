@@ -2577,30 +2577,63 @@ window.answerCard = async (difficulty) => {
     currentCardIndex++;
     renderStudyCard();
 };
-window.openVaultModal = () => {
-  $('vault-title').value = '';
-  $('vault-content').value = '';
-  $('vault-image').value = '';
-  vaultModal.style.display = 'flex';
+window.openVaultModal = (docId = null) => {
+  const modal = $('vault-modal');
+  const titleEl = $('vault-modal-title');
+  const titleInput = $('vault-title');
+  const contentInput = $('vault-content');
+  const imageInput = $('vault-image');
+  const editId = $('edit-vault-id');
+
+  if (docId) {
+    const doc = vaultDocs.find(d => String(d.id) === String(docId));
+    if (!doc) return;
+    titleEl.textContent = '📝 Editar Documento';
+    titleInput.value = doc.title || '';
+    contentInput.value = doc.content || '';
+    imageInput.value = doc.cover_image || '';
+    editId.value = docId;
+  } else {
+    titleEl.textContent = '🧠 Nuevo Documento';
+    titleInput.value = '';
+    contentInput.value = '';
+    imageInput.value = '';
+    editId.value = '';
+  }
+  modal.style.display = 'flex';
 };
 
 window.closeVaultModal = () => vaultModal.style.display = 'none';
 
 window.saveVaultDoc = async () => {
+  const editId = $('edit-vault-id')?.value || '';
   const title = capitalizeFirstLetter($('vault-title').value);
   const content = $('vault-content').value;
   const image = $('vault-image').value;
   if (!title) return alert("El título es obligatorio");
-  
+
+  const docData = { title, content, cover_image: image, area: 'General' };
+
   try {
-    const { error } = await supabase.from('vault_docs').insert([{ title, content, cover_image: image, area: 'General' }]);
-    if (error) throw error;
-    showToast("Documento guardado en el Cerebro 🧠 (Nube)");
+    if (editId) {
+      const { error } = await supabase.from('vault_docs').update(docData).eq('id', editId);
+      if (error) throw error;
+      showToast("Documento actualizado 🧠 (Nube)");
+    } else {
+      const { error } = await supabase.from('vault_docs').insert([docData]);
+      if (error) throw error;
+      showToast("Documento guardado en el Cerebro 🧠 (Nube)");
+    }
   } catch (e) {
     console.warn("Error Supabase Vault:", e);
-    vaultDocs.unshift({ id: Date.now(), title, content, cover_image: image, created_at: new Date().toISOString() });
+    if (editId) {
+      const idx = vaultDocs.findIndex(d => String(d.id) === String(editId));
+      if (idx >= 0) vaultDocs[idx] = { ...vaultDocs[idx], ...docData };
+    } else {
+      vaultDocs.unshift({ id: Date.now(), ...docData, created_at: new Date().toISOString() });
+    }
     localStorage.setItem('axon_vault_docs', JSON.stringify(vaultDocs));
-    showToast("Documento guardado 🧠 (Local)");
+    showToast(editId ? "Documento actualizado 🧠 (Local)" : "Documento guardado 🧠 (Local)");
   }
   closeVaultModal();
   fetchVaultDocs();
@@ -2626,9 +2659,14 @@ function renderVault() {
       ${doc.cover_image ? `<img src="${doc.cover_image}" alt="cover">` : ''}
       <h4>${doc.title}</h4>
       <p>${doc.content || 'Sin descripción...'}</p>
-      <button class="btn btn-outline" onclick="window.convertVaultToTask('${doc.id}')">Convertir a Tarea</button>
+      <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="window.convertVaultToTask('${doc.id}')" style="flex:1; font-size:0.75rem;">📋 Tarea</button>
+        <button class="btn btn-outline" onclick="window.convertVaultToCard('${doc.id}')" style="flex:1; font-size:0.75rem; background:rgba(139,92,246,0.1); border-color:var(--primary); color:var(--primary);">🧠 Tarjeta</button>
+        <button class="btn btn-outline" onclick="window.openVaultModal('${doc.id}')" style="flex:0; font-size:0.75rem;">✏️</button>
+      </div>
     </div>
   `).join('') || '<p style="text-align:center; opacity:0.5; grid-column: 1/-1; padding:2rem;">El Cerebro está esperando tus ideas.</p>';
+  if (window.lucide) lucide.createIcons();
 }
 
 window.convertVaultToTask = (docId) => {
@@ -2641,7 +2679,28 @@ window.convertVaultToTask = (docId) => {
   showToast("Pre-cargado desde el Vault");
 };
 
-// ==================== STATS ====================
+window.convertVaultToCard = (docId) => {
+  const doc = vaultDocs.find(d => String(d.id) === String(docId));
+  if (!doc) return;
+
+  const modal = $('card-modal');
+  const title = $('card-modal-title');
+  const front = $('card-front');
+  const back = $('card-back');
+  const category = $('card-category');
+  const custom = $('card-category-custom');
+  const idInput = $('edit-card-id');
+
+  custom.style.display = 'none';
+  custom.value = '';
+  title.textContent = '🧠 Desde el Cerebro';
+  front.value = doc.title || '';
+  back.value = doc.content || '';
+  category.value = 'General';
+  idInput.value = '';
+  modal.style.display = 'flex';
+  showToast('🧠 Contenido precargado desde el Cerebro');
+};
 let selectedProfile = 'Pipe';
 
 window.setStatProfile = (profile, btn) => {

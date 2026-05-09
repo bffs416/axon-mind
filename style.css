@@ -1348,6 +1348,8 @@ input::placeholder, textarea::placeholder {
     .couple-vs {
         transform: rotate(90deg);
         padding: 0.2rem 0.6rem;
+        width: auto;
+        justify-self: center;
     }
     .couple-card {
         padding: 0.75rem;
