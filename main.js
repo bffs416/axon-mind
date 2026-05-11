@@ -2033,39 +2033,52 @@ function renderCards() {
     const list = $('cards-list');
     if (!list) return;
 
-    // Reconstruir filtros dinámicamente
-    const uniqueCategories = [...new Set(allCards.map(c => c.category).filter(Boolean))];
-    const filterBar = $('cards-filter-bar');
-    if (filterBar) {
-        filterBar.innerHTML = `
-            <button class="filter-chip ${currentFilter === 'All' ? 'active' : ''}" onclick="window.filterCards('All', this)">Todas</button>
-            ${uniqueCategories.map(cat => `
-                <button class="filter-chip ${currentFilter === cat ? 'active' : ''}" onclick="window.filterCards('${cat.replace(/'/g, "\\'")}', this)">${cat}</button>
-            `).join('')}
+    // Capturar estados de expansión actuales de carpetas
+    const openFolders = {};
+    list.querySelectorAll('details').forEach(det => {
+        const catName = det.dataset.category;
+        if (catName) openFolders[catName] = det.open;
+    });
+
+    const categories = [...new Set(allCards.map(c => c.category || 'Sin Categoría'))];
+    
+    let html = '';
+    
+    categories.sort().forEach(cat => {
+        const cardsInCat = allCards.filter(c => (c.category || 'Sin Categoría') === cat);
+        const isOpen = openFolders[cat] !== undefined ? openFolders[cat] : false;
+        
+        html += `
+            <div class="folder-group" style="margin-bottom: 1rem; width: 100%;">
+                <details ${isOpen ? 'open' : ''} data-category="${cat}">
+                    <summary style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-card); border-radius: 12px; cursor: pointer; font-weight: 600; border: 1px solid var(--border); transition: all 0.2s ease;">
+                        <span style="font-size: 1.2rem;">📂</span>
+                        <span style="flex: 1;">${cat}</span>
+                        <span class="category-badge" style="background: var(--accent); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">${cardsInCat.length}</span>
+                    </summary>
+                    <div class="folder-content" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; padding: 1rem 0;">
+                        ${cardsInCat.map(card => `
+                            <div class="card-item" onclick="window.openCardModal('${card.id}')" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; cursor: pointer; transition: transform 0.2s;">
+                                <div style="font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;">${card.front}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; opacity: 0.7;">
+                                    ${card.back}
+                                </div>
+                                <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.6rem; color: var(--accent);">SRS Nivel: ${card.srs_level || 0}</span>
+                                    <button class="btn-icon" onclick="event.stopPropagation(); window.deleteCard('${card.id}')" style="color: var(--danger); background:none; border:none; cursor:pointer;">
+                                        <i data-lucide="trash-2" style="width: 14px;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </details>
+            </div>
         `;
-    }
+    });
 
-    const filtered = currentFilter === 'All'
-        ? allCards
-        : allCards.filter(c => c.category === currentFilter);
-
-    list.innerHTML = filtered.map(card => `
-        <div class="card-item" onclick="window.openCardModal('${card.id}')">
-            <span class="card-category-tag">${card.category}</span>
-            <div style="font-weight: 600; margin-bottom: 0.5rem;">${card.front}</div>
-            <div style="font-size: 0.8rem; color: var(--text-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                ${card.back}
-            </div>
-            <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.65rem; color: var(--primary);">Próximo: ${new Date(card.next_review).toLocaleDateString()}</span>
-                <button class="btn-icon" onclick="event.stopPropagation(); window.deleteCard('${card.id}')" style="color: var(--danger);">
-                    <i data-lucide="trash-2" style="width: 14px;"></i>
-                </button>
-            </div>
-        </div>
-    `).join('');
-
-    initIcons();
+    list.innerHTML = html || '<p style="text-align:center; padding:2rem; opacity:0.5;">No hay tarjetas aún. ¡Crea tu primera carpeta!</p>';
+    if (window.lucide) lucide.createIcons();
 }
 
 function updateCardStats() {
