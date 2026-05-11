@@ -3531,6 +3531,9 @@ function renderInbox() {
                 <button class="btn-mini" onclick="window.convertInboxToTask('${doc.id}')" title="Convertir a Tarea" style="background:var(--surface-light); border:1px solid var(--border); color:var(--text);">
                     <i data-lucide="layers" style="width:14px; height:14px;"></i>
                 </button>
+                <button class="btn-mini" onclick="window.convertInboxToFinance('${doc.id}')" title="Finanzas IA" style="background:var(--surface-light); border:1px solid var(--border); color:var(--success);">
+                    <i data-lucide="dollar-sign" style="width:14px; height:14px;"></i>
+                </button>
                 <button class="btn-mini" onclick="window.deleteInboxItem('${doc.id}')" title="Eliminar" style="background:var(--surface-light); border:1px solid var(--border); color:var(--danger);">
                     <i data-lucide="trash-2" style="width:14px; height:14px;"></i>
                 </button>
@@ -3541,6 +3544,136 @@ function renderInbox() {
     if (window.lucide) lucide.createIcons();
 }
 window.renderInbox = renderInbox;
+
+window.convertInboxToFinance = async (id) => {
+    const doc = inboxDocs.find(d => String(d.id) === String(id));
+    if (!doc) return;
+    showToast("🤖 Analizando transacción con IA...");
+    try {
+        const categories = (window.financeState.categories || []).map(c => c.name).join(", ");
+        const res = await fetch('https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/finance-assistant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                text: doc.content,
+                categories: categories 
+            })
+        });
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        let data = await res.json();
+        
+        // n8n Agent often nests result in .output
+        if (data.output && typeof data.output === 'object') {
+            data = data.output;
+        } else if (Array.isArray(data) && data[0]?.output) {
+            data = data[0].output;
+        } else if (Array.isArray(data) && data[0]) {
+            data = data[0];
+        }
+
+        const safeType = data.type?.toLowerCase() === 'income' ? 'income' : 'expense';
+        const cats = window.financeState.categories || [];
+        const typeMatch = cats.filter(c => (c.transaction_type || c.type) === safeType);
+        let categoryId = typeMatch.length ? typeMatch[0].id : null;
+        if (data.category && typeMatch.length) {
+            const searchCat = data.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const exactMatch = typeMatch.find(c => {
+                const normName = c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return normName.includes(searchCat) || searchCat.includes(normName);
+            });
+            if (exactMatch) categoryId = exactMatch.id;
+        }
+
+        const record = {
+            transaction_date: new Date().toISOString().slice(0,10),
+            description: capitalizeFirstLetter(data.description || doc.content),
+            amount: parseFloat(data.amount) || 0,
+            type: safeType,
+            category_id: categoryId,
+            profile: 'Ambos',
+            currency: 'COP'
+        };
+
+        if (record.amount <= 0) throw new Error("El monto debe ser mayor a 0 (IA extrajo: " + record.amount + ")");
+
+        const { error } = await supabase.from('finance_transactions').insert([record]);
+        if (error) throw new Error("DB Error: " + error.message);
+        
+        await supabase.from('inbox').delete().eq('id', id);
+        showToast(`✅ ${safeType === 'income' ? 'Ingreso' : 'Gasto'} registrado: $${record.amount}`);
+        fetchInbox();
+        if (typeof fetchFinanceData === 'function') fetchFinanceData();
+    } catch (e) {
+        console.error("AI Finance Error:", e);
+        showToast("⚠️ Error: " + e.message);
+    }
+};
+
+window.processFinanceAI = async () => {
+    const inputEl = $('finance-ai-input');
+    if (!inputEl) return;
+    const text = inputEl.value.trim();
+    if (!text) return;
+    
+    showToast("🤖 Analizando transacción con IA...");
+    try {
+        const categories = (window.financeState.categories || []).map(c => c.name).join(", ");
+        const res = await fetch('https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/finance-assistant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                text: text,
+                categories: categories
+            })
+        });
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        let data = await res.json();
+
+        // n8n Agent often nests result in .output
+        if (data.output && typeof data.output === 'object') {
+            data = data.output;
+        } else if (Array.isArray(data) && data[0]?.output) {
+            data = data[0].output;
+        } else if (Array.isArray(data) && data[0]) {
+            data = data[0];
+        }
+        
+        const safeType = data.type?.toLowerCase() === 'income' ? 'income' : 'expense';
+        const cats = window.financeState.categories || [];
+        const typeMatch = cats.filter(c => (c.transaction_type || c.type) === safeType);
+        let categoryId = typeMatch.length ? typeMatch[0].id : null;
+        if (data.category && typeMatch.length) {
+            const searchCat = data.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const exactMatch = typeMatch.find(c => {
+                const normName = c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return normName.includes(searchCat) || searchCat.includes(normName);
+            });
+            if (exactMatch) categoryId = exactMatch.id;
+        }
+
+        const record = {
+            transaction_date: new Date().toISOString().slice(0,10),
+            description: capitalizeFirstLetter(data.description || text),
+            amount: parseFloat(data.amount) || 0,
+            type: safeType,
+            category_id: categoryId,
+            profile: 'Ambos',
+            currency: 'COP'
+        };
+
+        if (record.amount <= 0) throw new Error("El monto debe ser mayor a 0 (IA extrajo: " + record.amount + ")");
+
+        const { error } = await supabase.from('finance_transactions').insert([record]);
+        if (error) throw new Error("DB Error: " + error.message);
+        
+        inputEl.value = '';
+        showToast(`✅ ${safeType === 'income' ? 'Ingreso' : 'Gasto'} registrado: $${record.amount}`);
+        if (typeof fetchFinanceData === 'function') fetchFinanceData();
+    } catch (e) {
+        console.error("AI Finance Error:", e);
+        showToast("⚠️ Error: " + e.message);
+    }
+};
 
 window.deleteInboxItem = async (id) => {
     if (!confirm("¿Eliminar esta idea del Inbox?")) return;

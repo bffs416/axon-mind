@@ -630,6 +630,13 @@
 
         <!-- ===== TAB: TRANSACCIONES ===== -->
         <div id="finance-tab-transactions" class="finance-tab-content active">
+          
+          <!-- AI Quick Capture -->
+          <div class="finance-quick-capture" style="display:flex; gap:0.5rem; margin-bottom: 1rem;">
+            <input type="text" id="finance-ai-input" class="finance-input" style="flex:1; border: 1px solid var(--primary-low); background: var(--surface-light);" placeholder="✨ IA: Ej: Gasté 15 en un café y postre..." onkeydown="if(event.key==='Enter') window.processFinanceAI()">
+            <button class="btn-primary" onclick="window.processFinanceAI()" style="padding: 0 1rem;" title="Analizar con IA"><i data-lucide="sparkles"></i></button>
+          </div>
+
           <!-- Summary Cards -->
           <div class="finance-summary">
             <div class="finance-card income">
