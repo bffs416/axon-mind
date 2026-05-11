@@ -1,0 +1,27 @@
+{
+  "model": "deepseek/deepseek-v4-flash",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hola"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thought",
+          "thought": "El usuario me saluda. Debo responder cordialmente."
+        },
+        {
+          "type": "text",
+          "text": "¡Hola! ¿En qué puedo ayudarte?"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "¿Quién eres?"
+    }
+  ]
+}

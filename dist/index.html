@@ -8,8 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-D62it0BF.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-YWeMIn7F.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" crossorigin src="/assets/index-DZKbSCXd.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-rLHSJ7j3.css">
 </head>
 <body>
     <canvas id="confetti-canvas"></canvas>
@@ -36,6 +37,8 @@
                 <button class="tab-btn" data-view="vault"><i data-lucide="brain"></i> Cerebro</button>
                 <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards <span id="cards-pending-badge" class="tab-badge" style="display:none;">0</span></button>
                 <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
+                <button class="tab-btn" data-view="finances"><i data-lucide="dollar-sign"></i> Finanzas</button>
+                <button class="tab-btn" data-view="polyglot">🌍 Polyglot</button>
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
@@ -608,6 +611,502 @@
             <!-- Cards injected here -->
         </div>
       </section>
+
+      <!-- ========== VISTA FINANZAS ========== -->
+      <section id="view-finances" class="view">
+        <div class="plan-header">
+          <h2>💰 Finanzas</h2>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-secondary" onclick="window.openFinanceCategoryModal()" style="font-size:0.75rem;">📂 Cat.</button>
+            <button class="btn btn-primary" onclick="window.openFinanceModal()"><i data-lucide="plus"></i> Nueva</button>
+          </div>
+        </div>
+
+        <!-- Sub-tabs -->
+        <div class="finance-subtabs">
+          <button class="finance-subtab active" data-ftab="transactions" onclick="window.switchFinanceTab('transactions', this)">💳 Transacciones</button>
+          <button class="finance-subtab" data-ftab="budgets" onclick="window.switchFinanceTab('budgets', this)">📊 Presupuesto</button>
+          <button class="finance-subtab" data-ftab="goals" onclick="window.switchFinanceTab('goals', this)">🎯 Metas</button>
+        </div>
+
+        <!-- ===== TAB: TRANSACCIONES ===== -->
+        <div id="finance-tab-transactions" class="finance-tab-content active">
+          <!-- Summary Cards -->
+          <div class="finance-summary">
+            <div class="finance-card income">
+              <div class="finance-card-icon">📈</div>
+              <div class="finance-card-label">Ingresos</div>
+              <div class="finance-card-amount" id="finance-total-income">$0</div>
+            </div>
+            <div class="finance-card expense">
+              <div class="finance-card-icon">📉</div>
+              <div class="finance-card-label">Gastos</div>
+              <div class="finance-card-amount" id="finance-total-expense">$0</div>
+            </div>
+            <div class="finance-card balance">
+              <div class="finance-card-icon">💰</div>
+              <div class="finance-card-label">Balance</div>
+              <div class="finance-card-amount" id="finance-total-balance">$0</div>
+            </div>
+          </div>
+
+          <!-- Income Base Average Banner -->
+          <div class="finance-base-income" id="finance-base-income">
+            <span>📊 Ingreso base promedio (3m): </span>
+            <strong id="finance-base-amount">$0</strong>
+            <span style="opacity:0.6;font-size:0.65rem;"> — Gasto seguro recomendado</span>
+          </div>
+
+          <!-- Month + Filters -->
+          <div class="finance-filters">
+            <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+              <input type="month" id="finance-month-filter" class="finance-input" style="width:auto; padding:0.5rem;">
+              <div class="finance-type-filter">
+                <button class="finance-type-btn active" data-type="all" onclick="window.setFinanceTypeFilter('all', this)">Todas</button>
+                <button class="finance-type-btn" data-type="income" onclick="window.setFinanceTypeFilter('income', this)">📈 Ingresos</button>
+                <button class="finance-type-btn" data-type="expense" onclick="window.setFinanceTypeFilter('expense', this)">📉 Gastos</button>
+              </div>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <select id="finance-category-filter" class="finance-input" style="padding:0.5rem;width:auto;">
+                <option value="all">Todas categorías</option>
+              </select>
+              <select id="finance-profile-filter" class="finance-input" style="padding:0.5rem;width:auto;">
+                <option value="all">Todos los perfiles</option>
+                <option value="Pipe">👨 Pipe</option>
+                <option value="Tati">👩 Tati</option>
+                <option value="Ambos">👫 Ambos</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Transactions List -->
+          <div id="finance-transactions-list" class="finance-transactions-list">
+            <p style="text-align:center; color:var(--text-dim); padding:2rem;">Cargando transacciones...</p>
+          </div>
+        </div>
+
+        <!-- ===== TAB: PRESUPUESTO ===== -->
+        <div id="finance-tab-budgets" class="finance-tab-content">
+          <div class="budgets-header">
+            <h3>📊 Presupuesto Mensual</h3>
+            <div style="display:flex;gap:0.3rem;align-items:center;">
+              <input type="month" id="budget-month" class="finance-input" style="width:auto;padding:0.4rem;font-size:0.75rem;">
+            </div>
+          </div>
+          <div id="budget-summary-card" class="budget-summary-card">
+            <div class="budget-summary-label">Total presupuestado</div>
+            <div class="budget-summary-amount" id="budget-total-budgeted">$0</div>
+            <div class="budget-summary-label">Gastado</div>
+            <div class="budget-summary-amount" id="budget-total-spent">$0</div>
+            <div class="budget-summary-bar">
+              <div class="budget-summary-fill" id="budget-summary-fill" style="width:0%;"></div>
+            </div>
+            <div class="budget-remaining" id="budget-total-remaining">Restan $0</div>
+          </div>
+          <div id="budgets-list" class="budgets-list">
+            <p style="text-align:center;color:var(--text-dim);padding:2rem;">Cargando presupuestos...</p>
+          </div>
+          <p style="font-size:0.65rem;color:var(--text-muted);text-align:center;margin-top:0.5rem;">
+            💡 Los presupuestos se reinician cada mes. Tus gastos reales se comparan automáticamente.
+          </p>
+        </div>
+
+        <!-- ===== TAB: METAS ===== -->
+        <div id="finance-tab-goals" class="finance-tab-content">
+          <div class="goals-header">
+            <h3>🎯 Metas de Ahorro</h3>
+            <button class="btn-primary" style="padding:0.4rem 0.8rem;font-size:0.75rem;" onclick="window.openFinanceGoalModal()">+ Nueva Meta</button>
+          </div>
+          <div id="goals-list" class="goals-list">
+            <p style="text-align:center;color:var(--text-dim);padding:2rem;">Cargando metas...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== MODAL TRANSACCIÓN (mejorado) ========== -->
+      <div id="finance-modal" class="modal">
+        <div class="modal-content" style="max-width:520px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h2 id="finance-modal-title">💰 Nueva Transacción</h2>
+            <button class="btn-icon" onclick="window.closeModal('finance-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <input type="hidden" id="edit-finance-id">
+          <div class="finance-modal-body">
+            <div class="finance-type-toggle">
+              <button class="finance-type-toggle-btn active" data-finance-type="expense" onclick="window.selectFinanceType('expense', this)">💸 Gasto</button>
+              <button class="finance-type-toggle-btn" data-finance-type="income" onclick="window.selectFinanceType('income', this)">💰 Ingreso</button>
+            </div>
+            <div class="form-row">
+              <label class="input-label">Descripción</label>
+              <input type="text" id="finance-description" class="finance-input" placeholder="Ej: Proyecto web, Supermercado...">
+            </div>
+            <div class="form-row">
+              <label class="input-label">Monto</label>
+              <input type="number" id="finance-amount" class="finance-input" step="0.01" min="0.01" placeholder="0.00">
+            </div>
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:1;">
+                <label class="input-label">Categoría</label>
+                <select id="finance-category" class="finance-input"></select>
+              </div>
+              <div class="form-row" style="flex:0.7;">
+                <label class="input-label">Fecha</label>
+                <input type="date" id="finance-date" class="finance-input">
+              </div>
+            </div>
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:1;">
+                <label class="input-label">Perfil</label>
+                <select id="finance-profile" class="finance-input">
+                  <option value="Pipe">👨 Pipe</option>
+                  <option value="Tati">👩 Tati</option>
+                  <option value="Ambos">👫 Ambos</option>
+                </select>
+              </div>
+              <div class="form-row" style="flex:0.7;">
+                <label class="input-label">Moneda</label>
+                <select id="finance-currency" class="finance-input" onchange="window.toggleFinanceRateField()">
+                  <option value="COP">🇨🇴 COP</option>
+                  <option value="USD">🇺🇸 USD</option>
+                </select>
+              </div>
+            </div>
+            <div id="finance-rate-container" class="form-row" style="display:none;">
+              <label class="input-label">Tasa de cambio (COP/USD)</label>
+              <input type="number" id="finance-rate" class="finance-input" step="1" min="1" placeholder="Ej: 4200">
+            </div>
+            <div class="form-row">
+              <label class="input-label">Establecimiento</label>
+              <input type="text" id="finance-establishment" class="finance-input" placeholder="Ej: Éxito, Mercado Libre...">
+            </div>
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:1;">
+                <label class="input-label">Factura (URL)</label>
+                <input type="url" id="finance-invoice" class="finance-input" placeholder="https://...">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="input-label">Notas</label>
+              <textarea id="finance-notes" class="finance-input" rows="2" placeholder="Notas adicionales..."></textarea>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-ghost" onclick="window.closeModal('finance-modal')">Cancelar</button>
+            <button class="btn-primary" onclick="window.saveFinanceTransaction()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL PRESUPUESTO ========== -->
+      <div id="budget-modal" class="modal">
+        <div class="modal-content modal-sm">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h2>📊 Editar Presupuesto</h2>
+            <button class="btn-icon" onclick="window.closeModal('budget-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <input type="hidden" id="edit-budget-id">
+          <div class="form-row">
+            <label class="input-label">Categoría</label>
+            <select id="budget-category" class="finance-input"></select>
+          </div>
+          <div class="form-row">
+            <label class="input-label">Límite mensual ($)</label>
+            <input type="number" id="budget-amount" class="finance-input" step="10000" min="0" placeholder="0">
+          </div>
+          <div class="modal-actions">
+            <button class="btn-ghost" onclick="window.closeModal('budget-modal')">Cancelar</button>
+            <button class="btn-primary" onclick="window.saveBudget()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL META DE AHORRO ========== -->
+      <div id="goal-modal" class="modal">
+        <div class="modal-content" style="max-width:480px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h2 id="goal-modal-title">🎯 Nueva Meta</h2>
+            <button class="btn-icon" onclick="window.closeModal('goal-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <input type="hidden" id="edit-goal-id">
+          <div class="finance-modal-body">
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:1;">
+                <label class="input-label">Nombre</label>
+                <input type="text" id="goal-name" class="finance-input" placeholder="Ej: Fondo de emergencia">
+              </div>
+              <div class="form-row" style="flex:0.5;">
+                <label class="input-label">Ícono</label>
+                <select id="goal-icon" class="finance-input">
+                  <option value="🏦">🏦</option>
+                  <option value="✈️">✈️</option>
+                  <option value="💻">💻</option>
+                  <option value="📚">📚</option>
+                  <option value="🏠">🏠</option>
+                  <option value="🚗">🚗</option>
+                  <option value="🎓">🎓</option>
+                  <option value="💊">💊</option>
+                  <option value="🎯">🎯</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:1;">
+                <label class="input-label">Meta ($)</label>
+                <input type="number" id="goal-target" class="finance-input" step="10000" min="1" placeholder="Ej: 3000000">
+              </div>
+              <div class="form-row" style="flex:0.7;">
+                <label class="input-label">Moneda</label>
+                <select id="goal-currency" class="finance-input">
+                  <option value="COP">🇨🇴 COP</option>
+                  <option value="USD">🇺🇸 USD</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="input-label">Fecha límite (opcional)</label>
+              <input type="date" id="goal-deadline" class="finance-input">
+            </div>
+            <div class="form-row">
+              <label class="input-label">Notas</label>
+              <textarea id="goal-notes" class="finance-input" rows="2" placeholder="¿Para qué es esta meta?..."></textarea>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-ghost" onclick="window.closeModal('goal-modal')">Cancelar</button>
+            <button class="btn-primary" onclick="window.saveFinanceGoal()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL DEPOSITAR A META ========== -->
+      <div id="goal-deposit-modal" class="modal">
+        <div class="modal-content modal-sm">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h2>💰 Depositar a Meta</h2>
+            <button class="btn-icon" onclick="window.closeModal('goal-deposit-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <input type="hidden" id="deposit-goal-id">
+          <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.8rem;" id="deposit-goal-name">Meta</p>
+          <div class="form-row">
+            <label class="input-label">Monto a depositar</label>
+            <input type="number" id="deposit-amount" class="finance-input" step="1000" min="1" placeholder="0">
+          </div>
+          <div class="form-row">
+            <label class="input-label">Nota (opcional)</label>
+            <input type="text" id="deposit-notes" class="finance-input" placeholder="Ej: Ahorro de este proyecto">
+          </div>
+          <div class="modal-actions">
+            <button class="btn-ghost" onclick="window.closeModal('goal-deposit-modal')">Cancelar</button>
+            <button class="btn-primary" onclick="window.confirmGoalDeposit()">Depositar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL CATEGORÍAS ========== -->
+      <div id="finance-category-modal" class="modal">
+        <div class="modal-content" style="max-width:450px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h2>📂 Categorías</h2>
+            <button class="btn-icon" onclick="window.closeModal('finance-category-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <div id="finance-category-list" class="finance-category-list">
+            <p style="text-align:center; color:var(--text-dim);">Cargando...</p>
+          </div>
+          <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+            <input type="text" id="new-category-name" class="finance-input" placeholder="Nueva categoría..." style="flex:1;">
+            <button class="btn-primary" onclick="window.addFinanceCategory()" style="white-space:nowrap;">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== VISTA POLYGLOT HUB ========== -->
+      <section id="view-polyglot" class="view">
+        <div class="plan-header">
+          <h2>🌍 Polyglot Hub</h2>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-secondary" style="font-size:0.75rem;padding:0.4rem 0.7rem;" onclick="window.openPolyglotConfig()">⚙️</button>
+            <button class="btn btn-secondary" style="font-size:0.75rem;" onclick="window.openPolyglotAlphabets()">🔤 Alfabetos</button>
+            <button class="btn btn-primary" onclick="window.startPolyglotStudy()">📚 Estudiar</button>
+            <button class="btn btn-primary" onclick="window.openPolyglotPhraseModal()">+ Frase</button>
+          </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="polyglot-dashboard">
+          <div class="polyglot-chart-container">
+            <canvas id="polyglot-radar-chart"></canvas>
+          </div>
+          <div class="polyglot-dash-stats">
+            <div class="polyglot-daily-lang" id="polyglot-daily-lang">
+              <span style="font-size:0.7rem;color:var(--text-dim);">🌍 Idioma del Día</span>
+              <span id="polyglot-daily-lang-name" style="font-size:1.2rem;font-weight:700;">—</span>
+              <span id="polyglot-daily-lang-reason" style="font-size:0.7rem;color:var(--text-dim);"></span>
+            </div>
+            <div class="polyglot-stat-row">
+              <div class="polyglot-stat">
+                <span class="polyglot-stat-num" id="polyglot-phrase-count">0</span>
+                <span class="polyglot-stat-label">Frases</span>
+              </div>
+              <div class="polyglot-stat">
+                <span class="polyglot-stat-num" id="polyglot-pending-count">0</span>
+                <span class="polyglot-stat-label">Pendientes</span>
+              </div>
+              <div class="polyglot-stat">
+                <span class="polyglot-stat-num" id="polyglot-mastered-count">0</span>
+                <span class="polyglot-stat-label">Dominadas</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="polyglot-filters">
+          <div class="polyglot-lang-chips" id="polyglot-lang-chips">
+            <button class="polyglot-lang-chip active" data-lang="all" onclick="window.filterPolyglotLang('all',this)">🌐 Todos</button>
+            <button class="polyglot-lang-chip" data-lang="fr" onclick="window.filterPolyglotLang('fr',this)">🇫🇷</button>
+            <button class="polyglot-lang-chip" data-lang="pt" onclick="window.filterPolyglotLang('pt',this)">🇵🇹</button>
+            <button class="polyglot-lang-chip" data-lang="de" onclick="window.filterPolyglotLang('de',this)">🇩🇪</button>
+            <button class="polyglot-lang-chip" data-lang="hi" onclick="window.filterPolyglotLang('hi',this)">🇮🇳</button>
+            <button class="polyglot-lang-chip" data-lang="ar" onclick="window.filterPolyglotLang('ar',this)">🇸🇦</button>
+            <button class="polyglot-lang-chip" data-lang="ko" onclick="window.filterPolyglotLang('ko',this)">🇰🇷</button>
+            <button class="polyglot-lang-chip" data-lang="zh" onclick="window.filterPolyglotLang('zh',this)">🇨🇳</button>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex:1;">
+            <input type="text" id="polyglot-search" class="finance-input" placeholder="🔍 Buscar frase..." oninput="window.filterPolyglotSearch(this.value)" style="flex:1;">
+            <select id="polyglot-cat-filter" class="finance-input" style="width:auto;padding:0.5rem;" onchange="window.filterPolyglotCategory(this.value)">
+              <option value="all">Todas las categorías</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Phrase List -->
+        <div id="polyglot-phrase-list" class="polyglot-phrase-list">
+          <p style="text-align:center;color:var(--text-dim);padding:2rem;">🌍 Cargando frases...</p>
+        </div>
+      </section>
+
+      <!-- ========== MODAL POLYGLOT: Nueva/Editar Frase ========== -->
+      <div id="polyglot-phrase-modal" class="modal">
+        <div class="modal-content" style="max-width:600px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <h2 id="polyglot-phrase-modal-title">🌍 Nueva Frase</h2>
+            <button class="btn-icon" onclick="window.closeModal('polyglot-phrase-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <input type="hidden" id="edit-polyglot-phrase-id">
+          <div class="polyglot-phrase-form">
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:1;">
+                <label class="input-label">🇪🇸 En español</label>
+                <input type="text" id="polyglot-source-es" class="finance-input" placeholder="Ej: Hola, ¿cómo estás?">
+              </div>
+              <div class="form-row" style="flex:1;">
+                <label class="input-label">🇬🇧 En inglés</label>
+                <input type="text" id="polyglot-source-en" class="finance-input" placeholder="Ej: Hello, how are you?">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="input-label">Categoría</label>
+              <select id="polyglot-phrase-category" class="finance-input">
+                <option value="Saludos">Saludos</option>
+                <option value="Cortesía">Cortesía</option>
+                <option value="Comida">Comida</option>
+                <option value="Viajes">Viajes</option>
+                <option value="Familia">Familia</option>
+                <option value="Tiempo">Tiempo / Clima</option>
+                <option value="Emergencia">Emergencia</option>
+                <option value="Amor">Amor / Relaciones</option>
+                <option value="Trabajo">Trabajo</option>
+                <option value="General">General</option>
+              </select>
+            </div>
+
+            <div style="margin-top:0.75rem;">
+              <p style="font-size:0.75rem;font-weight:600;color:var(--text-dim);margin-bottom:0.4rem;">Traducciones por idioma:</p>
+              <div class="polyglot-lang-accordion" id="polyglot-lang-accordion">
+                <!-- Generado dinámicamente por JS -->
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions" style="margin-top:0.75rem;">
+            <button class="btn-ghost" onclick="window.closeModal('polyglot-phrase-modal')">Cancelar</button>
+            <button class="btn-secondary" id="polyglot-translate-btn" onclick="window.translatePolyglotPhrase()" style="font-size:0.75rem;">✨ Traducir con IA</button>
+            <button class="btn-primary" onclick="window.savePolyglotPhrase()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL POLYGLOT: Estudio ========== -->
+      <div id="polyglot-study-modal" class="modal">
+        <div class="modal-content" style="max-width:720px;padding:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+            <span id="polyglot-study-progress" style="font-size:0.75rem;color:var(--text-dim);">1 / 10</span>
+            <div style="display:flex;gap:0.3rem;">
+              <button class="btn-ghost" style="padding:0.3rem 0.5rem;font-size:0.7rem;" onclick="window.openPolyglotAlphabets()" title="Alfabetos">🔤</button>
+              <button class="btn-icon" onclick="window.closePolyglotStudy()"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+
+          <div id="polyglot-study-source" class="polyglot-study-source">
+            <!-- Source phrase aquí -->
+          </div>
+
+          <div id="polyglot-study-lang-grid" class="polyglot-lang-grid">
+            <!-- 7 language cards generadas por JS -->
+          </div>
+
+          <div class="polyglot-study-nav">
+            <button class="btn-ghost" id="polyglot-prev-btn" onclick="window.prevPolyglotCard()" style="font-size:0.75rem;">◀ Anterior</button>
+            <span id="polyglot-study-source-lang" style="font-size:0.65rem;color:var(--text-muted);"></span>
+            <button class="btn-ghost" id="polyglot-next-btn" onclick="window.nextPolyglotCard()" style="font-size:0.75rem;">Siguiente ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL POLYGLOT: Alfabetos ========== -->
+      <div id="polyglot-alphabet-modal" class="modal">
+        <div class="modal-content" style="max-width:650px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <h2>🔤 Alfabetos</h2>
+            <button class="btn-icon" onclick="window.closeModal('polyglot-alphabet-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <div id="polyglot-alphabet-content">
+            <p style="text-align:center;color:var(--text-dim);padding:1rem;">Cargando...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL POLYGLOT: Configuración ========== -->
+      <div id="polyglot-config-modal" class="modal">
+        <div class="modal-content modal-sm">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h2>⚙️ Configuración Polyglot</h2>
+            <button class="btn-icon" onclick="window.closeModal('polyglot-config-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <div class="form-row">
+            <label class="input-label">Perfil</label>
+            <select id="polyglot-config-profile" class="finance-input">
+              <option value="Pipe">👨 Pipe</option>
+              <option value="Tati">👩 Tati</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="input-label">Idioma base de estudio</label>
+            <select id="polyglot-config-source" class="finance-input">
+              <option value="es">🇪🇸 Español (para aprender desde castellano)</option>
+              <option value="en">🇬🇧 Inglés (para aprender desde inglés)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="input-label">Orden preferido de idiomas</label>
+            <div id="polyglot-config-lang-order" style="display:flex;flex-wrap:wrap;gap:0.3rem;"></div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-ghost" onclick="window.closeModal('polyglot-config-modal')">Cancelar</button>
+            <button class="btn-primary" onclick="window.savePolyglotConfig()">Guardar</button>
+          </div>
+        </div>
+      </div>
 
       <!-- ========== MODAL ESTUDIO FLASHCARDS ========== -->
       <div id="study-modal" class="modal">

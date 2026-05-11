@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__supabase__list_projects",
+      "mcp__n8n-mcp__search_workflows",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__get_advisors",
+      "mcp__supabase__execute_sql",
+      "Read(//c/Users/Kathe/.claude/**)",
+      "mcp__supabase__search_docs",
+      "mcp__supabase__apply_migration",
+      "Bash(npm run *)",
+      "mcp__n8n-mcp__search_nodes",
+      "mcp__n8n-mcp__get_node_types",
+      "mcp__n8n-mcp__validate_workflow",
+      "mcp__n8n-mcp__create_workflow_from_code",
+      "mcp__n8n-mcp__get_workflow_details",
+      "mcp__n8n-mcp__update_workflow",
+      "mcp__n8n-mcp__publish_workflow"
+    ]
+  }
+}
