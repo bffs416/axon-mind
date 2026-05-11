@@ -606,6 +606,13 @@ async function fetchTasks() {
   });
 
   const taskList = $('task-list');
+  const openStates = {};
+  if (taskList) {
+    taskList.querySelectorAll('details').forEach(det => {
+      const summaryText = det.querySelector('summary')?.innerText.trim();
+      if (summaryText) openStates[summaryText] = det.open;
+    });
+  }
 
   // Helper: render a single task card
   const renderTaskCard = (task) => {
@@ -726,9 +733,12 @@ async function fetchTasks() {
   const renderGroup = (title, icon, tasks, catClass) => {
     const count = tasks.length;
     const doneCount = tasks.filter(t => t.status === 'done').length;
+    // Recuperamos el estado previo. Si es nuevo o no estaba en openStates, por defecto va cerrado (false)
+    const isOpen = openStates[`${icon} ${title} ${doneCount}/${count}`] || false;
+    
     return `
       <div class="category-group">
-        <details>
+        <details ${isOpen ? 'open' : ''}>
           <summary>
             ${icon} ${title}
             <span class="category-badge ${catClass}">${doneCount}/${count}</span>
