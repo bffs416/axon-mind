@@ -52,6 +52,12 @@ const capitalizeFirstLetter = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+const linkify = (text) => {
+  if (!text) return "";
+  const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+  return text.replace(urlPattern, '<a href="$1" target="_blank" style="color:var(--accent);text-decoration:underline;">$1</a>');
+};
+
 // ==================== DOM ====================
 window.$ = id => document.getElementById(id);
 const $ = window.$;
@@ -629,7 +635,7 @@ async function fetchTasks() {
               <span class="assignee-toggle-icon" onclick="event.stopPropagation();window.cycleAssignee('${task.id}', '${tAssignee}')" title="Cambiar responsable" style="cursor:pointer; font-size:1.2rem;">${assigneeIcon}</span>
               ${task.title} ${energyTag}
             </h4>
-            <p>${task.description||''}</p>
+            <p>${linkify(task.description||'')}</p>
             <div class="task-meta">
               ${task.pomodoro_count ? `<span class="meta-chip">🍅 ${task.pomodoro_count}</span>` : ''}
               ${stale >= 5 && task.status !== 'frozen' ? `<span class="meta-chip danger">⚠ ${stale} días sin actividad</span>` : stale >= 2 && task.status !== 'frozen' ? `<span class="meta-chip warning">${stale} días sin actividad</span>` : ''}
@@ -708,11 +714,11 @@ async function fetchTasks() {
   };
 
   // Group by category
-  const personalTasks = filteredTasks.filter(t => getTaskCategory(t) === 'Personal');
-  const workTasks = filteredTasks.filter(t => getTaskCategory(t) === 'Trabajo');
+  const personalTasks = filteredTasks.filter(t => (t.category || 'Personal') === 'Personal');
+  const workTasks = filteredTasks.filter(t => (t.category || 'Personal') === 'Trabajo');
   const otherTasks = filteredTasks.filter(t => {
-    const cat = getTaskCategory(t);
-    return cat && cat !== 'Personal' && cat !== 'Trabajo';
+    const cat = t.category || 'Personal';
+    return cat !== 'Personal' && cat !== 'Trabajo';
   });
 
   let html = '';
@@ -722,7 +728,7 @@ async function fetchTasks() {
     const doneCount = tasks.filter(t => t.status === 'done').length;
     return `
       <div class="category-group">
-        <details ${count > 0 ? 'open' : ''}>
+        <details>
           <summary>
             ${icon} ${title}
             <span class="category-badge ${catClass}">${doneCount}/${count}</span>
@@ -848,7 +854,14 @@ window.editTask = async (id) => {
     const assignee = $('new-task-assignee') ? $('new-task-assignee').value : 'Ambos';
     const category = getSelectedCategory();
     setTaskCategory(id, category);
-    const { error } = await supabase.from('tasks').update({ title, description: capitalizeFirstLetter($('new-task-desc').value), energy_level: energy, assignee: assignee, steps: currentStepsInModal }).eq('id', id);
+    const { error } = await supabase.from('tasks').update({ 
+      title, 
+      description: capitalizeFirstLetter($('new-task-desc').value), 
+      energy_level: energy, 
+      assignee: assignee, 
+      category: category,
+      steps: currentStepsInModal 
+    }).eq('id', id);
     if (error) {
       console.error("Error al actualizar tarea:", error);
       showToast("Error al actualizar: " + error.message);
@@ -1344,7 +1357,7 @@ function loadTaskCategories() {
 loadTaskCategories();
 
 const getTaskCategory = (task) => {
-  return taskCategories[String(task.id)] || 'Personal';
+  return task.category || taskCategories[String(task.id)] || 'Personal';
 };
 
 const setTaskCategory = (taskId, category) => {
@@ -1372,6 +1385,7 @@ const createProject = async () => {
     description: capitalizeFirstLetter($('new-task-desc').value),
     energy_level: energy,
     assignee: assignee,
+    category: category,
     status: 'todo',
     steps: currentStepsInModal
   }]).select();
