@@ -609,8 +609,12 @@ async function fetchTasks() {
   const openStates = {};
   if (taskList) {
     taskList.querySelectorAll('details').forEach(det => {
-      const summaryText = det.querySelector('summary')?.innerText.trim();
-      if (summaryText) openStates[summaryText] = det.open;
+      const summary = det.querySelector('summary');
+      if (summary) {
+        // Extraemos solo el texto del título, ignorando el badge del contador
+        const titleText = summary.childNodes[0]?.textContent?.trim() || "";
+        if (titleText) openStates[titleText] = det.open;
+      }
     });
   }
 
@@ -733,8 +737,8 @@ async function fetchTasks() {
   const renderGroup = (title, icon, tasks, catClass) => {
     const count = tasks.length;
     const doneCount = tasks.filter(t => t.status === 'done').length;
-    // Recuperamos el estado previo. Si es nuevo o no estaba en openStates, por defecto va cerrado (false)
-    const isOpen = openStates[`${icon} ${title} ${doneCount}/${count}`] || false;
+    const groupKey = `${icon} ${title}`;
+    const isOpen = openStates[groupKey] || false;
     
     return `
       <div class="category-group">
