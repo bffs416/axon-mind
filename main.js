@@ -3027,12 +3027,15 @@ async function fetchDiscoverData() {
 }
 
 function renderInspirations() {
+  if (window.renderInspirations && window.renderInspirations !== renderInspirations) {
+    window.renderInspirations(); return;
+  }
   const list = $('inspiration-list'); if (!list) return;
   const items = window._inspirations || [];
-  if (!items.length) { list.innerHTML = '<div class="finance-empty">💡 Pegá un link para analizar</div>'; return; }
+  if (!items.length) { list.innerHTML = '<div class="finance-empty">💡 Pegá un link y describí de qué trata</div>'; return; }
   list.innerHTML = items.map(i => {
     const statusLabel = { nuevo: '🆕', por_hacer: '📝', en_progreso: '🔄', hecho: '✅', archivado: '📦' };
-    return '<div class="polyglot-phrase-item"><div class="polyglot-phrase-source" onclick="window.openInspirationDetail(\'' + i.id + '\')" style="cursor:pointer;"><div class="polyglot-phrase-source-text">' + escHtml(i.title || 'Sin título') + '</div><div class="polyglot-phrase-source-lang">' + (statusLabel[i.status] || '🆕') + ' ' + i.status + (i.platform ? ' · ' + i.platform : '') + (i.category ? ' · ' + i.category : '') + '</div></div><div class="polyglot-phrase-langs">' + ((i.tools || []).slice(0, 3).map(t => '<span style="font-size:0.6rem;padding:0.05rem 0.3rem;border-radius:3px;background:var(--primary-low);color:var(--primary);margin-left:0.15rem;">' + t + '</span>').join('')) + '</div></div>';
+    return '<div class="polyglot-phrase-item"><div class="polyglot-phrase-source" onclick="window.openInspirationDetail(\'' + i.id + '\')" style="cursor:pointer;"><div class="polyglot-phrase-source-text">' + escHtml(i.title || 'Sin título') + '</div><div class="polyglot-phrase-source-lang">' + (statusLabel[i.status] || '🆕') + ' ' + i.status + (i.platform ? ' · ' + i.platform : '') + (i.category ? ' · ' + i.category : '') + '</div></div></div>';
   }).join('');
 }
 
@@ -3809,6 +3812,40 @@ document.addEventListener('click', (e) => {
   });
 });
 
+// ===== DOLAR ALERT ======
+window.fetchDolarValue = async function() {
+    try {
+        const { data, error } = await supabase
+            .from('dolar_history')
+            .select('rate')
+            .order('created_at', { ascending: false })
+            .limit(1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+            const rate = data[0].rate;
+            const badge = $('dolar-badge');
+            if (badge) {
+                if (rate >= 3500 && rate <= 3600) {
+                    badge.innerHTML = `💵 $${rate} (COMPRAR)`;
+                    badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                    badge.style.color = '#10b981';
+                } else {
+                    badge.innerHTML = `💵 $${rate}`;
+                    badge.style.background = 'var(--bg-card-hover)';
+                    badge.style.color = 'var(--text-dim)';
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error fetching dolar value:', e);
+    }
+};
+
+window.openDolarDetail = async function() {
+    showToast('Actualizando precio del dólar...');
+    await window.fetchDolarValue();
+};
+
 // Initialize water display on load
 updateWaterDisplay();
 
@@ -3839,6 +3876,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (restored) {
           showToast('⏱️ Pomodoro restaurado');
         }
+        window.fetchDolarValue();
     }, 1000);
 });
 

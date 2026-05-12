@@ -16,7 +16,10 @@
       "mcp__n8n-mcp__create_workflow_from_code",
       "mcp__n8n-mcp__get_workflow_details",
       "mcp__n8n-mcp__update_workflow",
-      "mcp__n8n-mcp__publish_workflow"
+      "mcp__n8n-mcp__publish_workflow",
+      "Bash(node *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

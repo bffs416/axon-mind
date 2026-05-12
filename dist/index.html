@@ -9,15 +9,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" crossorigin src="/assets/index-DZKbSCXd.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-rLHSJ7j3.css">
+  <script type="module" crossorigin src="/assets/index-BCOHPyrf.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-6WCKvHdN.css">
 </head>
 <body>
     <canvas id="confetti-canvas"></canvas>
     <div id="app">
         <div class="top-sticky-container">
             <header>
-                <div class="logo"><span class="accent">AXON</span> FLOW</div>
+                <div class="logo"><span class="accent">AXON</span> FLOW <span class="dolar-badge" id="dolar-badge" onclick="window.openDolarDetail()" title="USD/COP">💵 --</span></div>
                 <div class="header-right">
                     <div class="theme-switcher">
                         <button onclick="setTheme('dark')" title="Deep Night">🌑</button>
@@ -39,6 +39,7 @@
                 <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
                 <button class="tab-btn" data-view="finances"><i data-lucide="dollar-sign"></i> Finanzas</button>
                 <button class="tab-btn" data-view="polyglot">🌍 Polyglot</button>
+                <button class="tab-btn" data-view="discover">🌐 Discover</button>
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
@@ -631,6 +632,13 @@
 
         <!-- ===== TAB: TRANSACCIONES ===== -->
         <div id="finance-tab-transactions" class="finance-tab-content active">
+          
+          <!-- AI Quick Capture -->
+          <div class="finance-quick-capture" style="display:flex; gap:0.5rem; margin-bottom: 1rem;">
+            <input type="text" id="finance-ai-input" class="finance-input" style="flex:1; border: 1px solid var(--primary-low); background: var(--surface-light);" placeholder="✨ IA: Ej: Gasté 15 en un café y postre..." onkeydown="if(event.key==='Enter') window.processFinanceAI()">
+            <button class="btn-primary" onclick="window.processFinanceAI()" style="padding: 0 1rem;" title="Analizar con IA"><i data-lucide="sparkles"></i></button>
+          </div>
+
           <!-- Summary Cards -->
           <div class="finance-summary">
             <div class="finance-card income">
@@ -985,6 +993,98 @@
           <p style="text-align:center;color:var(--text-dim);padding:2rem;">🌍 Cargando frases...</p>
         </div>
       </section>
+
+      <!-- ========== VISTA DISCOVER ========== -->
+      <section id="view-discover" class="view">
+        <div class="plan-header">
+          <h2>🌐 Discover</h2>
+        </div>
+        <div class="finance-subtabs">
+          <button class="finance-subtab active" data-dtab="inspirations" onclick="window.switchDiscoverTab('inspirations', this)">💡 Inspiración</button>
+          <button class="finance-subtab" data-dtab="media" onclick="window.switchDiscoverTab('media', this)">🎬 Media Vault</button>
+          <button class="finance-subtab" data-dtab="dolar" onclick="window.switchDiscoverTab('dolar', this)">💵 Dólar</button>
+        </div>
+        <div id="discover-tab-inspirations" class="finance-tab-content active">
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+            <input type="url" id="inspiration-url" class="finance-input" placeholder="Pegá un link (YouTube, IG, TikTok, etc.)..." style="flex:1;" onkeydown="if(event.key==='Enter')window.captureInspiration()">
+            <button class="btn-primary" onclick="window.captureInspiration()" style="white-space:nowrap;">🔍 Analizar</button>
+          </div>
+          <div id="inspiration-list" class="polyglot-phrase-list">
+            <p style="text-align:center;color:var(--text-dim);padding:2rem;">💡 Pegá un link para empezar</p>
+          </div>
+        </div>
+        <div id="discover-tab-media" class="finance-tab-content">
+          <div style="display:flex;gap:0.5rem;justify-content:space-between;margin-bottom:0.75rem;">
+            <h3 style="font-size:0.9rem;">🎬 Películas, Series, Artistas</h3>
+            <button class="btn-primary" style="padding:0.4rem 0.8rem;font-size:0.75rem;" onclick="window.openMediaModal()">+ Agregar</button>
+          </div>
+          <div class="polyglot-filters">
+            <select id="media-type-filter" class="finance-input" style="width:auto;padding:0.4rem;font-size:0.75rem;" onchange="window.renderMediaVault()"><option value="all">Todos</option><option value="pelicula">🎬 Película</option><option value="serie">📺 Serie</option><option value="artista">🎤 Artista</option><option value="cancion">🎵 Canción</option><option value="documental">📖 Documental</option><option value="libro">📚 Libro</option></select>
+            <select id="media-status-filter" class="finance-input" style="width:auto;padding:0.4rem;font-size:0.75rem;" onchange="window.renderMediaVault()"><option value="all">Todos</option><option value="quiero_ver">👀 Quiero ver</option><option value="viendo">📺 Viendo</option><option value="visto">✅ Visto</option><option value="abandonado">💤 Abandonado</option></select>
+          </div>
+          <div id="media-list" class="polyglot-phrase-list">
+            <p style="text-align:center;color:var(--text-dim);padding:2rem;">🎬 Sin contenido aún</p>
+          </div>
+        </div>
+        <div id="discover-tab-dolar" class="finance-tab-content">
+          <div class="dolar-detail-header">
+            <div class="dolar-detail-rate" id="dolar-detail-rate">💵 -- COP</div>
+            <div class="dolar-detail-range">Rango alerta: 3.500 — 3.600</div>
+            <div class="dolar-detail-status" id="dolar-detail-status">Cargando...</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;margin-bottom:0.75rem;">
+            <canvas id="dolar-chart" style="height:200px;"></canvas>
+          </div>
+          <div id="dolar-history-list" class="polyglot-phrase-list">
+            <p style="text-align:center;color:var(--text-dim);padding:1rem;">Cargando histórico...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== MODAL MEDIA VAULT ========== -->
+      <div id="media-modal" class="modal">
+        <div class="modal-content" style="max-width:480px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <h2 id="media-modal-title">🎬 Agregar</h2>
+            <button class="btn-icon" onclick="window.closeModal('media-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <input type="hidden" id="edit-media-id">
+          <div class="finance-modal-body">
+            <div class="form-row"><label class="input-label">Título</label><input type="text" id="media-title" class="finance-input" placeholder="Ej: Arcane, Blonde..."></div>
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:1;"><label class="input-label">Tipo</label><select id="media-type" class="finance-input"><option value="pelicula">🎬 Película</option><option value="serie">📺 Serie</option><option value="artista">🎤 Artista</option><option value="cancion">🎵 Canción</option><option value="documental">📖 Documental</option><option value="libro">📚 Libro</option><option value="otro">📌 Otro</option></select></div>
+              <div class="form-row" style="flex:1;"><label class="input-label">Estado</label><select id="media-status" class="finance-input"><option value="quiero_ver">👀 Quiero ver</option><option value="viendo">📺 Viendo</option><option value="visto">✅ Visto</option><option value="abandonado">💤 Abandonado</option></select></div>
+            </div>
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:1;"><label class="input-label">Plataforma</label><input type="text" id="media-platform" class="finance-input" placeholder="Netflix, Spotify..."></div>
+              <div class="form-row" style="flex:1;"><label class="input-label">Género</label><input type="text" id="media-genre" class="finance-input" placeholder="Sci-fi, Drama..."></div>
+            </div>
+            <div class="form-row-inline">
+              <div class="form-row" style="flex:0.5;"><label class="input-label">Rating</label><input type="number" id="media-rating" class="finance-input" min="1" max="5" placeholder="5"></div>
+              <div class="form-row" style="flex:1;"><label class="input-label">Recomendado por</label><input type="text" id="media-recommender" class="finance-input" placeholder="Pipe, Tati..."></div>
+            </div>
+            <div class="form-row"><label class="input-label">Link</label><input type="url" id="media-url" class="finance-input" placeholder="https://..."></div>
+            <div class="form-row"><label class="input-label">Notas</label><textarea id="media-notes" class="finance-input" rows="2" placeholder="Por qué lo querés ver..."></textarea></div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-ghost" onclick="window.closeModal('media-modal')">Cancelar</button>
+            <button class="btn-primary" onclick="window.saveMediaItem()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL INSPIRATION DETAIL ========== -->
+      <div id="inspiration-modal" class="modal">
+        <div class="modal-content" style="max-width:500px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <h2>💡 Detalle</h2>
+            <button class="btn-icon" onclick="window.closeModal('inspiration-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <div id="inspiration-detail-content" style="font-size:0.85rem;">
+            <p style="text-align:center;color:var(--text-dim);">Cargando...</p>
+          </div>
+        </div>
+      </div>
 
       <!-- ========== MODAL POLYGLOT: Nueva/Editar Frase ========== -->
       <div id="polyglot-phrase-modal" class="modal">

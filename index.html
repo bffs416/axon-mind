@@ -1004,9 +1004,29 @@
           <button class="finance-subtab" data-dtab="dolar" onclick="window.switchDiscoverTab('dolar', this)">💵 Dólar</button>
         </div>
         <div id="discover-tab-inspirations" class="finance-tab-content active">
-          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
-            <input type="url" id="inspiration-url" class="finance-input" placeholder="Pegá un link (YouTube, IG, TikTok, etc.)..." style="flex:1;" onkeydown="if(event.key==='Enter')window.captureInspiration()">
-            <button class="btn-primary" onclick="window.captureInspiration()" style="white-space:nowrap;">🔍 Analizar</button>
+          <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;">
+            <input type="url" id="inspiration-url" class="finance-input" placeholder="🔗 Pegá un link (YouTube, IG, TikTok, etc.)..." style="width:100%;" onkeydown="if(event.key==='Enter')window.captureInspiration()">
+            <textarea id="inspiration-desc" class="finance-input" placeholder="📝 ¿De qué trata? Describe brevemente el contenido..." rows="2" style="width:100%;resize:vertical;font-family:inherit;"></textarea>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <select id="inspiration-category" class="finance-input" style="flex:1;padding:0.4rem;font-size:0.75rem;">
+                <option value="Marketing Digital">📱 Marketing Digital</option>
+                <option value="IA & Automatización">🤖 IA & Automatización</option>
+                <option value="Desarrollo Web">💻 Desarrollo Web</option>
+                <option value="Finanzas">💰 Finanzas</option>
+                <option value="Diseño">🎨 Diseño</option>
+                <option value="Productividad">⚡ Productividad</option>
+                <option value="Negocios">📊 Negocios</option>
+                <option value="Salud">🏥 Salud</option>
+                <option value="Otro" selected>📌 Otro</option>
+              </select>
+              <button class="btn-primary" onclick="window.captureInspiration()" style="white-space:nowrap;padding:0.4rem 1rem;">💾 Guardar</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.3rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+            <button class="finance-subtab active" data-ifilter="all" onclick="window.filterInspirations('all', this)" style="font-size:0.65rem;padding:0.2rem 0.5rem;">Todos</button>
+            <button class="finance-subtab" data-ifilter="nuevo" onclick="window.filterInspirations('nuevo', this)" style="font-size:0.65rem;padding:0.2rem 0.5rem;">🆕 Nuevos</button>
+            <button class="finance-subtab" data-ifilter="por_hacer" onclick="window.filterInspirations('por_hacer', this)" style="font-size:0.65rem;padding:0.2rem 0.5rem;">📝 Por Hacer</button>
+            <button class="finance-subtab" data-ifilter="hecho" onclick="window.filterInspirations('hecho', this)" style="font-size:0.65rem;padding:0.2rem 0.5rem;">✅ Hecho</button>
           </div>
           <div id="inspiration-list" class="polyglot-phrase-list">
             <p style="text-align:center;color:var(--text-dim);padding:2rem;">💡 Pegá un link para empezar</p>
