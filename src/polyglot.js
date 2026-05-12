@@ -331,15 +331,28 @@ window.savePolyglotPhrase = async () => {
     phraseId = data.id;
   }
 
-  // Save entries
+  // Save entries — only for valid language IDs
   const entryInputs = document.querySelectorAll('.polyglot-lang-entry-form');
+  let savedCount = 0;
+  let errorCount = 0;
+
   for (const details of entryInputs) {
     const langId = details.querySelector('.pe-lang-id')?.value;
     if (!langId) continue;
+
+    // Skip languages not in our allowed list
+    if (!POLYGLOT_LANG_IDS.includes(langId)) {
+      console.warn(`Skipping language '${langId}' — not in POLYGLOT_LANG_IDS`);
+      continue;
+    }
+
     const native = details.querySelector('.pe-native')?.value?.trim() || '';
     const phonetic = details.querySelector('.pe-phonetic')?.value?.trim() || '';
     const literal = details.querySelector('.pe-literal')?.value?.trim() || '';
     const natural = details.querySelector('.pe-natural')?.value?.trim() || '';
+
+    // Skip entries with no content at all
+    if (!native && !phonetic && !literal && !natural) continue;
 
     const existing = window.polyglotState.entries.find(e => e.phrase_id === phraseId && e.language_id === langId);
 
@@ -347,18 +360,24 @@ window.savePolyglotPhrase = async () => {
       const { error } = await supabase.from('polyglot_entries').update({
         native_text: native, phonetic, literal_translation: literal, natural_translation: natural
       }).eq('id', existing.id);
-      if (error) { showToast('⚠️ Error entrada: ' + error.message); console.error(error); return; }
-    } else if (native || phonetic || literal || natural) {
+      if (error) { console.error(`Error updating entry for ${langId}:`, error); errorCount++; continue; }
+      savedCount++;
+    } else {
       const { error } = await supabase.from('polyglot_entries').insert([{
         phrase_id: phraseId, language_id: langId,
         native_text: native, phonetic, literal_translation: literal, natural_translation: natural,
         srs_level: 0, next_review: new Date().toISOString()
       }]);
-      if (error) { showToast('⚠️ Error entrada: ' + error.message); console.error(error); return; }
+      if (error) { console.error(`Error inserting entry for ${langId}:`, error); errorCount++; continue; }
+      savedCount++;
     }
   }
 
-  showToast(id ? '✅ Frase actualizada' : '✅ Frase creada');
+  if (errorCount > 0) {
+    showToast(`⚠️ Guardado con ${errorCount} error(es). Revisa la consola.`);
+  } else {
+    showToast(id ? '✅ Frase actualizada' : `✅ Frase creada con ${savedCount} idiomas`);
+  }
   window.closeModal('polyglot-phrase-modal');
   fetchPolyglotData();
 };
