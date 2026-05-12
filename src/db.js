@@ -12,6 +12,7 @@ export const N8N_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/pomodoro
 export const ARCHITECT_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-architect';
 export const SLICER_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-slicer';
 export const POLYGLOT_TRANSLATE_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/polyglot-translate';
+export const DISTILL_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/distill-media';
 
 // ==================== THEME ====================
 export function setTheme(theme) {

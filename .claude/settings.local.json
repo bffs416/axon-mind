@@ -19,7 +19,17 @@
       "mcp__n8n-mcp__publish_workflow",
       "Bash(node *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "WebFetch(domain:cobalt-latest-8twr.onrender.com)",
+      "Bash(curl *)",
+      "mcp__hostinger-mcp__VPS_getVirtualMachinesV1",
+      "mcp__hostinger-mcp__DNS_getDNSRecordsV1",
+      "mcp__hostinger-mcp__DNS_updateDNSRecordsV1",
+      "mcp__hostinger-mcp__VPS_getFirewallDetailsV1",
+      "mcp__n8n-mcp__execute_workflow",
+      "mcp__n8n-mcp__get_execution",
+      "mcp__supabase__get_publishable_keys",
+      "mcp__supabase__get_logs"
     ]
   }
 }

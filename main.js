@@ -3025,6 +3025,7 @@ async function fetchDiscoverData() {
   renderDolarDetail();
   renderDolarChart();
 }
+window.fetchDiscoverData = fetchDiscoverData;
 
 function renderInspirations() {
   if (window.renderInspirations && window.renderInspirations !== renderInspirations) {
