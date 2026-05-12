@@ -377,9 +377,13 @@ window.deletePolyglotPhrase = async (id) => {
 window.translatePolyglotPhrase = async () => {
   const source_es = $('polyglot-source-es')?.value?.trim();
   const source_en = $('polyglot-source-en')?.value?.trim();
-  if (!source_es && !source_en) { showToast('⚠️ Escribe la frase en español o inglés primero'); return; }
+  if (!source_es && !source_en) {
+    showToast('⚠️ Escribe la frase en español o inglés primero');
+    return;
+  }
 
   const btn = $('polyglot-translate-btn');
+  const originalText = btn ? btn.textContent : '✨ Traducir con IA';
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Traduciendo...'; }
 
   try {
@@ -392,52 +396,68 @@ window.translatePolyglotPhrase = async () => {
     if (!response.ok) throw new Error('HTTP ' + response.status);
 
     const data = await response.json();
+    console.log('Polyglot Translation Response:', data);
 
-    // Fill the accordion fields
+    // standard n8n returns an array of items
+    let rawMap = Array.isArray(data) ? data[0] : data;
+    
+    // Handle potential nesting (n8n standard output or custom keys)
+    if (rawMap && rawMap.json) rawMap = rawMap.json;
+    if (rawMap && rawMap.output) rawMap = rawMap.output;
+    if (rawMap && rawMap.data) rawMap = rawMap.data;
+
+    if (!rawMap || typeof rawMap !== 'object') {
+      console.error('Invalid translation map format:', rawMap);
+      throw new Error('Formato de traducción no reconocido');
+    }
+
+    const allDetails = document.querySelectorAll('.polyglot-lang-entry-form');
     let filled = 0;
-    const translationMap = Array.isArray(data) ? data[0] : data;
-    for (const [langId, translations] of Object.entries(translationMap)) {
-      const details = document.querySelector(`.polyglot-lang-entry-form summary`);
-      // Find the details element for this language
-      const allDetails = document.querySelectorAll('.polyglot-lang-entry-form');
+
+    for (const [langId, translations] of Object.entries(rawMap)) {
+      if (!translations || typeof translations !== 'object') continue;
+
+      // Find the corresponding accordion for this language ID
       for (const d of allDetails) {
         const langInput = d.querySelector('.pe-lang-id');
         if (langInput && langInput.value === langId) {
-          const nativeInput = d.querySelector('.pe-native');
-          const phoneticInput = d.querySelector('.pe-phonetic');
-          const literalInput = d.querySelector('.pe-literal');
-          const naturalInput = d.querySelector('.pe-natural');
+          const mapping = {
+            'native_text': '.pe-native',
+            'phonetic': '.pe-phonetic',
+            'literal_translation': '.pe-literal',
+            'natural_translation': '.pe-natural'
+          };
 
-          if (translations.native_text && nativeInput) {
-            nativeInput.value = translations.native_text;
-            filled++;
-          }
-          if (translations.phonetic && phoneticInput) {
-            phoneticInput.value = translations.phonetic;
-            filled++;
-          }
-          if (translations.literal_translation && literalInput) {
-            literalInput.value = translations.literal_translation;
-            filled++;
-          }
-          if (translations.natural_translation && naturalInput) {
-            naturalInput.value = translations.natural_translation;
-            filled++;
+          let langFilled = false;
+          for (const [apiKey, selector] of Object.entries(mapping)) {
+            const input = d.querySelector(selector);
+            if (input && translations[apiKey]) {
+              input.value = translations[apiKey];
+              filled++;
+              langFilled = true;
+            }
           }
 
-          // Open this accordion
-          d.setAttribute('open', '');
+          // If we filled any field for this language, open the accordion
+          if (langFilled) {
+            d.setAttribute('open', '');
+          }
           break;
         }
       }
     }
 
-    showToast(`✅ ${filled} campos traducidos. Revisa antes de guardar.`);
+    if (filled > 0) {
+      showToast(`✅ ${filled} campos traducidos. Revisa antes de guardar.`);
+    } else {
+      console.warn('No matches found for language IDs:', Object.keys(rawMap));
+      showToast('⚠️ No se encontraron coincidencias para los idiomas configurados.');
+    }
   } catch (e) {
     console.error('Translation error:', e);
-    showToast('⚠️ Error al traducir. ¿El webhook de n8n está activo?');
+    showToast('⚠️ Error al traducir. Revisa la consola o n8n.');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '✨ Traducir con IA'; }
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
   }
 };
 
