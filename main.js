@@ -578,9 +578,10 @@ async function fetchTasks() {
   // Group by category
   const personalTasks = filteredTasks.filter(t => (t.category || 'Personal') === 'Personal');
   const workTasks = filteredTasks.filter(t => (t.category || 'Personal') === 'Trabajo');
+  const coupleTasks = filteredTasks.filter(t => (t.category || 'Personal') === 'Pareja');
   const otherTasks = filteredTasks.filter(t => {
     const cat = t.category || 'Personal';
-    return cat !== 'Personal' && cat !== 'Trabajo';
+    return cat !== 'Personal' && cat !== 'Trabajo' && cat !== 'Pareja';
   });
 
   let html = '';
@@ -607,6 +608,7 @@ async function fetchTasks() {
 
   html += renderGroup('Personal', '🏠', personalTasks, 'personal');
   html += renderGroup('Trabajo', '💼', workTasks, 'trabajo');
+  html += renderGroup('Pareja', '💕', coupleTasks, 'pareja');
   if (otherTasks.length > 0) {
     html += renderGroup('Otros', '📂', otherTasks, 'trabajo');
   }

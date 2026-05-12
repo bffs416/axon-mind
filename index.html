@@ -1417,12 +1417,15 @@ Ejemplo:
 
                 <div style="margin: 0.5rem 0;">
                     <label class="input-label">Categoría</label>
-                    <div style="display:flex; gap:0.5rem;">
-                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center;">
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center; min-width: 30%;">
                             <input type="radio" name="task-category" value="Personal" checked style="accent-color:var(--primary);"> 🏠 Personal
                         </label>
-                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center;">
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center; min-width: 30%;">
                             <input type="radio" name="task-category" value="Trabajo" style="accent-color:var(--accent);"> 💼 Trabajo
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center; min-width: 30%;">
+                            <input type="radio" name="task-category" value="Pareja" style="accent-color:var(--danger);"> 💕 Pareja
                         </label>
                     </div>
                 </div>
@@ -1518,6 +1521,7 @@ Ejemplo:
                 <div id="plan-area-selector" style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.8rem;">
                     <button class="area-pill area-salud active" onclick="window.selectPlanArea('Salud', this)">🩺 Salud</button>
                     <button class="area-pill area-trabajo" onclick="window.selectPlanArea('Trabajo', this)">💼 Trabajo</button>
+                    <button class="area-pill area-pareja" onclick="window.selectPlanArea('Pareja', this)">💕 Pareja</button>
                     <button class="area-pill area-creativo" onclick="window.selectPlanArea('Creativo', this)">🎨 Creativo</button>
                     <button class="area-pill area-familia" onclick="window.selectPlanArea('Familia', this)">❤️ Familia</button>
                     <button class="area-pill area-estudio" onclick="window.selectPlanArea('Estudio', this)">📚 Estudio</button>
