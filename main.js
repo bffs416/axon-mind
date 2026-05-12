@@ -325,7 +325,7 @@ window.syncAllToCalendar = async () => {
   for (const block of allBlocks) {
     try {
       const url = new URL(N8N_URL);
-      const startDate = new Date(block.day + 'T' + block.time + ':00');
+      const startDate = new Date(block.day + 'T' + block.time + ':00-05:00');
       const endDate = new Date(startDate.getTime() + (block.duration || 30) * 60000);
       url.searchParams.append('startTime', startDate.toISOString());
       url.searchParams.append('endTime', endDate.toISOString());
@@ -1310,7 +1310,7 @@ window.openSchedule = (title, duration = 25) => {
 $('confirm-schedule').onclick = async () => {
   const t = $('schedule-time').value; if(!t) return;
   const dur = window.currentScheduleDuration || 25;
-  const start = new Date(t), end = new Date(start.getTime() + dur * 60000);
+  const start = new Date(t + '-05:00'), end = new Date(start.getTime() + dur * 60000);
   selectedTaskTitle = taskToSchedule;
   await syncCalendar('scheduled', start.toISOString(), end.toISOString());
   $('schedule-modal').style.display = 'none';
