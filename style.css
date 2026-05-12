@@ -3461,6 +3461,45 @@ select.finance-input {
 }
 .polyglot-canvas-btn:hover { opacity: 1; }
 
+/* ========== DÓLAR WIDGET ========== */
+.dolar-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background: var(--surface-light);
+    transition: all 0.2s;
+    margin-left: 0.3rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.dolar-badge:hover {
+    background: var(--bg-card-hover);
+}
+.dolar-detail-header {
+    text-align: center;
+    padding: 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 0.75rem;
+}
+.dolar-detail-rate {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+.dolar-detail-range {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-bottom: 0.25rem;
+}
+.dolar-detail-status {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .polyglot-dashboard { flex-direction: column; }

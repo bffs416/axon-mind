@@ -55,6 +55,7 @@ viewBtns.forEach(btn => {
     if (viewId === 'plan') { renderRoutines(); renderPlanner(); loadGCal(); }
     if (viewId === 'finances') { fetchFinanceData(); }
     if (viewId === 'polyglot') { fetchPolyglotData(); }
+    if (viewId === 'discover') { fetchDiscoverData(); }
   };
 });
 function restoreTimerState() {
@@ -3000,7 +3001,95 @@ window.confirmSaveTemplate = async () => {
 };
 // Polyglot Hub imported from src/polyglot.js
 import { fetchPolyglotData as _fetchP } from './src/polyglot.js';
+import './src/inspirations.js';
+import './src/mediavault.js';
 const fetchPolyglotData = _fetchP;
+
+// ==================== DISCOVER MODULE ====================
+window._inspirations = [];
+window._mediaItems = [];
+let _dolarHistory = [];
+
+async function fetchDiscoverData() {
+  const [insRes, medRes, dolRes] = await Promise.all([
+    supabase.from('inspirations').select('*').order('created_at', { ascending: false }),
+    supabase.from('media_vault').select('*').order('created_at', { ascending: false }),
+    supabase.from('dolar_history').select('*').order('date', { ascending: false }).limit(30)
+  ]);
+  if (insRes.data) window._inspirations = insRes.data;
+  if (medRes.data) window._mediaItems = medRes.data;
+  if (dolRes.data) _dolarHistory = dolRes.data;
+  renderInspirations();
+  renderMediaVault();
+  updateDolarBadge();
+  renderDolarDetail();
+  renderDolarChart();
+}
+
+function renderInspirations() {
+  const list = $('inspiration-list'); if (!list) return;
+  const items = window._inspirations || [];
+  if (!items.length) { list.innerHTML = '<div class="finance-empty">💡 Pegá un link para analizar</div>'; return; }
+  list.innerHTML = items.map(i => {
+    const statusLabel = { nuevo: '🆕', por_hacer: '📝', en_progreso: '🔄', hecho: '✅', archivado: '📦' };
+    return '<div class="polyglot-phrase-item"><div class="polyglot-phrase-source" onclick="window.openInspirationDetail(\'' + i.id + '\')" style="cursor:pointer;"><div class="polyglot-phrase-source-text">' + escHtml(i.title || 'Sin título') + '</div><div class="polyglot-phrase-source-lang">' + (statusLabel[i.status] || '🆕') + ' ' + i.status + (i.platform ? ' · ' + i.platform : '') + (i.category ? ' · ' + i.category : '') + '</div></div><div class="polyglot-phrase-langs">' + ((i.tools || []).slice(0, 3).map(t => '<span style="font-size:0.6rem;padding:0.05rem 0.3rem;border-radius:3px;background:var(--primary-low);color:var(--primary);margin-left:0.15rem;">' + t + '</span>').join('')) + '</div></div>';
+  }).join('');
+}
+
+function updateDolarBadge() {
+  const badge = $('dolar-badge'); if (!badge) return;
+  if (!_dolarHistory.length) { badge.textContent = '💵 --'; return; }
+  const latest = _dolarHistory[0];
+  const rate = Number(latest.rate);
+  badge.textContent = '💵 ' + rate.toLocaleString('es-CO');
+  badge.style.color = (rate >= 3500 && rate <= 3600) ? 'var(--success)' : '';
+}
+
+window.openDolarDetail = () => {
+  const tab = document.querySelector('.finance-subtab[data-dtab="dolar"]');
+  if (tab) tab.click();
+};
+
+function renderDolarDetail() {
+  const rateEl = $('dolar-detail-rate'); if (!rateEl) return;
+  const statusEl = $('dolar-detail-status'); if (!statusEl) return;
+  if (!_dolarHistory.length) { rateEl.textContent = '💵 -- COP'; statusEl.textContent = 'Sin datos aún'; return; }
+  const latest = _dolarHistory[0];
+  const rate = Number(latest.rate);
+  rateEl.textContent = '💵 ' + rate.toLocaleString('es-CO') + ' COP';
+  const inRange = rate >= 3500 && rate <= 3600;
+  rateEl.style.color = inRange ? 'var(--success)' : 'var(--text)';
+  statusEl.textContent = inRange ? '✅ En rango de compra' : (rate < 3500 ? '💪 Peso fuerte' : '💵 Dólar caro');
+  statusEl.style.color = inRange ? 'var(--success)' : 'var(--text-dim)';
+}
+
+function renderDolarChart() {
+  const canvas = document.getElementById('dolar-chart'); if (!canvas || !_dolarHistory.length) return;
+  if (!window._dolarChart) {
+    const ctx = canvas.getContext('2d');
+    window._dolarChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: _dolarHistory.slice().reverse().map(d => d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : ''),
+        datasets: [{
+          label: 'USD/COP',
+          data: _dolarHistory.slice().reverse().map(d => Number(d.rate)),
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139,92,246,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        scales: { x: { ticks: { color: '#64748b', font: { size: 8 } } }, y: { ticks: { color: '#64748b', font: { size: 8 } } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+}
+
 // ==================== FINANCE MODULE v2 ====================
 window.financeState = {
   transactions: [],
