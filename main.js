@@ -3850,6 +3850,25 @@ window.openDolarDetail = async function() {
 // Initialize water display on load
 updateWaterDisplay();
 
+// ===== GLOBAL AUTO-CAPITALIZATION =====
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+    const type = el.type ? el.type.toLowerCase() : '';
+    if (type === 'password' || type === 'email' || type === 'url' || el.dataset.noCap === 'true') return;
+    
+    const val = el.value;
+    if (val.length > 0 && val[0] !== val[0].toUpperCase()) {
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      el.value = val.charAt(0).toUpperCase() + val.slice(1);
+      if (el.setSelectionRange) {
+        el.setSelectionRange(start, end);
+      }
+    }
+  }
+});
+
 // Initial calls
 document.addEventListener('DOMContentLoaded', () => {
     renderRoutines();
