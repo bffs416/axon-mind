@@ -556,6 +556,10 @@ function renderPolyglotStudyCard() {
     const statusText = !entry ? 'Sin traducción' : level >= 6 ? '✅ Dominado' : isDue ? '📝 Pendiente' : `Nv. ${level}`;
     const levelLabel = level >= 6 ? '✅' : level >= 4 ? '💪' : level >= 2 ? '📖' : '🆕';
 
+    const meta = (entry && entry.grammar_metadata) ? entry.grammar_metadata : {};
+    const pronOk = meta.pronunciation_ok ? '✅' : '⬜';
+    const writOk = meta.writing_ok ? '✅' : '⬜';
+
     return `
       <div class="polyglot-lang-card ${entry && entry.native_text ? '' : ''}" data-lang="${id}" data-entry-id="${entry ? entry.id : ''}" data-phrase-id="${phraseId}" onclick="window.togglePolyglotLang(this)">
         <div class="polyglot-lang-card-header">
@@ -594,6 +598,8 @@ function renderPolyglotStudyCard() {
             <div style="display:flex;gap:0.3rem;margin-top:0.3rem;align-items:center;flex-wrap:wrap;">
               <button class="polyglot-audio-btn" onclick="event.stopPropagation();window.playPolyglotAudio('${escHtml(entry.native_text || entry.phonetic)}','${id}')" title="Escuchar pronunciación">▶️ Audio</button>
               <button class="polyglot-audio-btn" onclick="event.stopPropagation();window.togglePolyglotWriting(this,'${id}','${escHtml(entry.native_text || '')}')" title="Practicar escritura con S-Pen">🖊️ Escribir</button>
+              <button class="polyglot-audio-btn" style="background:var(--bg-deep);" onclick="event.stopPropagation();window.togglePolyglotSkill('${entry.id}', 'pronunciation_ok')" title="Evaluar: ¿Sé pronunciarlo?">🗣️ ${pronOk}</button>
+              <button class="polyglot-audio-btn" style="background:var(--bg-deep);" onclick="event.stopPropagation();window.togglePolyglotSkill('${entry.id}', 'writing_ok')" title="Evaluar: ¿Sé escribirlo?">✍️ ${writOk}</button>
             </div>
             <div class="polyglot-canvas-container" style="display:none;" data-lang="${id}">
               <canvas class="polyglot-canvas"></canvas>
@@ -645,6 +651,24 @@ window.togglePolyglotLayer = (btn) => {
 };
 
 // Play TTS audio
+window.togglePolyglotSkill = async (entryId, skillKey) => {
+  const entry = window.polyglotState.entries.find(e => e.id === entryId);
+  if (!entry) return;
+  const meta = entry.grammar_metadata || {};
+  meta[skillKey] = !meta[skillKey];
+  entry.grammar_metadata = meta;
+  
+  // Re-render immediately to show visual change
+  renderPolyglotStudyCard();
+
+  // Save to database
+  try {
+    await supabase.from('polyglot_entries').update({ grammar_metadata: meta }).eq('id', entryId);
+  } catch (err) {
+    console.error("Error updating skill:", err);
+  }
+};
+
 window.playPolyglotAudio = (text, langId) => {
   if (!text || text === '—') return;
   if (!window.speechSynthesis) { showToast('⚠️ TTS no disponible en este navegador'); return; }
