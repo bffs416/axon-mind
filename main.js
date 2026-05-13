@@ -560,11 +560,14 @@ async function fetchTasks() {
                         <button class="btn-mini" onclick="event.stopPropagation();window.focusStep('${task.id}','${task.title.replace(/'/g,"\\'")+': '+s.text.replace(/'/g,"\\'")}')" title="Iniciar Pomodoro" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
                           <i data-lucide="play" style="width:12px; height:12px;"></i>
                         </button>
-                        <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}', ${s.duration || 25})" title="Agendar" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                        <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}', ${s.duration || 25}, '${task.id}', ${i})" title="Agendar" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
                           <i data-lucide="calendar" style="width:12px; height:12px;"></i>
                         </button>
                       </div>
-                      <span style="display: flex; align-items: center; gap: 4px;">${assigneeHtml}${s.text}${sDuration}</span>
+                      <span style="display: flex; align-items: center; gap: 4px;">
+                        ${s.scheduled ? '<i data-lucide="check-circle" style="width:14px; height:14px; color:var(--accent);" title="Ya agendado en Calendar"></i>' : ''}
+                        ${assigneeHtml}${s.text}${sDuration}
+                      </span>
                     </div>`;
                 }).join('');
 
@@ -1301,9 +1304,11 @@ const createProject = async () => {
 
 $('save-task').onclick = createProject;
 
-window.openSchedule = (title, duration = 25) => {
+window.openSchedule = (title, duration = 25, taskId = null, stepIndex = null) => {
   taskToSchedule = title; 
   window.currentScheduleDuration = duration; // Guardamos la duración para usarla al confirmar
+  window.currentScheduleTaskId = taskId;
+  window.currentScheduleStepIndex = stepIndex;
   $('schedule-task-name').textContent = `${title} (${formatDuration(duration)})`;
   const now = new Date(); now.setMinutes(now.getMinutes()+5);
   $('schedule-time').value = new Date(now - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -1317,6 +1322,16 @@ $('confirm-schedule').onclick = async () => {
   await syncCalendar('scheduled', start.toISOString(), end.toISOString());
   $('schedule-modal').style.display = 'none';
   showToast(`📅 ¡Agendado (${formatDuration(dur)})! Tu teléfono te avisará.`);
+
+  // Si se agendó un paso específico, marcarlo en la DB
+  if (window.currentScheduleTaskId && window.currentScheduleStepIndex !== null) {
+    const task = filteredTasks.find(t => t.id === window.currentScheduleTaskId);
+    if (task && task.steps && task.steps[window.currentScheduleStepIndex]) {
+      task.steps[window.currentScheduleStepIndex].scheduled = true;
+      await supabase.from('tasks').update({ steps: task.steps }).eq('id', task.id);
+      renderTasks();
+    }
+  }
 };
 $('close-schedule-modal').onclick = () => $('schedule-modal').style.display = 'none';
 
