@@ -110,28 +110,36 @@ export function showToast(msg) {
 }
 
 // ==================== AUDIO ====================
-export function playSound(type = 'workEnd') {
-  if (ALARM_CONFIG.useCustomSound) {
-    const audio = new Audio(ALARM_CONFIG.soundUrl);
-    audio.volume = ALARM_CONFIG.volume;
-    audio.play();
-    return;
+export function playSound(type) {
+  try {
+    if (!ALARM_CONFIG.soundEnabled) return;
+    if (ALARM_CONFIG.soundUrl) {
+      const audio = new Audio(ALARM_CONFIG.soundUrl);
+      audio.volume = ALARM_CONFIG.volume;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => { console.warn("Audio play blocked by browser:", error); });
+      }
+      return;
+    }
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const configs = {
+      workStart: [{ f: 660, d: 0, t: 0.1 }, { f: 880, d: 0.1, t: 0.2 }],
+      workEnd: [{ f: 880, d: 0, t: 0.2 }, { f: 880, d: 0.3, t: 0.2 }, { f: 880, d: 0.6, t: 0.2 }],
+      breakStart: [{ f: 440, d: 0, t: 0.3 }, { f: 330, d: 0.3, t: 0.4 }]
+    };
+    (configs[type] || configs.workEnd).forEach(s => {
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = s.f;
+      gain.gain.setValueAtTime(0.2, ctx.currentTime + s.d);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + s.d + s.t);
+      osc.start(ctx.currentTime + s.d);
+      osc.stop(ctx.currentTime + s.d + s.t);
+    });
+  } catch (e) {
+    console.warn("playSound failed:", e);
   }
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const configs = {
-    workStart: [{ f: 660, d: 0, t: 0.1 }, { f: 880, d: 0.1, t: 0.2 }],
-    workEnd: [{ f: 880, d: 0, t: 0.2 }, { f: 880, d: 0.3, t: 0.2 }, { f: 880, d: 0.6, t: 0.2 }],
-    breakStart: [{ f: 440, d: 0, t: 0.3 }, { f: 330, d: 0.3, t: 0.4 }]
-  };
-  (configs[type] || configs.workEnd).forEach(s => {
-    const osc = ctx.createOscillator(), gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine'; osc.frequency.value = s.f;
-    gain.gain.setValueAtTime(0.2, ctx.currentTime + s.d);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + s.d + s.t);
-    osc.start(ctx.currentTime + s.d);
-    osc.stop(ctx.currentTime + s.d + s.t);
-  });
 }
 
 // ==================== NOTIFICATIONS ====================
