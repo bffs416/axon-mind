@@ -564,7 +564,7 @@ async function fetchTasks() {
                         <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}', ${s.duration || 25}, '${task.id}', ${i})" title="Agendar" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
                           <i data-lucide="calendar" style="width:12px; height:12px;"></i>
                         </button>
-                        <button class="btn-mini" onclick="event.stopPropagation();window.toggleStepScheduled('${task.id}', ${i})" title="${s.scheduled ? 'Desmarcar de agenda' : 'Marcar como agendado manualmente'}" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: ${s.scheduled ? 'var(--accent)' : 'inherit'};">
+                        <button class="btn-mini" onclick="event.stopPropagation();window.toggleStepScheduled('${task.id}', ${i}, this)" title="${s.scheduled ? 'Desmarcar de agenda' : 'Marcar como agendado manualmente'}" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: ${s.scheduled ? 'var(--accent)' : 'inherit'};">
                           <i data-lucide="check-circle" style="width:12px; height:12px;"></i>
                         </button>
                       </div>
@@ -689,12 +689,19 @@ window.cycleStepAssignee = async (taskId, stepIdx, current) => {
     fetchTasks();
   }
 };
-window.toggleStepScheduled = async (taskId, stepIndex) => {
+window.toggleStepScheduled = async (taskId, stepIndex, btnElement) => {
   const task = allTasks.find(t => t.id === taskId);
   if (task && task.steps && task.steps[stepIndex]) {
-    task.steps[stepIndex].scheduled = !task.steps[stepIndex].scheduled;
+    const isScheduled = !task.steps[stepIndex].scheduled;
+    task.steps[stepIndex].scheduled = isScheduled;
+    
+    // UI update optimista
+    if (btnElement) {
+      btnElement.style.color = isScheduled ? 'var(--accent)' : 'inherit';
+      btnElement.title = isScheduled ? 'Desmarcar de agenda' : 'Marcar como agendado manualmente';
+    }
+    
     await supabase.from('tasks').update({ steps: task.steps }).eq('id', task.id);
-    fetchTasks();
   }
 };
 window.reschedule = (id, title) => { window.openSchedule(title); };
