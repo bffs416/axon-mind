@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" crossorigin src="/assets/index-BCOHPyrf.js"></script>
+  <script type="module" crossorigin src="/assets/index-YIgdIv5-.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-6WCKvHdN.css">
 </head>
 <body>
@@ -1005,9 +1005,29 @@
           <button class="finance-subtab" data-dtab="dolar" onclick="window.switchDiscoverTab('dolar', this)">💵 Dólar</button>
         </div>
         <div id="discover-tab-inspirations" class="finance-tab-content active">
-          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
-            <input type="url" id="inspiration-url" class="finance-input" placeholder="Pegá un link (YouTube, IG, TikTok, etc.)..." style="flex:1;" onkeydown="if(event.key==='Enter')window.captureInspiration()">
-            <button class="btn-primary" onclick="window.captureInspiration()" style="white-space:nowrap;">🔍 Analizar</button>
+          <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;">
+            <input type="url" id="inspiration-url" class="finance-input" placeholder="🔗 Pegá un link (YouTube, IG, TikTok, etc.)..." style="width:100%;" onkeydown="if(event.key==='Enter')window.captureInspiration()">
+            <textarea id="inspiration-desc" class="finance-input" placeholder="📝 ¿De qué trata? Describe brevemente el contenido..." rows="2" style="width:100%;resize:vertical;font-family:inherit;"></textarea>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <select id="inspiration-category" class="finance-input" style="flex:1;padding:0.4rem;font-size:0.75rem;">
+                <option value="Marketing Digital">📱 Marketing Digital</option>
+                <option value="IA & Automatización">🤖 IA & Automatización</option>
+                <option value="Desarrollo Web">💻 Desarrollo Web</option>
+                <option value="Finanzas">💰 Finanzas</option>
+                <option value="Diseño">🎨 Diseño</option>
+                <option value="Productividad">⚡ Productividad</option>
+                <option value="Negocios">📊 Negocios</option>
+                <option value="Salud">🏥 Salud</option>
+                <option value="Otro" selected>📌 Otro</option>
+              </select>
+              <button class="btn-primary" onclick="window.captureInspiration()" style="white-space:nowrap;padding:0.4rem 1rem;">💾 Guardar</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.3rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+            <button class="finance-subtab active" data-ifilter="all" onclick="window.filterInspirations('all', this)" style="font-size:0.65rem;padding:0.2rem 0.5rem;">Todos</button>
+            <button class="finance-subtab" data-ifilter="nuevo" onclick="window.filterInspirations('nuevo', this)" style="font-size:0.65rem;padding:0.2rem 0.5rem;">🆕 Nuevos</button>
+            <button class="finance-subtab" data-ifilter="por_hacer" onclick="window.filterInspirations('por_hacer', this)" style="font-size:0.65rem;padding:0.2rem 0.5rem;">📝 Por Hacer</button>
+            <button class="finance-subtab" data-ifilter="hecho" onclick="window.filterInspirations('hecho', this)" style="font-size:0.65rem;padding:0.2rem 0.5rem;">✅ Hecho</button>
           </div>
           <div id="inspiration-list" class="polyglot-phrase-list">
             <p style="text-align:center;color:var(--text-dim);padding:2rem;">💡 Pegá un link para empezar</p>
@@ -1169,6 +1189,19 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
             <h2>🔤 Alfabetos</h2>
             <button class="btn-icon" onclick="window.closeModal('polyglot-alphabet-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <div id="polyglot-alphabet-practice-area" style="display:none; margin-bottom: 1rem; background:var(--bg-deep); padding:1rem; border-radius:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem">
+               <h3 style="margin:0; color:var(--accent);">Práctica de Trazo</h3>
+               <button class="btn-mini" onclick="window.closeAlphabetPractice()">Cerrar Práctica</button>
+            </div>
+            <div style="position:relative; width:100%; height:200px; border-radius:8px; border:1px dashed var(--border); overflow:hidden; background:#0a0a0f;">
+               <div id="polyglot-alphabet-ref" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:6rem; color:#ffffff; opacity:0.1; pointer-events:none; font-family:sans-serif;"></div>
+               <canvas id="polyglot-alphabet-canvas" style="width:100%; height:100%; cursor:crosshair; touch-action:none;"></canvas>
+               <div style="position:absolute; bottom:10px; right:10px; z-index:10;">
+                  <button class="btn-mini" onclick="window.clearAlphabetCanvas()">🧹 Limpiar</button>
+               </div>
+            </div>
           </div>
           <div id="polyglot-alphabet-content">
             <p style="text-align:center;color:var(--text-dim);padding:1rem;">Cargando...</p>
@@ -1398,12 +1431,15 @@ Ejemplo:
 
                 <div style="margin: 0.5rem 0;">
                     <label class="input-label">Categoría</label>
-                    <div style="display:flex; gap:0.5rem;">
-                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center;">
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center; min-width: 30%;">
                             <input type="radio" name="task-category" value="Personal" checked style="accent-color:var(--primary);"> 🏠 Personal
                         </label>
-                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center;">
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center; min-width: 30%;">
                             <input type="radio" name="task-category" value="Trabajo" style="accent-color:var(--accent);"> 💼 Trabajo
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer; background:var(--bg-card); padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); flex:1; justify-content:center; min-width: 30%;">
+                            <input type="radio" name="task-category" value="Pareja" style="accent-color:var(--danger);"> 💕 Pareja
                         </label>
                     </div>
                 </div>
@@ -1499,6 +1535,7 @@ Ejemplo:
                 <div id="plan-area-selector" style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.8rem;">
                     <button class="area-pill area-salud active" onclick="window.selectPlanArea('Salud', this)">🩺 Salud</button>
                     <button class="area-pill area-trabajo" onclick="window.selectPlanArea('Trabajo', this)">💼 Trabajo</button>
+                    <button class="area-pill area-pareja" onclick="window.selectPlanArea('Pareja', this)">💕 Pareja</button>
                     <button class="area-pill area-creativo" onclick="window.selectPlanArea('Creativo', this)">🎨 Creativo</button>
                     <button class="area-pill area-familia" onclick="window.selectPlanArea('Familia', this)">❤️ Familia</button>
                     <button class="area-pill area-estudio" onclick="window.selectPlanArea('Estudio', this)">📚 Estudio</button>
