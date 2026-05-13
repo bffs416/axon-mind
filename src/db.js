@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign } from 'lucide';
+import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign } from 'lucide';
 
 // ==================== SUPABASE ====================
 export const supabase = createClient(
@@ -96,7 +96,7 @@ export const $ = window.$;
 window.closeModal = (id) => { $(id).style.display = 'none'; };
 
 export function initIcons() {
-  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign } });
+  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign } });
 }
 window.initIcons = initIcons;
 
