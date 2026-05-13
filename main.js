@@ -1325,11 +1325,11 @@ $('confirm-schedule').onclick = async () => {
 
   // Si se agendó un paso específico, marcarlo en la DB
   if (window.currentScheduleTaskId && window.currentScheduleStepIndex !== null) {
-    const task = filteredTasks.find(t => t.id === window.currentScheduleTaskId);
+    const task = allTasks.find(t => t.id === window.currentScheduleTaskId);
     if (task && task.steps && task.steps[window.currentScheduleStepIndex]) {
       task.steps[window.currentScheduleStepIndex].scheduled = true;
       await supabase.from('tasks').update({ steps: task.steps }).eq('id', task.id);
-      renderTasks();
+      fetchTasks();
     }
   }
 };
