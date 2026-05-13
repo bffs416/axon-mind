@@ -875,7 +875,7 @@ window.openPolyglotAlphabets = () => {
       const lang = POLYGLOT_LANGUAGES[id];
       const chars = a.chars.split('<br>').map(line =>
         line.split(' ').filter(Boolean).map(ch =>
-          `<span class="polyglot-alphabet-char" title="${ch}">${ch}</span>`
+          `<span class="polyglot-alphabet-char" title="Practicar trazo de ${ch}" onclick="window.practiceAlphabetChar('${ch}')" style="cursor:pointer">${ch}</span>`
         ).join('')
       ).join('<br>');
       return `
@@ -891,6 +891,48 @@ window.openPolyglotAlphabets = () => {
   </div>`;
 
   modal.style.display = 'flex';
+  window.closeAlphabetPractice(); // close practice area if it was left open
+};
+
+window.practiceAlphabetChar = (char) => {
+  const area = $('polyglot-alphabet-practice-area');
+  const ref = $('polyglot-alphabet-ref');
+  const canvas = $('polyglot-alphabet-canvas');
+  if (!area || !ref || !canvas) return;
+
+  area.style.display = 'block';
+  ref.textContent = char;
+
+  if (!canvas.dataset.initialized) {
+    canvas.dataset.initialized = 'true';
+    if (typeof initPolyglotCanvas === 'function') {
+      initPolyglotCanvas(canvas);
+    }
+  }
+
+  // Scroll to top of modal content so canvas is visible
+  const content = $('polyglot-alphabet-content');
+  if (content && content.parentElement) {
+    content.parentElement.scrollTop = 0;
+  }
+  
+  window.clearAlphabetCanvas();
+};
+
+window.closeAlphabetPractice = () => {
+  const area = $('polyglot-alphabet-practice-area');
+  if (area) area.style.display = 'none';
+};
+
+window.clearAlphabetCanvas = () => {
+  const canvas = $('polyglot-alphabet-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 };
 
 // ===== CONFIG =====

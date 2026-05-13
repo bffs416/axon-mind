@@ -1189,6 +1189,19 @@
             <h2>🔤 Alfabetos</h2>
             <button class="btn-icon" onclick="window.closeModal('polyglot-alphabet-modal')"><i data-lucide="x"></i></button>
           </div>
+          <div id="polyglot-alphabet-practice-area" style="display:none; margin-bottom: 1rem; background:var(--bg-deep); padding:1rem; border-radius:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem">
+               <h3 style="margin:0; color:var(--accent);">Práctica de Trazo</h3>
+               <button class="btn-mini" onclick="window.closeAlphabetPractice()">Cerrar Práctica</button>
+            </div>
+            <div style="position:relative; width:100%; height:200px; border-radius:8px; border:1px dashed var(--border); overflow:hidden; background:#0a0a0f;">
+               <div id="polyglot-alphabet-ref" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:6rem; color:#ffffff; opacity:0.1; pointer-events:none; font-family:sans-serif;"></div>
+               <canvas id="polyglot-alphabet-canvas" style="width:100%; height:100%; cursor:crosshair; touch-action:none;"></canvas>
+               <div style="position:absolute; bottom:10px; right:10px; z-index:10;">
+                  <button class="btn-mini" onclick="window.clearAlphabetCanvas()">🧹 Limpiar</button>
+               </div>
+            </div>
+          </div>
           <div id="polyglot-alphabet-content">
             <p style="text-align:center;color:var(--text-dim);padding:1rem;">Cargando...</p>
           </div>
