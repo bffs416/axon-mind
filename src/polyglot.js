@@ -879,13 +879,13 @@ window.openPolyglotAlphabets = () => {
         ).join('')
       ).join('<br>');
       return `
-        <div class="polyglot-alphabet-lang">
-          <h4>${lang.flag} ${lang.name} <span style="font-weight:400;font-size:0.65rem;color:var(--text-dim);">(${a.script})</span></h4>
-          <div style="font-size:0.65rem; color:var(--text-dim); margin-bottom:0.3rem;">
+        <details class="polyglot-alphabet-lang" style="margin-bottom:0.5rem; background:rgba(255,255,255,0.02); padding:0.5rem; border-radius:8px;">
+          <summary style="cursor:pointer; font-weight:bold; outline:none;">${lang.flag} ${lang.name} <span style="font-weight:400;font-size:0.65rem;color:var(--text-dim);">(${a.script})</span></summary>
+          <div style="font-size:0.65rem; color:var(--text-dim); margin-bottom:0.3rem; margin-top:0.5rem;">
             ${id === 'zh' ? 'Caracteres comunes (frecuencia):' : 'Alfabeto:'}
           </div>
           <div>${chars}</div>
-        </div>
+        </details>
       `;
     }).join('')}
   </div>`;
