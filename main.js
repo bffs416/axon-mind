@@ -563,9 +563,11 @@ async function fetchTasks() {
                         <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${(task.title+': '+s.text).replace(/'/g,"\\'")}', ${s.duration || 25}, '${task.id}', ${i})" title="Agendar" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
                           <i data-lucide="calendar" style="width:12px; height:12px;"></i>
                         </button>
+                        <button class="btn-mini" onclick="event.stopPropagation();window.toggleStepScheduled('${task.id}', ${i})" title="${s.scheduled ? 'Desmarcar de agenda' : 'Marcar como agendado manualmente'}" style="padding: 2px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: ${s.scheduled ? 'var(--accent)' : 'inherit'};">
+                          <i data-lucide="check-circle" style="width:12px; height:12px;"></i>
+                        </button>
                       </div>
                       <span style="display: flex; align-items: center; gap: 4px;">
-                        ${s.scheduled ? '<i data-lucide="check-circle" style="width:14px; height:14px; color:var(--accent);" title="Ya agendado en Calendar"></i>' : ''}
                         ${assigneeHtml}${s.text}${sDuration}
                       </span>
                     </div>`;
@@ -683,6 +685,14 @@ window.cycleStepAssignee = async (taskId, stepIdx, current) => {
   if (data && data.steps) {
     data.steps[stepIdx].assignee = next;
     await supabase.from('tasks').update({ steps: data.steps }).eq('id', taskId);
+    fetchTasks();
+  }
+};
+window.toggleStepScheduled = async (taskId, stepIndex) => {
+  const task = allTasks.find(t => t.id === taskId);
+  if (task && task.steps && task.steps[stepIndex]) {
+    task.steps[stepIndex].scheduled = !task.steps[stepIndex].scheduled;
+    await supabase.from('tasks').update({ steps: task.steps }).eq('id', task.id);
     fetchTasks();
   }
 };
