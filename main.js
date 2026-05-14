@@ -2940,16 +2940,29 @@ window.fetchWaterFromSupabase = async () => {
             .eq('profile', waterProfile)
             .eq('date', today);
 
-        if (data && data.length > 0) {
+        if (data) {
             const sum = data.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-            if (sum > waterTotal) {
+            // Si el total en la nube es diferente al local, actualizamos
+            if (Math.abs(sum - waterTotal) > 0.01) {
                 waterTotal = sum;
                 localStorage.setItem(getWaterKey(), waterTotal.toString());
                 updateWaterDisplay();
+                console.log(`[Sync] ${waterProfile} actualizado a ${waterTotal.toFixed(1)}L`);
             }
         }
-    } catch (e) {}
+    } catch (e) {
+        console.warn("Error en fetchWaterFromSupabase:", e);
+    }
 };
+
+// Sincronización automática
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        window.fetchWaterFromSupabase();
+    }
+});
+
+setInterval(window.fetchWaterFromSupabase, 1000 * 60 * 5); // Cada 5 minutos
 
 function updateWaterDisplay() {
     const current = $('water-current');
