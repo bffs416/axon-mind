@@ -2877,7 +2877,7 @@ window.addWater = async (amount) => {
 
     // Sincronizar con Supabase
     try {
-        const { error } = await window.supabase.from('water_logs').insert({
+        const { error } = await supabase.from('water_logs').insert({
             profile: waterProfile,
             amount: amount,
             date: getTodayLocal(),
@@ -2912,7 +2912,7 @@ window.saveWater = async () => {
         // En el nuevo modelo, addWater ya sincroniza cada gota. 
         // saveWater ahora sirve para forzar una lectura y asegurar que todo esté al día.
         const today = getTodayLocal();
-        const { data, error } = await window.supabase
+        const { data, error } = await supabase
             .from('water_logs')
             .select('amount')
             .eq('profile', waterProfile)
@@ -2934,7 +2934,7 @@ window.saveWater = async () => {
 window.fetchWaterFromSupabase = async () => {
     try {
         const today = getTodayLocal();
-        const { data, error } = await window.supabase
+        const { data, error } = await supabase
             .from('water_logs')
             .select('amount')
             .eq('profile', waterProfile)
