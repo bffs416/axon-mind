@@ -1610,11 +1610,14 @@ Ejemplo:
 
     <!-- ========== FAB RÁPIDO ========== -->
     <div class="fab-container">
-        <button id="add-task-btn" class="fab fab-primary" onclick="window.openAddSelector()" title="Agregar">
-            <i data-lucide="plus"></i>
+        <button id="global-search-fab" class="fab fab-secondary" onclick="window.openGlobalSearch()" title="Buscar (Ctrl+K)" style="background: var(--bg-card); color: var(--text);">
+            <i data-lucide="search"></i>
         </button>
         <button id="quick-capture-fab" class="fab fab-secondary" onclick="openQuickCapture()" title="Captura Rápida">
             <i data-lucide="zap"></i>
+        </button>
+        <button id="add-task-btn" class="fab fab-primary" onclick="window.openAddSelector()" title="Agregar">
+            <i data-lucide="plus"></i>
         </button>
     </div>
 
