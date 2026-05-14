@@ -4269,17 +4269,16 @@ window._gsearchToggleSteps = (taskId) => {
 // Schedule a specific step (or the whole task if stepIndex is null)
 // Calls openSchedule with the full params → confirm handler saves scheduled=true → blue chip appears
 window._gsearchScheduleStep = (taskId, stepIndex, title, duration) => {
-    // Close the search overlay FIRST so the schedule modal is not blocked behind it
+    // Pass taskId and stepIndex so confirm-schedule saves scheduled=true → blue chip
+    const resolvedTaskId = (stepIndex !== null && stepIndex !== undefined) ? taskId : null;
+    const resolvedStepIndex = (stepIndex !== null && stepIndex !== undefined) ? stepIndex : null;
+
+    // Close the search overlay
     const searchModal = document.getElementById('global-search-modal');
     if (searchModal) searchModal.style.display = 'none';
 
-    // Small delay so the close transition finishes before the schedule modal opens
-    setTimeout(() => {
-        // Pass taskId and stepIndex so confirm-schedule saves scheduled=true → blue chip
-        const resolvedTaskId = (stepIndex !== null && stepIndex !== undefined) ? taskId : null;
-        const resolvedStepIndex = (stepIndex !== null && stepIndex !== undefined) ? stepIndex : null;
-        window.openSchedule(title, duration || 25, resolvedTaskId, resolvedStepIndex);
-    }, 80);
+    // Open the schedule modal (now guaranteed to be on top via CSS)
+    window.openSchedule(title, duration || 25, resolvedTaskId, resolvedStepIndex);
 };
 
 function _gsearchHandleKey(e) {
