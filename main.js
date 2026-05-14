@@ -4088,9 +4088,31 @@ function _gsearchRun(query) {
             const idx = _gsearchItems.length;
             const safeTitle = (t.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const isDone = t.status === 'done';
+            const hasSteps = (t.steps || []).filter(s => !s.isHeader).length > 0;
             _gsearchItems.push({ type: 'task', id: t.id, status: t.status, title: t.title });
+
+            // Pre-render the step picker (hidden by default)
+            const stepsHtml = hasSteps ? (() => {
+                const actionSteps = (t.steps || []).filter(s => !s.isHeader);
+                return actionSteps.map((s, realIdx) => {
+                    // Find the real index in the full steps array
+                    const fullIdx = t.steps.indexOf(s);
+                    const stepSafeTitle = `${t.title}: ${s.text}`.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return `<div class="gsearch-step-row ${s.scheduled ? 'scheduled' : ''}">
+                        <span class="gsearch-step-dot ${s.done ? 'done' : ''}"></span>
+                        <span class="gsearch-step-text">${escHtml(s.text || '')}</span>
+                        ${s.scheduled ? '<span class="gsearch-step-chip">📅 Agendado</span>' : ''}
+                        <button class="gsearch-step-cal-btn"
+                            title="Agendar este paso"
+                            onclick="event.stopPropagation();window._gsearchScheduleStep('${t.id}', ${fullIdx}, '${stepSafeTitle}', ${s.duration || t.duration || 25})">
+                            📅
+                        </button>
+                    </div>`;
+                }).join('');
+            })() : '';
+
             html += `
-                <div class="gsearch-item" data-idx="${idx}">
+                <div class="gsearch-item" data-idx="${idx}" data-task-id="${t.id}">
                     <div class="gsearch-item-icon">${isDone ? '✅' : t.status === 'frozen' ? '❄️' : '📋'}</div>
                     <div class="gsearch-item-body" onclick="window._gsearchGo(${idx})" style="cursor:pointer">
                         <div class="gsearch-item-title">${_gsearchHighlight(t.title || 'Sin título', query)}</div>
@@ -4106,12 +4128,27 @@ function _gsearchRun(query) {
                             onclick="window._gsearchDoEdit('${t.id}')">
                             ✏️
                         </button>
-                        <button class="gsearch-action-btn" title="Ir a la tarjeta para agendar un paso"
-                            onclick="window._gsearchDoSchedule('${t.id}', '${safeTitle}', ${t.duration || 25})">
+                        <button class="gsearch-action-btn ${hasSteps ? '' : ''}" title="${hasSteps ? 'Ver pasos para agendar' : 'Agendar tarea'}"
+                            onclick="${hasSteps
+                                ? `window._gsearchToggleSteps('${t.id}')`
+                                : `window._gsearchScheduleStep('${t.id}', null, '${safeTitle}', ${t.duration || 25})`
+                            }">
                             📅
                         </button>
                     </div>
-                </div>`;
+                </div>
+                ${hasSteps ? `<div class="gsearch-step-picker" id="gsearch-steps-${t.id}" style="display:none">
+                    <div class="gsearch-step-picker-label">Elige el paso a agendar:</div>
+                    ${stepsHtml}
+                    <div class="gsearch-step-row gsearch-step-whole">
+                        <span class="gsearch-step-dot"></span>
+                        <span class="gsearch-step-text" style="font-style:italic">Toda la tarea</span>
+                        <button class="gsearch-step-cal-btn"
+                            onclick="event.stopPropagation();window._gsearchScheduleStep('${t.id}', null, '${safeTitle}', ${t.duration || 25})">
+                            📅
+                        </button>
+                    </div>
+                </div>` : ''}`;
         });
     }
 
@@ -4217,39 +4254,26 @@ window._gsearchDoEdit = (id) => {
     setTimeout(() => window.editTask(id), 150);
 };
 
-window._gsearchDoSchedule = (taskId, title, duration) => {
-    const modal = document.getElementById('global-search-modal');
-    if (modal) modal.style.display = 'none';
+// Toggle the inline step picker inside the search modal
+window._gsearchToggleSteps = (taskId) => {
+    const picker = document.getElementById(`gsearch-steps-${taskId}`);
+    if (!picker) return;
+    const isOpen = picker.style.display !== 'none';
+    // Close all other open pickers first
+    document.querySelectorAll('.gsearch-step-picker').forEach(p => p.style.display = 'none');
+    // Toggle this one
+    picker.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) picker.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
 
-    // If the task has steps, navigate to the card so the user can
-    // schedule the exact step and get the blue chip indicator.
-    // Otherwise open the generic schedule modal directly.
-    const task = allTasks.find(t => t.id === taskId);
-    const hasSteps = task && task.steps && task.steps.length > 0;
-
-    if (hasSteps) {
-        // Navigate to Focus tab and highlight the card
-        const focusBtn = document.querySelector('.tab-btn[data-view="focus"]');
-        if (focusBtn) focusBtn.click();
-
-        setTimeout(() => {
-            const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
-            if (!card) return;
-
-            // Scroll card into view smoothly
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // Add a pulsing outline so the user knows which card
-            card.classList.add('gsearch-highlight');
-            setTimeout(() => card.classList.remove('gsearch-highlight'), 3000);
-
-            // Show a toast guiding the user
-            showToast('📅 Usa el botón 🗓️ del paso que quieres agendar');
-        }, 300);
-    } else {
-        // No steps — open the generic schedule modal directly
-        setTimeout(() => window.openSchedule(title, duration || 25), 100);
-    }
+// Schedule a specific step (or the whole task if stepIndex is null)
+// Calls openSchedule with the full params → confirm handler saves scheduled=true → blue chip appears
+window._gsearchScheduleStep = (taskId, stepIndex, title, duration) => {
+    // Pass taskId and stepIndex so confirm-schedule marks the step as scheduled
+    window.currentScheduleTaskId = (stepIndex !== null) ? taskId : null;
+    window.currentScheduleStepIndex = (stepIndex !== null) ? stepIndex : null;
+    // Open the schedule modal (does NOT close the search modal, stays in context)
+    window.openSchedule(title, duration || 25, window.currentScheduleTaskId, window.currentScheduleStepIndex);
 };
 
 function _gsearchHandleKey(e) {

@@ -3937,6 +3937,98 @@ select.finance-input {
     animation: gsearchPulse 0.9s ease 3;
 }
 
+/* ── Inline step picker inside search modal ── */
+.gsearch-step-picker {
+    margin: 0 0.5rem 0.25rem 2.5rem;
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    animation: gsearchFadeIn 0.12s ease;
+}
+
+.gsearch-step-picker-label {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+}
+
+.gsearch-step-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+}
+.gsearch-step-row:last-child { border-bottom: none; }
+.gsearch-step-row:hover { background: var(--primary-low); }
+.gsearch-step-row.scheduled { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+.gsearch-step-whole { opacity: 0.7; }
+
+.gsearch-step-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-dim);
+    flex-shrink: 0;
+}
+.gsearch-step-dot.done {
+    background: var(--success);
+    border-color: var(--success);
+}
+
+.gsearch-step-text {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gsearch-step-chip {
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid var(--accent);
+    border-radius: 99px;
+    padding: 1px 6px;
+}
+
+.gsearch-step-cal-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+    opacity: 0;
+}
+.gsearch-step-row:hover .gsearch-step-cal-btn { opacity: 1; }
+.gsearch-step-cal-btn:hover {
+    background: var(--primary-low);
+    border-color: var(--primary);
+    transform: scale(1.1);
+}
+
+/* On mobile always show the cal button */
+@media (max-width: 640px) {
+    .gsearch-step-cal-btn { opacity: 1; }
+}
+
 /* Mobile adjustments */
 @media (max-width: 640px) {
     .search-trigger-hint { display: none; }
