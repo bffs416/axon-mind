@@ -3709,6 +3709,13 @@ select.finance-input {
     letter-spacing: 0.05em;
     transition: all 0.2s;
 }
+.gsearch-close-icon {
+    display: none;
+    width: 20px;
+    height: 20px;
+    color: var(--text-dim);
+    margin-right: 0.5rem;
+}
 .gsearch-close-btn:hover .gsearch-esc-tag {
     border-color: var(--danger);
     color: var(--danger);
@@ -4032,6 +4039,11 @@ select.finance-input {
     .gsearch-footer { gap: 0.75rem; }
     /* Always show action buttons on mobile (no hover) */
     .gsearch-actions { opacity: 1; }
+    
+    /* Show X instead of ESC */
+    .gsearch-close-icon { display: block; }
+    .gsearch-esc-tag { display: none; }
+    .gsearch-close-btn { padding: 0.5rem; }
 }
 
 /* Media query for Tablets/Phones FABs */
