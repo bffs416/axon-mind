@@ -4036,7 +4036,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Polyglot proactive reminders
         checkPolyglotReminders();
-        setInterval(checkPolyglotReminders, 300000); // Check every 5 mins
+        setInterval(checkPolyglotReminders, 60000); // Check every 1 min for better precision
+        
+        // Also check whenever the user returns to the app
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                checkPolyglotReminders();
+            }
+        });
     }, 1000);
 });
 
@@ -4045,13 +4052,15 @@ async function checkPolyglotReminders() {
     const studyModal = document.getElementById('polyglot-study-modal');
     if (studyModal && studyModal.style.display === 'flex') return;
 
-    // Filter for entries where next_review is now or in the past
-    const now = new Date().toISOString();
+    // Use a small buffer (30s) to ensure we catch things due "now"
+    const now = new Date();
+    const queryTime = new Date(now.getTime() + 30000).toISOString(); 
+
     const { data: entries, error } = await supabase
         .from('polyglot_entries')
         .select('next_review')
         .lt('srs_level', 6)
-        .lte('next_review', now);
+        .lte('next_review', queryTime);
 
     if (error) {
         console.error('❌ Error checking reminders:', error);
@@ -4064,8 +4073,6 @@ async function checkPolyglotReminders() {
         if (granted) {
             showNotification('🌍 Axon Polyglot', `Tienes ${entries.length} repasos de idiomas pendientes. ¡Es hora de practicar! 🧠`);
         }
-    } else {
-        console.log('✅ No pending reviews at this moment.');
     }
 }
 
