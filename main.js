@@ -2947,6 +2947,7 @@ window.fetchWaterFromSupabase = async () => {
                 waterTotal = sum;
                 localStorage.setItem(getWaterKey(), waterTotal.toString());
                 updateWaterDisplay();
+                showToast(`💧 ${waterProfile}: ${waterTotal.toFixed(1)}L (Sincronizado)`);
                 console.log(`[Sync] ${waterProfile} actualizado a ${waterTotal.toFixed(1)}L`);
             }
         }
