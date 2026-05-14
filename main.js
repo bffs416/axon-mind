@@ -9,6 +9,16 @@ import {
   saveTimerState, clearTimerState
 } from './src/db.js';
 
+import {
+  getPolymathLevel, getXPForNextLevel, checkLevelUp
+} from "./src/cards.js";
+
+import { fetchPolyglotData as _fetchP } from './src/polyglot.js';
+import './src/inspirations.js';
+import './src/mediavault.js';
+const fetchPolyglotData = _fetchP;
+
+
 // Re-bind $ from window (set by db.js)
 const $ = window.$;
 
@@ -568,9 +578,13 @@ async function fetchTasks() {
                           <i data-lucide="check-circle" style="width:12px; height:12px;"></i>
                         </button>
                       </div>
-                      <span style="display: flex; align-items: center; gap: 4px;">
+                      <span style="display: flex; align-items: center; gap: 4px; overflow: hidden; min-width: 0;">
                         ${assigneeHtml}${s.text}${sDuration}
                       </span>
+                      ${(() => {
+                        const urlMatch = s.text.match(/(https?:\/\/[^\s]+)/i);
+                        return urlMatch ? `<a href="${urlMatch[1]}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Abrir enlace" style="flex-shrink:0; margin-left:4px; font-size:0.85em; text-decoration:none; background:rgba(14,165,233,0.15); color:#0ea5e9; padding:2px 6px; border-radius:4px; display:flex; align-items:center; gap:2px;">🔗</a>` : '';
+                      })()}
                     </div>`;
                 }).join('');
 
@@ -1581,7 +1595,7 @@ window.togglePlannerView = () => {
 
 // Cargar calendario al iniciar
 document.addEventListener('DOMContentLoaded', () => {
-    if (gcalUrl) loadGCal();
+    if (gcalId1) loadGCal();
 });
 
 // ==================== WEEKLY PLANNER ====================
@@ -1777,55 +1791,76 @@ window.clearCalendarDay = async (dateStr) => {
 };
 
 window.newEmptyWeek = () => {
-    if (!window.confirm('✨ ¿Empezar una semana desde cero?\n\nEsto borrará TODAS las rutinas y bloques actuales. No afecta tus plantillas guardadas ni Google Calendar.')) return;
-    routines.length = 0;
-    weekPlan.length = 0;
-    localStorage.setItem('axon_routines', JSON.stringify(routines));
-    localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
-    renderRoutines();
-    renderPlanner();
-    showToast('✅ Semana limpia. ¡A construir!');
+    try {
+        if (!window.confirm('✨ ¿Empezar una semana desde cero?\n\nEsto borrará TODAS las rutinas y bloques actuales en Axon. No afecta tus plantillas guardadas ni Google Calendar.')) return;
+        
+        // Limpiamos los arreglos de forma segura
+        routines.splice(0, routines.length);
+        weekPlan.splice(0, weekPlan.length);
+        
+        localStorage.setItem('axon_routines', JSON.stringify(routines));
+        localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+        
+        // Forzamos el renderizado de las vistas
+        if (typeof renderRoutines === 'function') renderRoutines();
+        if (typeof renderPlanner === 'function') renderPlanner();
+        
+        showToast('✅ Semana limpia. ¡A construir!');
+        console.log("Axon: Week cleared successfully.");
+    } catch (err) {
+        console.error("Axon Error in newEmptyWeek:", err);
+        showToast('❌ Error al limpiar la semana');
+    }
 };
 
 window.clearEntireWeek = async () => {
-  if (!window.confirm("⚠️ ¿ESTÁS SEGURO? Esto eliminará TODOS los bloques de tu planificación semanal local.\n\n(No borrará tus 'Rutinas Inamovibles', solo los bloques de trabajo asignados)")) return;
-
-  const confirmGoogle = window.confirm("¿Deseas también intentar LIMPIAR el Google Calendar de toda la semana?\n\n(Esto enviará una señal a n8n para cada día. Recomendado si te equivocaste y no quieres duplicados)");
-
-  if (confirmGoogle) {
-    const days = getWeekDays().map(d => d.toISOString().slice(0, 10));
-    calStatus.textContent = 'Clearing Week...';
-    showToast("⏳ Iniciando limpieza en Google Calendar...");
+  try {
+    if (!window.confirm("⚠️ ¿BORRAR PLANIFICACIÓN?\n\nEsto eliminará todos los bloques de trabajo de esta semana en Axon.\n(Las 'Rutinas Inamovibles' no se borrarán)")) return;
     
-    const calendars = [gcalId2, gcalId3].filter(Boolean);
-    for (const dateStr of days) {
-      for (const calId of calendars) {
-        try {
-          const url = new URL(N8N_URL);
-          await fetch(url.toString(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'clear_day', day: dateStr, calendarId: calId })
-          });
-        } catch (e) {
-          console.error(`Error clearing ${dateStr}:`, e);
+    const confirmGoogle = window.confirm("¿Deseas intentar borrar también estos eventos en Google Calendar?\n\n(Haz clic en CANCELAR si quieres proteger tu calendario externo)");
+    
+    const statusEl = $('calendar-status');
+    
+    if (confirmGoogle) {
+      const days = getWeekDays().map(d => d.toISOString().slice(0, 10));
+      if (statusEl) statusEl.textContent = 'Clearing Google...';
+      showToast("⏳ Iniciando limpieza en Google Calendar...");
+      
+      try {
+        const calendars = [gcalId2, gcalId3].filter(Boolean);
+        for (const dateStr of days) {
+          for (const calId of calendars) {
+            const url = new URL(N8N_URL);
+            await fetch(url.toString(), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'clear_day', day: dateStr, calendarId: calId })
+            });
+          }
+          // Pequeña pausa para no saturar n8n
+          await new Promise(r => setTimeout(r, 200));
         }
+        if (statusEl) statusEl.textContent = 'Google Cleared';
+      } catch (gerr) {
+        console.warn("Google Calendar clear failed or N8N unreachable:", gerr);
+        if (statusEl) statusEl.textContent = 'Google Error';
       }
-      await new Promise(r => setTimeout(r, 300));
     }
-    calStatus.textContent = 'Week Cleared';
-  }
 
-  // Limpiar localmente
-  weekPlan.length = 0;
-  localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
-  
-  // Resetear estado de sincronización de rutinas (en esta sesión)
-  sessionStorage.setItem('synced_routines', '[]');
-  
-  showToast("✅ Semana reiniciada localmente.");
-  renderPlanner();
-}
+    // Limpiar localmente siempre
+    weekPlan.splice(0, weekPlan.length);
+    localStorage.setItem('axon_week_plan', JSON.stringify(weekPlan));
+    sessionStorage.setItem('synced_routines', '[]');
+    
+    if (typeof renderPlanner === 'function') renderPlanner();
+    showToast("✅ Planificación local reiniciada.");
+    if (statusEl && !confirmGoogle) statusEl.textContent = 'Standby';
+    
+  } catch (err) {
+    console.error("Axon Error in clearEntireWeek:", err);
+    showToast('❌ Error al limpiar la planificación');
+  }
+};
 
 // Inicializar al cargar
 document.addEventListener('DOMContentLoaded', () => {
@@ -1835,9 +1870,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ==================== AXON CARDS LOGIC (SRS) ====================
 // ==================== AXON CARDS ====================
-import {
-  getPolymathLevel, getXPForNextLevel, checkLevelUp
-} from "./src/cards.js";
 
 window.openVaultModal = (docId = null) => {
   const modal = $('vault-modal');
@@ -3034,11 +3066,8 @@ window.confirmSaveTemplate = async () => {
     }
     $('save-template-modal').style.display = 'none';
 };
-// Polyglot Hub imported from src/polyglot.js
-import { fetchPolyglotData as _fetchP } from './src/polyglot.js';
-import './src/inspirations.js';
-import './src/mediavault.js';
-const fetchPolyglotData = _fetchP;
+// Logic handled at top
+
 
 // ==================== DISCOVER MODULE ====================
 window._inspirations = [];
@@ -3084,10 +3113,7 @@ function updateDolarBadge() {
   badge.style.color = (rate >= 3500 && rate <= 3600) ? 'var(--success)' : '';
 }
 
-window.openDolarDetail = () => {
-  const tab = document.querySelector('.finance-subtab[data-dtab="dolar"]');
-  if (tab) tab.click();
-};
+// window.openDolarDetail is defined further down
 
 function renderDolarDetail() {
   const rateEl = $('dolar-detail-rate'); if (!rateEl) return;
@@ -3862,11 +3888,11 @@ window.fetchDolarValue = async function() {
             const badge = $('dolar-badge');
             if (badge) {
                 if (rate >= 3500 && rate <= 3600) {
-                    badge.innerHTML = `💵 $${rate} (COMPRAR)`;
+                    badge.innerHTML = `💵 $${Number(rate).toLocaleString('es-CO')} (COMPRAR)`;
                     badge.style.background = 'rgba(16, 185, 129, 0.2)';
                     badge.style.color = '#10b981';
                 } else {
-                    badge.innerHTML = `💵 $${rate}`;
+                    badge.innerHTML = `💵 $${Number(rate).toLocaleString('es-CO')}`;
                     badge.style.background = 'var(--bg-card-hover)';
                     badge.style.color = 'var(--text-dim)';
                 }
@@ -3880,6 +3906,11 @@ window.fetchDolarValue = async function() {
 window.openDolarDetail = async function() {
     showToast('Actualizando precio del dólar...');
     await window.fetchDolarValue();
+    if (window.fetchDiscoverData) {
+        await window.fetchDiscoverData();
+    }
+    const tab = document.querySelector('.finance-subtab[data-dtab="dolar"]');
+    if (tab) tab.click();
 };
 
 // Initialize water display on load
@@ -3931,7 +3962,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (restored) {
           showToast('⏱️ Pomodoro restaurado');
         }
-        window.fetchDolarValue();
+        if (window.fetchDolarValue) {
+            window.fetchDolarValue();
+            setInterval(window.fetchDolarValue, 300000); // 5 minutes
+        }
     }, 1000);
 });
 
