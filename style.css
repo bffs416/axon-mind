@@ -3886,10 +3886,51 @@ select.finance-input {
     margin-right: 2px;
 }
 
+/* Quick action buttons inside search results */
+.gsearch-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.gsearch-item:hover .gsearch-actions,
+.gsearch-item.active .gsearch-actions {
+    opacity: 1;
+}
+
+.gsearch-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-light);
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: all 0.15s;
+    color: var(--text-dim);
+}
+.gsearch-action-btn:hover {
+    background: var(--primary-low);
+    border-color: var(--primary);
+    transform: scale(1.1);
+}
+.gsearch-action-btn.done {
+    color: var(--success);
+    border-color: var(--success);
+}
+
 /* Mobile adjustments */
 @media (max-width: 640px) {
     .search-trigger-hint { display: none; }
     .gsearch-overlay { padding-top: 1rem; align-items: flex-start; }
     .gsearch-container { width: 100%; border-radius: var(--radius) var(--radius) 0 0; }
     .gsearch-footer { gap: 0.75rem; }
+    /* Always show action buttons on mobile (no hover) */
+    .gsearch-actions { opacity: 1; }
 }

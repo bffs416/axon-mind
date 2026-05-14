@@ -4086,15 +4086,31 @@ function _gsearchRun(query) {
                 ? `↳ Paso: ${matchingStep.text}`
                 : (t.description || '');
             const idx = _gsearchItems.length;
-            _gsearchItems.push({ type: 'task', id: t.id, status: t.status });
+            const safeTitle = (t.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const isDone = t.status === 'done';
+            _gsearchItems.push({ type: 'task', id: t.id, status: t.status, title: t.title });
             html += `
-                <div class="gsearch-item" data-idx="${idx}" onclick="window._gsearchGo(${idx})">
-                    <div class="gsearch-item-icon">${t.status === 'done' ? '✅' : t.status === 'frozen' ? '❄️' : '📋'}</div>
-                    <div class="gsearch-item-body">
+                <div class="gsearch-item" data-idx="${idx}">
+                    <div class="gsearch-item-icon">${isDone ? '✅' : t.status === 'frozen' ? '❄️' : '📋'}</div>
+                    <div class="gsearch-item-body" onclick="window._gsearchGo(${idx})" style="cursor:pointer">
                         <div class="gsearch-item-title">${_gsearchHighlight(t.title || 'Sin título', query)}</div>
                         ${subtitle ? `<div class="gsearch-item-subtitle">${_gsearchHighlight(subtitle.slice(0, 80), query)}</div>` : ''}
                     </div>
-                    ${_gsearchStatusBadge(t.status)}
+                    <div class="gsearch-actions" onclick="event.stopPropagation()">
+                        <button class="gsearch-action-btn ${isDone ? 'done' : ''}"
+                            title="${isDone ? 'Marcar pendiente' : 'Completar'}"
+                            onclick="window._gsearchDoToggle('${t.id}','${t.status}')">
+                            ${isDone ? '↩' : '✅'}
+                        </button>
+                        <button class="gsearch-action-btn" title="Editar"
+                            onclick="window._gsearchDoEdit('${t.id}')">
+                            ✏️
+                        </button>
+                        <button class="gsearch-action-btn" title="Agendar en planificador"
+                            onclick="window._gsearchDoSchedule('${safeTitle}', ${t.duration || 25})">
+                            📅
+                        </button>
+                    </div>
                 </div>`;
         });
     }
@@ -4181,6 +4197,31 @@ function _gsearchRun(query) {
     resultsEl.innerHTML = html;
     _gsearchActiveIndex = -1;
 }
+
+// ── Quick action handlers called from search results ──
+
+window._gsearchDoToggle = (id, status) => {
+    // Close search first for clean UX
+    const modal = document.getElementById('global-search-modal');
+    if (modal) modal.style.display = 'none';
+    // Small delay so the close animation is visible before confetti/toast
+    setTimeout(() => window.toggleTask(id, status), 100);
+};
+
+window._gsearchDoEdit = (id) => {
+    const modal = document.getElementById('global-search-modal');
+    if (modal) modal.style.display = 'none';
+    // Make sure we're on the Focus tab (edit modal needs the task list context)
+    const focusBtn = document.querySelector('.tab-btn[data-view="focus"]');
+    if (focusBtn) focusBtn.click();
+    setTimeout(() => window.editTask(id), 150);
+};
+
+window._gsearchDoSchedule = (title, duration) => {
+    const modal = document.getElementById('global-search-modal');
+    if (modal) modal.style.display = 'none';
+    setTimeout(() => window.openSchedule(title, duration || 25), 100);
+};
 
 function _gsearchHandleKey(e) {
     const items = document.querySelectorAll('#gsearch-results .gsearch-item');
