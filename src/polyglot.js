@@ -1,6 +1,7 @@
 import {
   supabase, $, showToast, escHtml, POLYGLOT_TRANSLATE_URL,
-  POLYGLOT_LANGUAGES, POLYGLOT_LANG_IDS, POLYGLOT_ALPHABETS
+  POLYGLOT_LANGUAGES, POLYGLOT_LANG_IDS, POLYGLOT_ALPHABETS,
+  showNotification, ensureNotificationPermission
 } from './db.js';
 
 // ==================== POLYGLOT HUB ====================
