@@ -4106,8 +4106,8 @@ function _gsearchRun(query) {
                             onclick="window._gsearchDoEdit('${t.id}')">
                             ✏️
                         </button>
-                        <button class="gsearch-action-btn" title="Agendar en planificador"
-                            onclick="window._gsearchDoSchedule('${safeTitle}', ${t.duration || 25})">
+                        <button class="gsearch-action-btn" title="Ir a la tarjeta para agendar un paso"
+                            onclick="window._gsearchDoSchedule('${t.id}', '${safeTitle}', ${t.duration || 25})">
                             📅
                         </button>
                     </div>
@@ -4217,10 +4217,39 @@ window._gsearchDoEdit = (id) => {
     setTimeout(() => window.editTask(id), 150);
 };
 
-window._gsearchDoSchedule = (title, duration) => {
+window._gsearchDoSchedule = (taskId, title, duration) => {
     const modal = document.getElementById('global-search-modal');
     if (modal) modal.style.display = 'none';
-    setTimeout(() => window.openSchedule(title, duration || 25), 100);
+
+    // If the task has steps, navigate to the card so the user can
+    // schedule the exact step and get the blue chip indicator.
+    // Otherwise open the generic schedule modal directly.
+    const task = allTasks.find(t => t.id === taskId);
+    const hasSteps = task && task.steps && task.steps.length > 0;
+
+    if (hasSteps) {
+        // Navigate to Focus tab and highlight the card
+        const focusBtn = document.querySelector('.tab-btn[data-view="focus"]');
+        if (focusBtn) focusBtn.click();
+
+        setTimeout(() => {
+            const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
+            if (!card) return;
+
+            // Scroll card into view smoothly
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Add a pulsing outline so the user knows which card
+            card.classList.add('gsearch-highlight');
+            setTimeout(() => card.classList.remove('gsearch-highlight'), 3000);
+
+            // Show a toast guiding the user
+            showToast('📅 Usa el botón 🗓️ del paso que quieres agendar');
+        }, 300);
+    } else {
+        // No steps — open the generic schedule modal directly
+        setTimeout(() => window.openSchedule(title, duration || 25), 100);
+    }
 };
 
 function _gsearchHandleKey(e) {

@@ -3925,6 +3925,18 @@ select.finance-input {
     border-color: var(--success);
 }
 
+/* Highlight animation on task card when coming from search */
+@keyframes gsearchPulse {
+    0%   { box-shadow: 0 0 0 0 var(--primary), var(--shadow-md); }
+    40%  { box-shadow: 0 0 0 6px transparent, var(--shadow-md); }
+    70%  { box-shadow: 0 0 0 3px var(--primary), var(--shadow-md); }
+    100% { box-shadow: 0 0 0 0 transparent, var(--shadow-md); }
+}
+.task-card.gsearch-highlight {
+    border-color: var(--primary) !important;
+    animation: gsearchPulse 0.9s ease 3;
+}
+
 /* Mobile adjustments */
 @media (max-width: 640px) {
     .search-trigger-hint { display: none; }
