@@ -1605,23 +1605,6 @@ input::placeholder, textarea::placeholder {
     .water-actions {
         justify-content: center;
     }
-    .fab {
-        width: 48px;
-        height: 48px;
-        border-radius: 24px;
-    }
-    .fab-container { 
-        bottom: 1.25rem; 
-        right: 50%; 
-        transform: translateX(50%);
-        flex-direction: row-reverse;
-        gap: 1.2rem;
-    }
-    .fab-container.fab-hidden {
-        transform: translateX(50%) translateY(200%);
-        opacity: 0;
-        pointer-events: none;
-    }
     #gcal-iframe { height: 350px !important; }
     .plan-header h2 { font-size: 1rem; }
     .plan-block { font-size: 0.65rem; padding: 0.3rem 0.4rem; }
@@ -4049,4 +4032,26 @@ select.finance-input {
     .gsearch-footer { gap: 0.75rem; }
     /* Always show action buttons on mobile (no hover) */
     .gsearch-actions { opacity: 1; }
+}
+
+/* Media query for Tablets/Phones FABs */
+@media (max-width: 1024px) {
+    .fab {
+        width: 48px;
+        height: 48px;
+        border-radius: 24px;
+    }
+    .fab-container { 
+        bottom: 1.5rem; 
+        right: 50%; 
+        transform: translateX(50%);
+        flex-direction: row-reverse;
+        gap: 1.2rem;
+        display: flex; /* Ensure it's flex */
+    }
+    .fab-container.fab-hidden {
+        transform: translateX(50%) translateY(250%) !important;
+        opacity: 0;
+        pointer-events: none;
+    }
 }

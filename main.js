@@ -4342,18 +4342,24 @@ window._gsearchGo = (idx) => {
 
 
 // ==================== SCROLL TO HIDE FAB ====================
-let lastScrollY = window.scrollY;
+let lastScrollY = window.scrollY || document.documentElement.scrollTop;
 const fabContainer = document.querySelector('.fab-container');
 
 window.addEventListener('scroll', () => {
-    if (window.innerWidth > 640) return; // Only for mobile
+    // Aumentamos el umbral a 1024 para incluir tablets
+    if (window.innerWidth > 1024) {
+        fabContainer?.classList.remove('fab-hidden');
+        return;
+    }
     
-    if (window.scrollY > lastScrollY && window.scrollY > 50) {
-        // Scrolling down
+    const currentScrollY = window.scrollY || document.documentElement.scrollTop;
+    
+    if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down - Ocultar
         fabContainer?.classList.add('fab-hidden');
-    } else {
-        // Scrolling up
+    } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - Mostrar
         fabContainer?.classList.remove('fab-hidden');
     }
-    lastScrollY = window.scrollY;
+    lastScrollY = currentScrollY;
 }, { passive: true });
