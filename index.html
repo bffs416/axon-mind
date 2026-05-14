@@ -1237,9 +1237,12 @@
             <label class="input-label">Orden preferido de idiomas</label>
             <div id="polyglot-config-lang-order" style="display:flex;flex-wrap:wrap;gap:0.3rem;"></div>
           </div>
-          <div class="modal-actions">
-            <button class="btn-ghost" onclick="window.closeModal('polyglot-config-modal')">Cancelar</button>
-            <button class="btn-primary" onclick="window.savePolyglotConfig()">Guardar</button>
+          <div class="modal-actions" style="margin-top:1rem; display: flex; justify-content: space-between;">
+            <button class="btn-ghost" onclick="window.testPolyglotNotification()">🔔 Probar Alerta</button>
+            <div style="display:flex; gap:0.5rem;">
+              <button class="btn-ghost" onclick="window.closeModal('polyglot-config-modal')">Cancelar</button>
+              <button class="btn-primary" onclick="window.savePolyglotConfig()">Guardar</button>
+            </div>
           </div>
         </div>
       </div>

@@ -4033,8 +4033,41 @@ document.addEventListener('DOMContentLoaded', () => {
             window.fetchDolarValue();
             setInterval(window.fetchDolarValue, 300000); // 5 minutes
         }
+        
+        // Polyglot proactive reminders
+        checkPolyglotReminders();
+        setInterval(checkPolyglotReminders, 300000); // Check every 5 mins
     }, 1000);
 });
+
+async function checkPolyglotReminders() {
+    // Only check if we are not already in a study session
+    const studyModal = document.getElementById('polyglot-study-modal');
+    if (studyModal && studyModal.style.display === 'flex') return;
+
+    // Filter for entries where next_review is now or in the past
+    const now = new Date().toISOString();
+    const { data: entries, error } = await supabase
+        .from('polyglot_entries')
+        .select('next_review')
+        .lt('srs_level', 6)
+        .lte('next_review', now);
+
+    if (error) {
+        console.error('❌ Error checking reminders:', error);
+        return;
+    }
+
+    if (entries && entries.length > 0) {
+        console.log(`🔔 Found ${entries.length} pending reviews. Triggering notification...`);
+        const granted = await ensureNotificationPermission();
+        if (granted) {
+            showNotification('🌍 Axon Polyglot', `Tienes ${entries.length} repasos de idiomas pendientes. ¡Es hora de practicar! 🧠`);
+        }
+    } else {
+        console.log('✅ No pending reviews at this moment.');
+    }
+}
 
 // ==================== GLOBAL SEARCH (Ctrl+K) ====================
 

@@ -482,6 +482,7 @@ window.translatePolyglotPhrase = async () => {
 
 // ===== STUDY =====
 window.startPolyglotStudy = () => {
+  ensureNotificationPermission(); // Request permission on user action
   const entries = window.polyglotState.entries;
   if (entries.length === 0) { showToast('🌍 Crea algunas frases primero'); return; }
 
@@ -805,7 +806,7 @@ window.answerPolyglotEntry = async (entryId, difficulty, btn) => {
   let intervalDays = 0;
 
   if (difficulty === 'difficult') {
-    newLevel = Math.max(0, newLevel - 1);
+    newLevel = 0;
     intervalDays = 0;
   } else if (difficulty === 'good') {
     newLevel = Math.min(6, newLevel + 1);
@@ -933,6 +934,17 @@ window.clearAlphabetCanvas = () => {
   canvas.height = rect.height;
   ctx.fillStyle = '#0a0a0f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+};
+
+// ===== NOTIFICATIONS TEST =====
+window.testPolyglotNotification = async () => {
+  const granted = await ensureNotificationPermission();
+  if (granted) {
+    showNotification('🔔 Prueba de Axon', '¡Si ves esto, tus alertas están activas! Prepárate para aprender. 🚀');
+    showToast('🔔 Alerta enviada al sistema');
+  } else {
+    showToast('❌ Permiso de notificación denegado', 'error');
+  }
 };
 
 // ===== CONFIG =====
