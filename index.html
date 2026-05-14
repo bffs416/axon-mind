@@ -42,6 +42,10 @@
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
+                <button class="btn-ghost search-trigger-btn" id="global-search-trigger" onclick="window.openGlobalSearch()" title="Buscar (Ctrl+K)">
+                    <i data-lucide="search"></i>
+                    <span class="search-trigger-hint">Ctrl+K</span>
+                </button>
             </nav>
         </div>
 
@@ -1649,5 +1653,44 @@ Ejemplo:
 
     <script src="https://unpkg.com/lucide@latest"></script>
     <script type="module" src="/main.js"></script>
+
+    <!-- ========== GLOBAL SEARCH MODAL ========== -->
+    <div id="global-search-modal" class="gsearch-overlay" style="display:none" onclick="window.closeGlobalSearch(event)">
+        <div class="gsearch-container" role="dialog" aria-label="Búsqueda global">
+            <div class="gsearch-header">
+                <div class="gsearch-input-wrapper">
+                    <i data-lucide="search" class="gsearch-icon"></i>
+                    <input
+                        id="gsearch-input"
+                        class="gsearch-input"
+                        type="text"
+                        placeholder="Buscar proyectos, tareas, rutinas, bloques..."
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                    <button class="gsearch-close-btn" onclick="window.closeGlobalSearch()">
+                        <span class="gsearch-esc-tag">ESC</span>
+                    </button>
+                </div>
+            </div>
+            <div id="gsearch-results" class="gsearch-results">
+                <div class="gsearch-empty-state">
+                    <div class="gsearch-empty-icon">🔍</div>
+                    <p>Escribe para buscar en toda tu app</p>
+                    <div class="gsearch-hints">
+                        <span>📋 <b>Tareas</b></span>
+                        <span>🔁 <b>Rutinas</b></span>
+                        <span>📅 <b>Planificación</b></span>
+                        <span>📚 <b>Vault</b></span>
+                    </div>
+                </div>
+            </div>
+            <div class="gsearch-footer">
+                <span><kbd>↑</kbd><kbd>↓</kbd> Navegar</span>
+                <span><kbd>Enter</kbd> Ir</span>
+                <span><kbd>Esc</kbd> Cerrar</span>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

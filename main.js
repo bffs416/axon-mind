@@ -3969,7 +3969,275 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
 });
 
+// ==================== GLOBAL SEARCH (Ctrl+K) ====================
 
+let _gsearchActiveIndex = -1;
+let _gsearchItems = [];
 
+window.openGlobalSearch = () => {
+    const modal = document.getElementById('global-search-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    _gsearchActiveIndex = -1;
+    _gsearchItems = [];
 
+    // Reset results to empty state
+    const resultsEl = document.getElementById('gsearch-results');
+    if (resultsEl) {
+        resultsEl.innerHTML = `
+            <div class="gsearch-empty-state">
+                <div class="gsearch-empty-icon">🔍</div>
+                <p>Escribe para buscar en toda tu app</p>
+                <div class="gsearch-hints">
+                    <span>📋 <b>Tareas</b></span>
+                    <span>🔁 <b>Rutinas</b></span>
+                    <span>📅 <b>Planificación</b></span>
+                    <span>📚 <b>Vault</b></span>
+                </div>
+            </div>`;
+    }
+
+    const input = document.getElementById('gsearch-input');
+    if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 80);
+        input.oninput = () => _gsearchRun(input.value.trim());
+        input.onkeydown = _gsearchHandleKey;
+    }
+
+    // Re-init lucide icons inside modal
+    if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeGlobalSearch = (e) => {
+    if (e && e.target !== document.getElementById('global-search-modal')) return;
+    const modal = document.getElementById('global-search-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+// Ctrl+K shortcut anywhere
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const modal = document.getElementById('global-search-modal');
+        if (modal && modal.style.display !== 'none') {
+            modal.style.display = 'none';
+        } else {
+            window.openGlobalSearch();
+        }
+    }
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('global-search-modal');
+        if (modal && modal.style.display !== 'none') {
+            modal.style.display = 'none';
+        }
+    }
+});
+
+function _gsearchHighlight(text, query) {
+    if (!query) return escHtml(text);
+    const safeQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return escHtml(text).replace(new RegExp(`(${safeQ})`, 'gi'), '<mark>$1</mark>');
+}
+
+function _gsearchStatusBadge(status) {
+    if (status === 'done') return '<span class="gsearch-item-badge done">✓ Hecha</span>';
+    if (status === 'frozen') return '<span class="gsearch-item-badge frozen">❄ Congelada</span>';
+    return '<span class="gsearch-item-badge active">Activa</span>';
+}
+
+function _gsearchRun(query) {
+    const resultsEl = document.getElementById('gsearch-results');
+    if (!resultsEl) return;
+
+    if (!query) {
+        resultsEl.innerHTML = `
+            <div class="gsearch-empty-state">
+                <div class="gsearch-empty-icon">🔍</div>
+                <p>Escribe para buscar en toda tu app</p>
+                <div class="gsearch-hints">
+                    <span>📋 <b>Tareas</b></span>
+                    <span>🔁 <b>Rutinas</b></span>
+                    <span>📅 <b>Planificación</b></span>
+                    <span>📚 <b>Vault</b></span>
+                </div>
+            </div>`;
+        _gsearchItems = [];
+        _gsearchActiveIndex = -1;
+        return;
+    }
+
+    const q = query.toLowerCase();
+    let html = '';
+    _gsearchItems = [];
+
+    // ── TAREAS (Supabase) ──────────────────────────
+    const taskMatches = allTasks.filter(t =>
+        (t.title || '').toLowerCase().includes(q) ||
+        (t.description || '').toLowerCase().includes(q) ||
+        (t.steps || []).some(s => (s.text || '').toLowerCase().includes(q))
+    ).slice(0, 8);
+
+    if (taskMatches.length > 0) {
+        html += `<div class="gsearch-category">📋 Tareas</div>`;
+        taskMatches.forEach(t => {
+            const matchingStep = (t.steps || []).find(s => (s.text || '').toLowerCase().includes(q));
+            const subtitle = matchingStep
+                ? `↳ Paso: ${matchingStep.text}`
+                : (t.description || '');
+            const idx = _gsearchItems.length;
+            _gsearchItems.push({ type: 'task', id: t.id, status: t.status });
+            html += `
+                <div class="gsearch-item" data-idx="${idx}" onclick="window._gsearchGo(${idx})">
+                    <div class="gsearch-item-icon">${t.status === 'done' ? '✅' : t.status === 'frozen' ? '❄️' : '📋'}</div>
+                    <div class="gsearch-item-body">
+                        <div class="gsearch-item-title">${_gsearchHighlight(t.title || 'Sin título', query)}</div>
+                        ${subtitle ? `<div class="gsearch-item-subtitle">${_gsearchHighlight(subtitle.slice(0, 80), query)}</div>` : ''}
+                    </div>
+                    ${_gsearchStatusBadge(t.status)}
+                </div>`;
+        });
+    }
+
+    // ── RUTINAS ───────────────────────────────────
+    const routineMatches = routines.filter(r =>
+        (r.name || '').toLowerCase().includes(q) ||
+        (r.category || '').toLowerCase().includes(q)
+    ).slice(0, 5);
+
+    if (routineMatches.length > 0) {
+        if (taskMatches.length > 0) html += `<div class="gsearch-divider"></div>`;
+        html += `<div class="gsearch-category">🔁 Rutinas</div>`;
+        routineMatches.forEach(r => {
+            const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+            const dayLabels = (r.days || []).map(d => days[d]).join(', ');
+            const idx = _gsearchItems.length;
+            _gsearchItems.push({ type: 'routine' });
+            html += `
+                <div class="gsearch-item" data-idx="${idx}" onclick="window._gsearchGo(${idx})">
+                    <div class="gsearch-item-icon">${r.emoji || '🔁'}</div>
+                    <div class="gsearch-item-body">
+                        <div class="gsearch-item-title">${_gsearchHighlight(r.name || 'Rutina', query)}</div>
+                        <div class="gsearch-item-subtitle">${r.time || ''} · ${dayLabels}</div>
+                    </div>
+                    <span class="gsearch-item-badge">${r.duration || 30} min</span>
+                </div>`;
+        });
+    }
+
+    // ── PLANIFICACIÓN SEMANAL ──────────────────────
+    const planMatches = weekPlan.filter(b =>
+        (b.taskTitle || '').toLowerCase().includes(q)
+    ).slice(0, 5);
+
+    if (planMatches.length > 0) {
+        if (taskMatches.length > 0 || routineMatches.length > 0) html += `<div class="gsearch-divider"></div>`;
+        html += `<div class="gsearch-category">📅 Planificación</div>`;
+        planMatches.forEach(b => {
+            const idx = _gsearchItems.length;
+            _gsearchItems.push({ type: 'plan' });
+            html += `
+                <div class="gsearch-item" data-idx="${idx}" onclick="window._gsearchGo(${idx})">
+                    <div class="gsearch-item-icon">📅</div>
+                    <div class="gsearch-item-body">
+                        <div class="gsearch-item-title">${_gsearchHighlight(b.taskTitle || 'Bloque', query)}</div>
+                        <div class="gsearch-item-subtitle">${b.day || ''} · ${b.time || ''}</div>
+                    </div>
+                    ${b.synced ? '<span class="gsearch-item-badge done">Sync ✓</span>' : ''}
+                </div>`;
+        });
+    }
+
+    // ── VAULT / INBOX ──────────────────────────────
+    const vaultAll = [...(vaultDocs || []), ...(inboxDocs || [])];
+    const vaultMatches = vaultAll.filter(d =>
+        (d.title || '').toLowerCase().includes(q) ||
+        (d.content || '').toLowerCase().includes(q)
+    ).slice(0, 4);
+
+    if (vaultMatches.length > 0) {
+        const hasPrev = taskMatches.length || routineMatches.length || planMatches.length;
+        if (hasPrev) html += `<div class="gsearch-divider"></div>`;
+        html += `<div class="gsearch-category">📚 Vault / Inbox</div>`;
+        vaultMatches.forEach(d => {
+            const idx = _gsearchItems.length;
+            _gsearchItems.push({ type: 'vault', id: d.id });
+            html += `
+                <div class="gsearch-item" data-idx="${idx}" onclick="window._gsearchGo(${idx})">
+                    <div class="gsearch-item-icon">${d.type === 'vault' ? '📚' : '⚡'}</div>
+                    <div class="gsearch-item-body">
+                        <div class="gsearch-item-title">${_gsearchHighlight(d.title || 'Documento', query)}</div>
+                        <div class="gsearch-item-subtitle">${(d.content || '').slice(0, 80)}</div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    // ── SIN RESULTADOS ─────────────────────────────
+    if (_gsearchItems.length === 0) {
+        html = `<div class="gsearch-no-results">😶 Sin resultados para "<b>${escHtml(query)}</b>"</div>`;
+    }
+
+    resultsEl.innerHTML = html;
+    _gsearchActiveIndex = -1;
+}
+
+function _gsearchHandleKey(e) {
+    const items = document.querySelectorAll('#gsearch-results .gsearch-item');
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _gsearchActiveIndex = Math.min(_gsearchActiveIndex + 1, items.length - 1);
+        _gsearchUpdateActive(items);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _gsearchActiveIndex = Math.max(_gsearchActiveIndex - 1, 0);
+        _gsearchUpdateActive(items);
+    } else if (e.key === 'Enter') {
+        if (_gsearchActiveIndex >= 0 && _gsearchActiveIndex < _gsearchItems.length) {
+            window._gsearchGo(_gsearchActiveIndex);
+        }
+    }
+}
+
+function _gsearchUpdateActive(items) {
+    items.forEach((el, i) => el.classList.toggle('active', i === _gsearchActiveIndex));
+    if (_gsearchActiveIndex >= 0 && items[_gsearchActiveIndex]) {
+        items[_gsearchActiveIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+window._gsearchGo = (idx) => {
+    const item = _gsearchItems[idx];
+    if (!item) return;
+
+    // Close modal
+    const modal = document.getElementById('global-search-modal');
+    if (modal) modal.style.display = 'none';
+
+    // Navigate to the right view
+    if (item.type === 'task') {
+        // Switch to Focus tab and open the task
+        const focusBtn = document.querySelector('.tab-btn[data-view="focus"]');
+        if (focusBtn) focusBtn.click();
+        if (item.id) {
+            setTimeout(() => {
+                const taskEl = document.querySelector(`.task-card[data-id="${item.id}"]`);
+                if (taskEl) {
+                    taskEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    taskEl.classList.add('selected');
+                    setTimeout(() => taskEl.classList.remove('selected'), 2500);
+                }
+            }, 300);
+        }
+    } else if (item.type === 'routine' || item.type === 'plan') {
+        const planBtn = document.querySelector('.tab-btn[data-view="plan"]');
+        if (planBtn) planBtn.click();
+    } else if (item.type === 'vault') {
+        const vaultBtn = document.querySelector('.tab-btn[data-view="vault"]');
+        if (vaultBtn) vaultBtn.click();
+        if (item.id && window.openVaultModal) {
+            setTimeout(() => window.openVaultModal(item.id), 300);
+        }
+    }
+};
 
