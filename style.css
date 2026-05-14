@@ -425,6 +425,7 @@ button { cursor: pointer; border: none; font-family: var(--font); }
     flex-direction: column-reverse; /* Stacks upwards */
     gap: 1.2rem;
     z-index: 3000; /* Higher priority */
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
 .fab {
@@ -1605,11 +1606,22 @@ input::placeholder, textarea::placeholder {
         justify-content: center;
     }
     .fab {
-        width: 44px;
-        height: 44px;
-        border-radius: 22px;
+        width: 48px;
+        height: 48px;
+        border-radius: 24px;
     }
-    .fab-container { bottom: 0.75rem; right: 0.75rem; }
+    .fab-container { 
+        bottom: 1.25rem; 
+        right: 50%; 
+        transform: translateX(50%);
+        flex-direction: row-reverse;
+        gap: 1.2rem;
+    }
+    .fab-container.fab-hidden {
+        transform: translateX(50%) translateY(200%);
+        opacity: 0;
+        pointer-events: none;
+    }
     #gcal-iframe { height: 350px !important; }
     .plan-header h2 { font-size: 1rem; }
     .plan-block { font-size: 0.65rem; padding: 0.3rem 0.4rem; }

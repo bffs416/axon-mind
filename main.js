@@ -4340,3 +4340,20 @@ window._gsearchGo = (idx) => {
     }
 };
 
+
+// ==================== SCROLL TO HIDE FAB ====================
+let lastScrollY = window.scrollY;
+const fabContainer = document.querySelector('.fab-container');
+
+window.addEventListener('scroll', () => {
+    if (window.innerWidth > 640) return; // Only for mobile
+    
+    if (window.scrollY > lastScrollY && window.scrollY > 50) {
+        // Scrolling down
+        fabContainer?.classList.add('fab-hidden');
+    } else {
+        // Scrolling up
+        fabContainer?.classList.remove('fab-hidden');
+    }
+    lastScrollY = window.scrollY;
+}, { passive: true });
