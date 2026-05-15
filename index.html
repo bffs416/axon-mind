@@ -39,6 +39,7 @@
                 <button class="tab-btn" data-view="finances"><i data-lucide="dollar-sign"></i> Finanzas</button>
                 <button class="tab-btn" data-view="polyglot">🌍 Polyglot</button>
                 <button class="tab-btn" data-view="discover">🌐 Discover</button>
+                <button class="tab-btn" data-view="trabajo">💼 Trabajo</button>
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
@@ -984,7 +985,8 @@
             <button class="polyglot-lang-chip" data-lang="zh" onclick="window.filterPolyglotLang('zh',this)">🇨🇳</button>
           </div>
           <div style="display:flex;gap:0.5rem;flex:1;">
-            <input type="text" id="polyglot-search" class="finance-input" placeholder="🔍 Buscar frase..." oninput="window.filterPolyglotSearch(this.value)" style="flex:1;">
+            <button class="btn-primary" onclick="window.openInspirarmeModal()" style="padding:0.5rem 1rem;white-space:nowrap;display:flex;align-items:center;gap:0.5rem;"><i data-lucide="lightbulb"></i> Inspirarme</button>
+            <input type="text" id="polyglot-search" class="finance-input" placeholder="Buscar frase..." oninput="window.filterPolyglotSearch(this.value)" style="flex:1;">
             <select id="polyglot-cat-filter" class="finance-input" style="width:auto;padding:0.5rem;" onchange="window.filterPolyglotCategory(this.value)">
               <option value="all">Todas las categorías</option>
             </select>
@@ -1061,6 +1063,39 @@
           <div id="dolar-history-list" class="polyglot-phrase-list">
             <p style="text-align:center;color:var(--text-dim);padding:1rem;">Cargando histórico...</p>
           </div>
+        </div>
+      </section>
+
+      <!-- ========== VISTA TRABAJO / CARRERA ========== -->
+      <section id="view-trabajo" class="view">
+        <div class="plan-header">
+          <h2>💼 Buscar Trabajo Remoto</h2>
+        </div>
+        <div class="career-subtabs">
+          <button class="career-subtab active" data-ctab="checklist" onclick="window.switchCareerTab('checklist', this)">✅ Checklist</button>
+          <button class="career-subtab" data-ctab="portales" onclick="window.switchCareerTab('portales', this)">🌐 Portales</button>
+          <button class="career-subtab" data-ctab="empresas" onclick="window.switchCareerTab('empresas', this)">🏢 Empresas</button>
+        </div>
+        <div id="career-tab-checklist" class="career-tab-content active">
+          <div class="career-progress-container">
+            <div class="career-progress-header">
+              <span class="career-progress-title">📋 Preparación</span>
+              <span class="career-progress-text" id="career-progress-text">0/10 · 0%</span>
+            </div>
+            <div class="career-progress-track">
+              <div class="career-progress-fill" id="career-progress-bar"></div>
+            </div>
+          </div>
+          <div id="career-checklist"></div>
+          <p style="font-size:0.7rem;color:var(--text-dim);margin-top:0.5rem;text-align:center;">✅ Haz clic en cada ítem para marcarlo — se guarda automáticamente</p>
+        </div>
+        <div id="career-tab-portales" class="career-tab-content">
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.75rem;">Los mejores portales para encontrar trabajo remoto, curados desde <strong>Awesome Remote Job</strong></p>
+          <div id="career-portales"></div>
+        </div>
+        <div id="career-tab-empresas" class="career-tab-content">
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.75rem;">Empresas con cultura remoto-friendly donde aplicar directamente</p>
+          <div id="career-empresas"></div>
         </div>
       </section>
 
@@ -1208,6 +1243,20 @@
           </div>
           <div id="polyglot-alphabet-content">
             <p style="text-align:center;color:var(--text-dim);padding:1rem;">Cargando...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== MODAL POLYGLOT: Inspirarme ========== -->
+      <div id="polyglot-inspirarme-modal" class="modal">
+        <div class="modal-content" style="max-width:600px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h2>💡 Inspirarme</h2>
+            <button class="btn-icon" onclick="window.closeModal('polyglot-inspirarme-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:1rem;">Explora sugerencias de frases por etapa de aprendizaje y agrégalas a tu Hub.</p>
+          <div id="polyglot-inspirarme-content" style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
+            <!-- Rendered list of phrases goes here -->
           </div>
         </div>
       </div>
@@ -1658,7 +1707,7 @@ Ejemplo:
     </div>
 
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script type="module" src="/main.js?v=1.2"></script>
+    <script type="module" src="/main.js?v=1.2" charset="utf-8"></script>
 
     <!-- ========== GLOBAL SEARCH MODAL ========== -->
     <div id="global-search-modal" class="gsearch-overlay" style="display:none" onclick="window.closeGlobalSearch(event)">

@@ -16,6 +16,7 @@ import {
 import { fetchPolyglotData as _fetchP } from './src/polyglot.js';
 import './src/inspirations.js';
 import './src/mediavault.js';
+import { initCareer } from './src/modules/career.js';
 const fetchPolyglotData = _fetchP;
 
 
@@ -67,6 +68,7 @@ viewBtns.forEach(btn => {
     if (viewId === 'finances') { fetchFinanceData(); }
     if (viewId === 'polyglot') { fetchPolyglotData(); }
     if (viewId === 'discover') { fetchDiscoverData(); }
+    if (viewId === 'trabajo') { initCareer(); }
   };
 });
 function restoreTimerState() {
