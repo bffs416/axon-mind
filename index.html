@@ -38,7 +38,7 @@
                 <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
                 <button class="tab-btn" data-view="finances"><i data-lucide="dollar-sign"></i> Finanzas</button>
                 <button class="tab-btn" data-view="polyglot"><i data-lucide="book-open"></i> Polyglot</button>
-                <button class="tab-btn" data-view="guitar"><i data-lucide="music"></i> Guitar Master</button>
+                <!-- <button class="tab-btn" data-view="guitar"><i data-lucide="music"></i> Guitar Master</button> -->
                 <button class="tab-btn" data-view="discover"><i data-lucide="globe"></i> Discover</button>
                 <button class="tab-btn" data-view="trabajo"><i data-lucide="briefcase"></i> Trabajo</button>
                 <div style="flex:1"></div>
@@ -1100,186 +1100,11 @@
         </div>
       </section>
 
-      <!-- ========== VISTA GUITAR MASTER ========== -->
+      <!-- SECCIÓN GUITAR MASTER OCULTA 
       <section id="view-guitar" class="view">
-        <div class="polyglot-header" style="margin-bottom:0;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div class="polyglot-icon" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">
-              <i data-lucide="music"></i>
-            </div>
-            <div>
-              <h2 style="margin:0; font-size:1.5rem;">Guitar Master PRO</h2>
-              <p style="margin:0; font-size:0.8rem; color:var(--text-dim);">Laboratorio de Alto Rendimiento (Método Govan)</p>
-            </div>
-          </div>
-          <div style="display:flex; gap:10px;">
-            <div class="polyglot-stat-card" style="padding: 0.5rem 1rem; margin:0;">
-                <span class="label">XP Musical</span>
-                <span class="value" id="guitar-xp" style="font-size:1.2rem;">0</span>
-            </div>
-            <button class="btn-primary" onclick="window.openInspirarmeGuitarModal()">
-                <i data-lucide="zap"></i> Inspirarme
-            </button>
-          </div>
-        </div>
-
-        <div class="guitar-main-container">
-            <!-- Navigation Sidebar -->
-            <aside class="guitar-sidebar">
-                <button class="guitar-zone-btn active" onclick="window.switchGuitarZone('caged', this)">
-                    <i data-lucide="map"></i> Geografía CAGED
-                </button>
-                <button class="guitar-zone-btn" onclick="window.switchGuitarZone('harmony', this)">
-                    <i data-lucide="component"></i> Lab. de Armonía
-                </button>
-                <button class="guitar-zone-btn" onclick="window.switchGuitarZone('studio', this)">
-                    <i data-lucide="mic"></i> Estudio / Oído
-                </button>
-                <button class="guitar-zone-btn" onclick="window.switchGuitarZone('gym', this)">
-                    <i data-lucide="activity"></i> Gimnasio Precisión
-                </button>
-                <button class="guitar-zone-btn" onclick="window.switchGuitarZone('auditorium', this)">
-                    <i data-lucide="headphones"></i> El Auditorio
-                </button>
-            </aside>
-
-            <!-- Main Content Area -->
-            <div class="guitar-content-area">
-                
-                <!-- ZONE 1: CAGED GEOGRAPHY -->
-                <div id="zone-caged" class="guitar-zone-view active">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1.5rem;">
-                        <div>
-                            <h3 id="guitar-fretboard-ref" style="margin:0;">Selecciona una lección</h3>
-                            <p id="guitar-lesson-desc" style="margin:0; font-size:0.85rem; color:var(--text-dim);">Domina el mapa del mástil</p>
-                        </div>
-                        <span id="guitar-current-level" class="badge-accent">Nivel 1</span>
-                    </div>
-
-                    <div class="guitar-fretboard-container" style="position: relative; margin-bottom: 1.5rem; background: #0f172a; border-radius: 12px; border: 2px solid #334155; padding: 30px 10px; overflow-x: auto; box-shadow: inset 0 0 50px rgba(0,0,0,0.8);">
-                        <svg id="guitar-svg" width="850" height="180" viewBox="0 0 850 180" style="display: block; margin: 0 auto; cursor: pointer;">
-                            <rect x="40" y="0" width="810" height="180" fill="#1e293b" rx="4" />
-                            <rect x="35" y="0" width="10" height="180" fill="#f8fafc" rx="2" />
-                            <g id="guitar-frets-group"></g>
-                            <g id="guitar-markers-group"></g>
-                            <g id="guitar-strings-group"></g>
-                            <g id="guitar-hints-group" style="opacity: 0.3;"></g>
-                            <g id="guitar-interaction-layer"></g>
-                            <g id="guitar-dots-group"></g>
-                        </svg>
-                    </div>
-
-                    <div style="display:flex; justify-content:center; gap:0.8rem;">
-                        <button class="btn-secondary" onclick="window.clearGuitarDots()"><i data-lucide="rotate-ccw"></i> Limpiar</button>
-                        <button class="btn-secondary" onclick="window.toggleGuitarHint()"><i data-lucide="eye"></i> Ayuda</button>
-                        <button class="btn-primary" style="flex:1;" onclick="window.validateGuitarSelection()"><i data-lucide="check-circle"></i> Validar Posición</button>
-                    </div>
-
-                    <div id="guitar-feedback-panel" style="margin-top: 1.5rem; padding: 1.2rem; background: rgba(139, 92, 246, 0.05); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.1); display: none;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span id="guitar-feedback-icon" style="font-size:2rem;">🎯</span>
-                            <div>
-                                <div id="guitar-feedback-title" style="font-weight:700; color:var(--text);">¡Muy bien!</div>
-                                <p id="guitar-feedback-text" style="margin:0; font-size: 0.85rem; color:var(--text-dim);"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ZONE 2: HARMONY LAB -->
-                <div id="zone-harmony" class="guitar-zone-view">
-                    <h3>Laboratorio de Armonía & EQ</h3>
-                    <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:20px;">
-                        <div style="background:var(--surface-light); padding:1.5rem; border-radius:12px;">
-                            <p style="font-size:0.9rem; color:var(--text-dim); margin-bottom:1.5rem;">Construye el acorde arrastrando los intervalos:</p>
-                            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:2rem;">
-                                <div class="finance-tag" draggable="true">Tónica (1)</div>
-                                <div class="finance-tag" draggable="true">3ª Mayor</div>
-                                <div class="finance-tag" draggable="true">3ª Menor</div>
-                                <div class="finance-tag" draggable="true">5ª Justa</div>
-                                <div class="finance-tag" draggable="true">7ª Dominante</div>
-                            </div>
-                            <div style="height:80px; border:2px dashed var(--border); border-radius:12px; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">
-                                Suelta aquí para construir el acorde
-                            </div>
-                        </div>
-                        <div style="background:var(--bg-deep); padding:1.5rem; border-radius:12px;">
-                            <h4 style="margin-top:0;">Frecuencias (EQ)</h4>
-                            <div style="display:flex; flex-direction:column; gap:15px;">
-                                <div>
-                                    <label style="font-size:0.7rem; color:var(--text-dim);">BASS (Low)</label>
-                                    <input type="range" class="eq-slider" value="40">
-                                </div>
-                                <div>
-                                    <label style="font-size:0.7rem; color:var(--accent);">MIDS (Corte en mezcla)</label>
-                                    <input type="range" class="eq-slider" value="80">
-                                </div>
-                                <div>
-                                    <label style="font-size:0.7rem; color:var(--text-dim);">TREBLE (High)</label>
-                                    <input type="range" class="eq-slider" value="50">
-                                </div>
-                            </div>
-                            <p style="font-size:0.7rem; color:var(--text-dim); margin-top:1rem;">💡 Govan: Sube los medios para que la guitarra respire en la banda.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ZONE 3: STUDIO -->
-                <div id="zone-studio" class="guitar-zone-view">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                        <h3>Estudio de Transcripción</h3>
-                        <button class="btn-secondary btn-sm"><i data-lucide="upload"></i> Cargar Audio</button>
-                    </div>
-                    <div style="background:#000; border-radius:12px; padding:2rem; text-align:center; margin-bottom:1.5rem;">
-                        <i data-lucide="music" style="width:48px; height:48px; color:var(--text-muted); margin-bottom:1rem;"></i>
-                        <p style="color:var(--text-dim);">Phrase Sampler: Arrastra un MP3 para ralentizarlo sin cambiar el tono.</p>
-                    </div>
-                    <h4>Cuaderno de Licks</h4>
-                    <textarea class="finance-input" style="width:100%; height:120px; font-family:var(--mono);" placeholder="Ej: 15-12-12 en cuerdas 1-2-3 (Triada de La)"></textarea>
-                </div>
-
-                <!-- ZONE 4: GYM -->
-                <div id="zone-gym" class="guitar-zone-view">
-                    <h3>Gimnasio de Precisión</h3>
-                    <div style="text-align:center; padding:2rem; background:var(--bg-deep); border-radius:12px; margin-bottom:1.5rem;">
-                        <div class="metronome-visual">
-                            <div class="metro-dot accent"></div>
-                            <div class="metro-dot"></div>
-                            <div class="metro-dot"></div>
-                            <div class="metro-dot"></div>
-                        </div>
-                        <div style="font-size:3rem; font-weight:800; margin:1rem 0;">120 BPM</div>
-                        <div style="display:flex; justify-content:center; gap:10px;">
-                            <button class="btn-primary" style="width:120px;">START</button>
-                            <button class="btn-secondary">Govan Mode (2 & 4)</button>
-                        </div>
-                    </div>
-                    <div style="padding:1rem; border-radius:12px; border:1px solid var(--warning); background:rgba(245,158,11,0.05);">
-                        <p style="margin:0; font-size:0.85rem; color:var(--warning);"><strong>⚠️ Auditor de Velocidad:</strong> Practica a 60 BPM. El sistema bloqueará la velocidad alta hasta que demuestres limpieza absoluta.</p>
-                    </div>
-                </div>
-
-                <!-- ZONE 5: AUDITORIUM -->
-                <div id="zone-auditorium" class="guitar-zone-view">
-                    <h3>El Auditorio</h3>
-                    <p style="color:var(--text-dim); font-size:0.9rem;">"Cuando tocas, no te escuchas. Cuando grabas, no puedes mentir." - G. Govan</p>
-                    <div style="margin-top:2rem; display:flex; flex-direction:column; gap:15px;">
-                        <div style="background:var(--surface-light); padding:1rem; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
-                            <span>Pista 1: Backing Track (Blues en La)</span>
-                            <i data-lucide="play-circle" style="cursor:pointer"></i>
-                        </div>
-                        <div style="background:var(--bg-deep); padding:2rem; border-radius:12px; text-align:center; border:2px dashed var(--danger);">
-                            <button class="btn-primary" style="background:var(--danger); border:none; width:80px; height:80px; border-radius:50%; box-shadow:0 0 20px rgba(239,68,68,0.3);">
-                                <i data-lucide="circle" style="fill:white"></i>
-                            </button>
-                            <p style="margin-top:1rem; font-weight:700;">GRABAR EVALUACIÓN OBJETIVA</p>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+        ... (contenido oculto) ...
       </section>
+      -->
 
       <!-- ========== MODAL MEDIA VAULT ========== -->
       <div id="media-modal" class="modal">

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase } from 'lucide';
+import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle } from 'lucide';
 
 // ==================== SUPABASE ====================
 export const supabase = createClient(
@@ -50,13 +50,13 @@ export const POLYMATH_LEVELS = [
 ];
 
 export const POLYGLOT_LANGUAGES = {
-  fr: { name: 'Francés', flag: '🇫🇷', tts: 'fr-FR' },
-  pt: { name: 'Portugués', flag: '🇵🇹', tts: 'pt-PT' },
-  de: { name: 'Alemán', flag: '🇩🇪', tts: 'de-DE' },
-  hi: { name: 'Hindi', flag: '🇮🇳', tts: 'hi-IN' },
-  ar: { name: 'Árabe', flag: '🇸🇦', tts: 'ar-SA' },
-  ko: { name: 'Coreano', flag: '🇰🇷', tts: 'ko-KR' },
-  zh: { name: 'Chino', flag: '🇨🇳', tts: 'zh-CN' }
+  fr: { name: 'Francés', flag: '🇫🇷', tts: 'fr-FR', color: '#3b82f6' },
+  pt: { name: 'Portugués', flag: '🇵🇹', tts: 'pt-PT', color: '#10b981' },
+  de: { name: 'Alemán', flag: '🇩🇪', tts: 'de-DE', color: '#f59e0b' },
+  hi: { name: 'Hindi', flag: '🇮🇳', tts: 'hi-IN', color: '#f97316' },
+  ar: { name: 'Árabe', flag: '🇸🇦', tts: 'ar-SA', color: '#059669' },
+  ko: { name: 'Coreano', flag: '🇰🇷', tts: 'ko-KR', color: '#ec4899' },
+  zh: { name: 'Chino', flag: '🇨🇳', tts: 'zh-CN', color: '#dc2626' }
 };
 export const POLYGLOT_LANG_IDS = Object.keys(POLYGLOT_LANGUAGES);
 
@@ -96,7 +96,7 @@ export const $ = window.$;
 window.closeModal = (id) => { $(id).style.display = 'none'; };
 
 export function initIcons() {
-  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign } });
+  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle } });
 }
 window.initIcons = initIcons;
 

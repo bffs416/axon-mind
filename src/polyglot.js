@@ -217,8 +217,14 @@ function renderPhraseList() {
         <div class="polyglot-phrase-langs">
           ${POLYGLOT_LANG_IDS.map(id => {
             const e = phraseEntries.find(ent => ent.language_id === id);
+            const lang = POLYGLOT_LANGUAGES[id];
             const cls = e && e.srs_level >= 6 ? 'mastered' : '';
-            return `<span class="polyglot-phrase-lang-dot ${cls}" title="${POLYGLOT_LANGUAGES[id].name}${e ? ' Nivel ' + e.srs_level : ''}">${POLYGLOT_LANGUAGES[id].flag}</span>`;
+            const dotColor = lang.color || 'var(--border)';
+            const dotStyle = e ? `background: ${dotColor}22; border: 1px solid ${dotColor};` : `background: transparent; border: 1px solid var(--border); opacity: 0.3;`;
+            
+            return `<span class="polyglot-phrase-lang-dot ${cls}" 
+                     style="${dotStyle} width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem;" 
+                     title="${lang.name}${e ? ' Nivel ' + e.srs_level : ''}">${lang.flag}</span>`;
           }).join('')}
         </div>
         <div class="polyglot-phrase-actions">
@@ -335,19 +341,19 @@ window.openPolyglotPhraseModal = async (id, prefillEs = '', prefillEn = '') => {
 
     // Load entries for this phrase
     const { data: phraseEntries } = await supabase.from('polyglot_entries').select('*').eq('phrase_id', id);
-    renderLangAccordion(phraseEntries || []);
+    renderLangAccordion(phraseEntries || [], id);
   } else {
     $('polyglot-phrase-modal-title').textContent = '🌍 Nueva Frase';
     $('edit-polyglot-phrase-id').value = '';
     $('polyglot-source-es').value = prefillEs || '';
     $('polyglot-source-en').value = prefillEn || '';
     $('polyglot-phrase-category').value = 'Saludos';
-    renderLangAccordion([]);
+    renderLangAccordion([], '');
   }
   modal.style.display = 'flex';
 };
 
-function renderLangAccordion(existingEntries) {
+function renderLangAccordion(existingEntries, phraseId) {
   const container = $('polyglot-lang-accordion');
   if (!container) return;
 
@@ -362,7 +368,10 @@ function renderLangAccordion(existingEntries) {
 
     return `
       <details class="polyglot-lang-entry-form" ${hasData ? 'open' : ''}>
-        <summary>${lang.flag} ${lang.name} ${hasData ? '✅' : '⬜'}</summary>
+        <summary>
+          ${lang.flag} ${lang.name} ${hasData ? '✅' : '⬜'}
+          ${(hasData && phraseId) ? `<button class="btn-mini" style="margin-left:auto; background:${lang.color}; color:white; border:none; padding:2px 8px; font-size:0.6rem;" onclick="event.preventDefault(); event.stopPropagation(); window.convertPolyglotToCard('${phraseId}', '${id}')">💡 Card</button>` : ''}
+        </summary>
         <div class="form-body">
           <input type="hidden" class="pe-lang-id" value="${id}">
           <div class="form-row">
@@ -636,14 +645,17 @@ function renderPolyglotStudyCard() {
     const pronOk = meta.pronunciation_ok ? '✅' : '⬜';
     const writOk = meta.writing_ok ? '✅' : '⬜';
 
+    const langColor = lang.color || 'var(--border)';
+    const cardStyle = `border-top: 3px solid ${langColor};`;
+
     return `
-      <div class="polyglot-lang-card ${entry && entry.native_text ? '' : ''}" data-lang="${id}" data-entry-id="${entry ? entry.id : ''}" data-phrase-id="${phraseId}" onclick="window.togglePolyglotLang(this)">
+      <div class="polyglot-lang-card ${entry && entry.native_text ? '' : ''}" data-lang="${id}" data-entry-id="${entry ? entry.id : ''}" data-phrase-id="${phraseId}" onclick="window.togglePolyglotLang(this)" style="${cardStyle}">
         <div class="polyglot-lang-card-header">
           <span class="polyglot-lang-card-flag">${lang.flag}</span>
           <span class="polyglot-lang-card-name">${lang.name}</span>
-          <span class="polyglot-lang-card-level">${levelLabel}</span>
+          <span class="polyglot-lang-card-level" style="background: ${langColor}22; color: ${langColor}; border: 1px solid ${langColor}44;">${levelLabel}</span>
         </div>
-        <div class="polyglot-lang-card-status">${statusText}</div>
+        <div class="polyglot-lang-card-status" style="color: ${langColor}; opacity: 0.8;">${statusText}</div>
         <div class="polyglot-lang-layers" style="display:none;">
           ${entry ? `
             <div class="polyglot-layer" data-layer="native">
@@ -676,6 +688,7 @@ function renderPolyglotStudyCard() {
               <button class="polyglot-audio-btn" onclick="event.stopPropagation();window.togglePolyglotWriting(this,'${id}','${escHtml(entry.native_text || '')}')" title="Practicar escritura con S-Pen">🖊️ Escribir</button>
               <button class="polyglot-audio-btn" style="background:var(--bg-deep);" onclick="event.stopPropagation();window.togglePolyglotSkill('${entry.id}', 'pronunciation_ok')" title="Evaluar: ¿Sé pronunciarlo?">🗣️ ${pronOk}</button>
               <button class="polyglot-audio-btn" style="background:var(--bg-deep);" onclick="event.stopPropagation();window.togglePolyglotSkill('${entry.id}', 'writing_ok')" title="Evaluar: ¿Sé escribirlo?">✍️ ${writOk}</button>
+              <button class="polyglot-audio-btn" style="background:${langColor}; color:white; border:none;" onclick="event.stopPropagation();window.convertPolyglotToCard('${phraseId}', '${id}')" title="Convertir en Flashcard para Axon Cards">💡 Card</button>
             </div>
             <div class="polyglot-canvas-container" style="display:none;" data-lang="${id}">
               <canvas class="polyglot-canvas"></canvas>
@@ -742,6 +755,32 @@ window.togglePolyglotSkill = async (entryId, skillKey) => {
     await supabase.from('polyglot_entries').update({ grammar_metadata: meta }).eq('id', entryId);
   } catch (err) {
     console.error("Error updating skill:", err);
+  }
+};
+
+window.convertPolyglotToCard = (phraseId, langId) => {
+  const phrase = window.polyglotState.phrases.find(p => p.id === phraseId);
+  const entry = window.polyglotState.entries.find(e => e.phrase_id === phraseId && e.language_id === langId);
+  const lang = POLYGLOT_LANGUAGES[langId];
+
+  if (!phrase || !entry || !lang) {
+    showToast('⚠️ No se pudo encontrar la información para la card');
+    return;
+  }
+
+  // User preference: Front in English if available
+  const front = phrase.source_en || phrase.source_es;
+  
+  // Back: Native translation + Emoji
+  const back = `${entry.native_text} ${lang.flag}`;
+  
+  // Category: Language Name + Emoji
+  const category = `${lang.name} ${lang.flag}`;
+
+  if (window.quickAddCard) {
+    window.quickAddCard(front, back, category);
+  } else {
+    showToast('⚠️ Error: El módulo de Cards no está listo');
   }
 };
 
@@ -871,8 +910,12 @@ function initPolyglotCanvas(canvas, refText = "") {
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = '#8b5cf6';
-    ctx.lineWidth = 4;
+    const langId = canvas.closest('.polyglot-canvas-container')?.dataset.lang || 
+                   canvas.closest('#polyglot-alphabet-practice-area')?.dataset.lang;
+    const langColor = POLYGLOT_LANGUAGES[langId]?.color || '#8b5cf6';
+    
+    ctx.strokeStyle = langColor;
+    ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.stroke();
@@ -1005,6 +1048,7 @@ window.practiceAlphabetChar = (char) => {
   if (!area || !ref || !canvas) return;
 
   area.style.display = 'block';
+  area.dataset.lang = window.polyglotState.currentAlphabetLang || 'zh'; // Fallback to current selected if known
   ref.textContent = char;
 
   if (!canvas.dataset.initialized || canvas.dataset.ref !== char) {

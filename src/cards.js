@@ -1,6 +1,7 @@
 import {
   supabase, N8N_URL, $, showToast, fireConfetti, initIcons,
-  SRS_INTERVALS, MAX_SRS_LEVEL, SRS_XP, capitalizeFirstLetter, escHtml, POLYMATH_LEVELS
+  SRS_INTERVALS, MAX_SRS_LEVEL, SRS_XP, capitalizeFirstLetter, escHtml, POLYMATH_LEVELS,
+  POLYGLOT_LANGUAGES
 } from "./db.js";
 
 window.allCards = [];
@@ -98,17 +99,26 @@ function renderCards() {
         const cardsInCat = allCards.filter(c => (c.category || 'Sin Categoría') === cat);
         const isOpen = openFolders[cat] !== undefined ? openFolders[cat] : false;
         
+        const langMatch = Object.values(POLYGLOT_LANGUAGES).find(l => cat && cat.includes(l.name));
+        const catColor = langMatch ? langMatch.color : 'var(--border)';
+        const catIcon = langMatch ? langMatch.flag : '📂';
+        
         html += `
             <div class="folder-group" style="margin-bottom: 1rem; width: 100%;">
                 <details ${isOpen ? 'open' : ''} data-category="${cat}">
-                    <summary style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-card); border-radius: 12px; cursor: pointer; font-weight: 600; border: 1px solid var(--border); transition: all 0.2s ease;">
-                        <span style="font-size: 1.2rem;">📂</span>
+                    <summary style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-card); border-radius: 12px; cursor: pointer; font-weight: 600; border: 1px solid ${langMatch ? catColor : 'var(--border)'}; transition: all 0.2s ease;">
+                        <span style="font-size: 1.2rem;">${catIcon}</span>
                         <span style="flex: 1;">${cat}</span>
-                        <span class="category-badge" style="background: var(--accent); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">${cardsInCat.length}</span>
+                        <span class="category-badge" style="background: ${langMatch ? catColor : 'var(--accent)'}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">${cardsInCat.length}</span>
                     </summary>
                     <div class="folder-content" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; padding: 1rem 0;">
-                        ${cardsInCat.map(card => `
-                            <div class="card-item" onclick="window.openCardModal('${card.id}')" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; cursor: pointer; transition: transform 0.2s;">
+                        ${cardsInCat.map(card => {
+                            const langMatch = Object.values(POLYGLOT_LANGUAGES).find(l => card.category && card.category.includes(l.name));
+                            const cardColor = langMatch ? langMatch.color : 'var(--border)';
+                            const cardStyle = langMatch ? `border-top: 3px solid ${cardColor};` : `border: 1px solid var(--border);`;
+                            
+                            return `
+                            <div class="card-item" onclick="window.openCardModal('${card.id}')" style="background: var(--bg-card); border-radius: 12px; padding: 1rem; cursor: pointer; transition: transform 0.2s; ${cardStyle}">
                                 <div style="font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem;">${card.front}</div>
                                 <div style="font-size: 0.8rem; color: var(--text-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; opacity: 0.7;">
                                     ${card.back}
@@ -119,8 +129,8 @@ function renderCards() {
                                         <i data-lucide="trash-2" style="width: 14px;"></i>
                                     </button>
                                 </div>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 </details>
             </div>
@@ -420,6 +430,44 @@ window.saveCard = async () => {
         localStorage.setItem('axon_cards_backup', JSON.stringify(localCards));
         showToast('💾 Guardado localmente (sin conexión).');
         $('card-modal').style.display = 'none';
+        window.loadCards();
+    }
+};
+
+window.quickAddCard = async (front, back, category) => {
+    const cardData = {
+        front: capitalizeFirstLetter(front),
+        back: capitalizeFirstLetter(back),
+        category: category,
+        srs_level: 0,
+        reviews_count: 0,
+        last_review: null,
+        next_review: new Date().toISOString()
+    };
+
+    // Backup local
+    const localCards = JSON.parse(localStorage.getItem('axon_cards_backup') || '[]');
+
+    try {
+        const { data, error } = await supabase.from('flashcards').insert([cardData]).select();
+        if (error) throw error;
+
+        if (data && data[0]) {
+            cardData.id = data[0].id;
+            localCards.push(cardData);
+            localStorage.setItem('axon_cards_backup', JSON.stringify(localCards));
+        }
+
+        showToast(`💡 Card creada en ${category}`);
+        window.loadCards();
+    } catch (e) {
+        console.error('Quick add error:', e);
+        // Fallback local
+        cardData.id = 'local_' + Date.now();
+        cardData.created_at = new Date().toISOString();
+        localCards.push(cardData);
+        localStorage.setItem('axon_cards_backup', JSON.stringify(localCards));
+        showToast('💾 Guardado localmente (DB offline)');
         window.loadCards();
     }
 };

@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" crossorigin src="/assets/index-YIgdIv5-.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-6WCKvHdN.css">
+  <script type="module" crossorigin src="/assets/index-DEV8vK-P.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BRvOoVVa.css">
 </head>
 <body>
     <canvas id="confetti-canvas"></canvas>
@@ -38,11 +38,17 @@
                 <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards <span id="cards-pending-badge" class="tab-badge" style="display:none;">0</span></button>
                 <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
                 <button class="tab-btn" data-view="finances"><i data-lucide="dollar-sign"></i> Finanzas</button>
-                <button class="tab-btn" data-view="polyglot">🌍 Polyglot</button>
-                <button class="tab-btn" data-view="discover">🌐 Discover</button>
+                <button class="tab-btn" data-view="polyglot"><i data-lucide="book-open"></i> Polyglot</button>
+                <!-- <button class="tab-btn" data-view="guitar"><i data-lucide="music"></i> Guitar Master</button> -->
+                <button class="tab-btn" data-view="discover"><i data-lucide="globe"></i> Discover</button>
+                <button class="tab-btn" data-view="trabajo"><i data-lucide="briefcase"></i> Trabajo</button>
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
+                <button class="btn-ghost search-trigger-btn" id="global-search-trigger" onclick="window.openGlobalSearch()" title="Buscar (Ctrl+K)">
+                    <i data-lucide="search"></i>
+                    <span class="search-trigger-hint">Ctrl+K</span>
+                </button>
             </nav>
         </div>
 
@@ -981,7 +987,8 @@
             <button class="polyglot-lang-chip" data-lang="zh" onclick="window.filterPolyglotLang('zh',this)">🇨🇳</button>
           </div>
           <div style="display:flex;gap:0.5rem;flex:1;">
-            <input type="text" id="polyglot-search" class="finance-input" placeholder="🔍 Buscar frase..." oninput="window.filterPolyglotSearch(this.value)" style="flex:1;">
+            <button class="btn-primary" onclick="window.openInspirarmeModal()" style="padding:0.5rem 1rem;white-space:nowrap;display:flex;align-items:center;gap:0.5rem;"><i data-lucide="lightbulb"></i> Inspirarme</button>
+            <input type="text" id="polyglot-search" class="finance-input" placeholder="Buscar frase..." oninput="window.filterPolyglotSearch(this.value)" style="flex:1;">
             <select id="polyglot-cat-filter" class="finance-input" style="width:auto;padding:0.5rem;" onchange="window.filterPolyglotCategory(this.value)">
               <option value="all">Todas las categorías</option>
             </select>
@@ -1061,6 +1068,45 @@
         </div>
       </section>
 
+      <!-- ========== VISTA TRABAJO / CARRERA ========== -->
+      <section id="view-trabajo" class="view">
+        <div class="plan-header">
+          <h2>💼 Buscar Trabajo Remoto</h2>
+        </div>
+        <div class="career-subtabs">
+          <button class="career-subtab active" data-ctab="checklist" onclick="window.switchCareerTab('checklist', this)">✅ Checklist</button>
+          <button class="career-subtab" data-ctab="portales" onclick="window.switchCareerTab('portales', this)">🌐 Portales</button>
+          <button class="career-subtab" data-ctab="empresas" onclick="window.switchCareerTab('empresas', this)">🏢 Empresas</button>
+        </div>
+        <div id="career-tab-checklist" class="career-tab-content active">
+          <div class="career-progress-container">
+            <div class="career-progress-header">
+              <span class="career-progress-title">📋 Preparación</span>
+              <span class="career-progress-text" id="career-progress-text">0/10 · 0%</span>
+            </div>
+            <div class="career-progress-track">
+              <div class="career-progress-fill" id="career-progress-bar"></div>
+            </div>
+          </div>
+          <div id="career-checklist"></div>
+          <p style="font-size:0.7rem;color:var(--text-dim);margin-top:0.5rem;text-align:center;">✅ Haz clic en cada ítem para marcarlo — se guarda automáticamente</p>
+        </div>
+        <div id="career-tab-portales" class="career-tab-content">
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.75rem;">Los mejores portales para encontrar trabajo remoto, curados desde <strong>Awesome Remote Job</strong></p>
+          <div id="career-portales"></div>
+        </div>
+        <div id="career-tab-empresas" class="career-tab-content">
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.75rem;">Empresas con cultura remoto-friendly donde aplicar directamente</p>
+          <div id="career-empresas"></div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN GUITAR MASTER OCULTA 
+      <section id="view-guitar" class="view">
+        ... (contenido oculto) ...
+      </section>
+      -->
+
       <!-- ========== MODAL MEDIA VAULT ========== -->
       <div id="media-modal" class="modal">
         <div class="modal-content" style="max-width:480px;">
@@ -1114,6 +1160,17 @@
             <button class="btn-icon" onclick="window.closeModal('polyglot-phrase-modal')"><i data-lucide="x"></i></button>
           </div>
           <input type="hidden" id="edit-polyglot-phrase-id">
+          
+          <div class="form-row" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px;">
+            <label class="input-label" style="color: #a78bfa; display: flex; align-items: center; gap: 5px;">
+              <i data-lucide="zap" style="width: 14px;"></i> Mago Políglota AI
+            </label>
+            <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.8rem;">Escribe en español y el mago completará todos los idiomas por ti.</p>
+            <button class="btn btn-primary" id="btn-magic-translate" style="width: 100%; background: linear-gradient(135deg, #6366f1, #a855f7); border: none; font-weight: 600; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);" onclick="window.magicTranslate()">
+              ✨ Auto-completar idiomas
+            </button>
+          </div>
+
           <div class="polyglot-phrase-form">
             <div class="form-row-inline">
               <div class="form-row" style="flex:1;">
@@ -1209,6 +1266,20 @@
         </div>
       </div>
 
+      <!-- ========== MODAL POLYGLOT: Inspirarme ========== -->
+      <div id="polyglot-inspirarme-modal" class="modal">
+        <div class="modal-content" style="max-width:600px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h2>💡 Inspirarme</h2>
+            <button class="btn-icon" onclick="window.closeModal('polyglot-inspirarme-modal')"><i data-lucide="x"></i></button>
+          </div>
+          <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:1rem;">Explora sugerencias de frases por etapa de aprendizaje y agrégalas a tu Hub.</p>
+          <div id="polyglot-inspirarme-content" style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
+            <!-- Rendered list of phrases goes here -->
+          </div>
+        </div>
+      </div>
+
       <!-- ========== MODAL POLYGLOT: Configuración ========== -->
       <div id="polyglot-config-modal" class="modal">
         <div class="modal-content modal-sm">
@@ -1234,9 +1305,12 @@
             <label class="input-label">Orden preferido de idiomas</label>
             <div id="polyglot-config-lang-order" style="display:flex;flex-wrap:wrap;gap:0.3rem;"></div>
           </div>
-          <div class="modal-actions">
-            <button class="btn-ghost" onclick="window.closeModal('polyglot-config-modal')">Cancelar</button>
-            <button class="btn-primary" onclick="window.savePolyglotConfig()">Guardar</button>
+          <div class="modal-actions" style="margin-top:1rem; display: flex; justify-content: space-between;">
+            <button class="btn-ghost" onclick="window.testPolyglotNotification()">🔔 Probar Alerta</button>
+            <div style="display:flex; gap:0.5rem;">
+              <button class="btn-ghost" onclick="window.closeModal('polyglot-config-modal')">Cancelar</button>
+              <button class="btn-primary" onclick="window.savePolyglotConfig()">Guardar</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1607,11 +1681,14 @@ Ejemplo:
 
     <!-- ========== FAB RÁPIDO ========== -->
     <div class="fab-container">
-        <button id="add-task-btn" class="fab fab-primary" onclick="window.openAddSelector()" title="Agregar">
-            <i data-lucide="plus"></i>
+        <button id="global-search-fab" class="fab fab-secondary" onclick="window.openGlobalSearch()" title="Buscar (Ctrl+K)" style="background: var(--bg-card); color: var(--text);">
+            <i data-lucide="search"></i>
         </button>
         <button id="quick-capture-fab" class="fab fab-secondary" onclick="openQuickCapture()" title="Captura Rápida">
             <i data-lucide="zap"></i>
+        </button>
+        <button id="add-task-btn" class="fab fab-primary" onclick="window.openAddSelector()" title="Agregar">
+            <i data-lucide="plus"></i>
         </button>
     </div>
 
@@ -1649,5 +1726,45 @@ Ejemplo:
     </div>
 
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- ========== GLOBAL SEARCH MODAL ========== -->
+    <div id="global-search-modal" class="gsearch-overlay" style="display:none" onclick="window.closeGlobalSearch(event)">
+        <div class="gsearch-container" role="dialog" aria-label="Búsqueda global">
+            <div class="gsearch-header">
+                <div class="gsearch-input-wrapper">
+                    <i data-lucide="search" class="gsearch-icon"></i>
+                    <input
+                        id="gsearch-input"
+                        class="gsearch-input"
+                        type="text"
+                        placeholder="Buscar proyectos, tareas, rutinas, bloques..."
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                    <button class="gsearch-close-btn" onclick="window.closeGlobalSearch()" aria-label="Cerrar búsqueda">
+                        <i data-lucide="x" class="gsearch-close-icon"></i>
+                        <span class="gsearch-esc-tag">ESC</span>
+                    </button>
+                </div>
+            </div>
+            <div id="gsearch-results" class="gsearch-results">
+                <div class="gsearch-empty-state">
+                    <div class="gsearch-empty-icon">🔍</div>
+                    <p>Escribe para buscar en toda tu app</p>
+                    <div class="gsearch-hints">
+                        <span>📋 <b>Tareas</b></span>
+                        <span>🔁 <b>Rutinas</b></span>
+                        <span>📅 <b>Planificación</b></span>
+                        <span>📚 <b>Vault</b></span>
+                    </div>
+                </div>
+            </div>
+            <div class="gsearch-footer">
+                <span><kbd>↑</kbd><kbd>↓</kbd> Navegar</span>
+                <span><kbd>Enter</kbd> Ir</span>
+                <span><kbd>Esc</kbd> Cerrar</span>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
