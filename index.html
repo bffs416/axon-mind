@@ -1158,32 +1158,52 @@
                 <span id="guitar-current-level" style="font-size:0.7rem; color:var(--accent); font-weight:700; text-transform:uppercase;">Nivel 1</span>
               </div>
               <div id="guitar-fretboard-practice-area">
-                 <div id="guitar-fretboard-ref" style="font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 1rem; text-align: center;">Selecciona una lección</div>
+                 <div id="guitar-fretboard-ref" style="font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; text-align: center;">Selecciona una lección</div>
+                 <div id="guitar-lesson-desc" style="font-size: 0.8rem; color: var(--text-dim); text-align: center; margin-bottom: 1.5rem;">Haz clic en "Inspirarme" para empezar</div>
                  
-                 <!-- Guitar Fretboard UI -->
-                 <div class="guitar-fretboard-container" style="position: relative; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 10px;">
-                    <div id="guitar-fretboard-visual" style="min-width: 800px; height: 180px; background: #1a1a24; border-radius: 8px; border: 2px solid #333; position: relative;">
-                        <!-- Strings -->
-                        <div style="position:absolute; top:20px; left:0; right:0; height:1px; background:#555; box-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
-                        <div style="position:absolute; top:48px; left:0; right:0; height:1.5px; background:#666;"></div>
-                        <div style="position:absolute; top:76px; left:0; right:0; height:2px; background:#777;"></div>
-                        <div style="position:absolute; top:104px; left:0; right:0; height:2.5px; background:#888;"></div>
-                        <div style="position:absolute; top:132px; left:0; right:0; height:3px; background:#999;"></div>
-                        <div style="position:absolute; top:160px; left:0; right:0; height:4px; background:#aaa;"></div>
+                 <!-- Interactive Guitar Fretboard -->
+                 <div class="guitar-fretboard-container" style="position: relative; margin-bottom: 1.5rem; background: #0f172a; border-radius: 12px; border: 2px solid #334155; padding: 20px 10px; overflow-x: auto; box-shadow: inset 0 0 40px rgba(0,0,0,0.5);">
+                    <svg id="guitar-svg" width="850" height="180" viewBox="0 0 850 180" style="display: block; margin: 0 auto; cursor: pointer;">
+                        <!-- Fretboard Wood -->
+                        <rect x="40" y="0" width="810" height="180" fill="#1e293b" />
                         
-                        <!-- Drawing Canvas Overlay -->
-                        <canvas id="guitar-fretboard-canvas" width="800" height="180" style="position:absolute; top:0; left:0; cursor: crosshair;"></canvas>
-                    </div>
+                        <!-- The Nut (Cejuela) -->
+                        <rect x="35" y="0" width="10" height="180" fill="#f8fafc" />
+                        
+                        <!-- Frets -->
+                        <g id="guitar-frets-group"></g>
+                        
+                        <!-- Fret Markers (Dots) -->
+                        <g id="guitar-markers-group"></g>
+
+                        <!-- Strings -->
+                        <g id="guitar-strings-group">
+                            <line x1="35" y1="15" x2="850" y2="15" stroke="#94a3b8" stroke-width="1" />
+                            <line x1="35" y1="45" x2="850" y2="45" stroke="#94a3b8" stroke-width="1.5" />
+                            <line x1="35" y1="75" x2="850" y2="75" stroke="#94a3b8" stroke-width="2" />
+                            <line x1="35" y1="105" x2="850" y2="105" stroke="#cbd5e1" stroke-width="2.5" />
+                            <line x1="35" y1="135" x2="850" y2="135" stroke="#cbd5e1" stroke-width="3" />
+                            <line x1="35" y1="165" x2="850" y2="165" stroke="#e2e8f0" stroke-width="4" />
+                        </g>
+
+                        <!-- Interaction Layer -->
+                        <g id="guitar-interaction-layer"></g>
+
+                        <!-- Active Dots (Notes played) -->
+                        <g id="guitar-dots-group"></g>
+                    </svg>
                  </div>
 
                  <div style="display:flex; justify-content:center; gap:1rem;">
-                    <button class="btn-secondary" style="flex:1;" onclick="window.clearGuitarCanvas()"><i data-lucide="rotate-ccw"></i> Borrar</button>
-                    <button class="btn-primary" style="flex:2;" onclick="window.checkGuitarPractice()"><i data-lucide="check"></i> Validar Trazo</button>
+                    <button class="btn-secondary" style="flex:1;" onclick="window.clearGuitarDots()"><i data-lucide="rotate-ccw"></i> Limpiar</button>
+                    <button class="btn-primary" style="flex:2;" onclick="window.validateGuitarSelection()"><i data-lucide="check-circle"></i> Validar Posición</button>
                  </div>
                  
-                 <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 0.8rem;">
-                    <strong style="color:var(--accent); display:block; margin-bottom:0.5rem;">💡 Tip del Maestro:</strong>
-                    <p id="guitar-theory-tip" style="margin:0; color:var(--text-dim);">Dibuja los puntos sobre las cuerdas para marcar la escala o el acorde solicitado.</p>
+                 <div id="guitar-feedback-panel" style="margin-top: 1.5rem; padding: 1rem; background: rgba(139, 92, 246, 0.05); border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.1); display: none;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span id="guitar-feedback-icon" style="font-size:1.5rem;">🎯</span>
+                        <p id="guitar-feedback-text" style="margin:0; font-size: 0.85rem; font-weight: 500;"></p>
+                    </div>
                  </div>
               </div>
             </div>
