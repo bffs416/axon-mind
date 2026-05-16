@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign } from 'lucide';
+import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase } from 'lucide';
 
 // ==================== SUPABASE ====================
 export const supabase = createClient(

@@ -14,10 +14,12 @@ import {
 } from "./src/cards.js";
 
 import { fetchPolyglotData as _fetchP } from './src/polyglot.js';
+import { initGuitarModule } from './src/guitar.js';
 import './src/inspirations.js';
 import './src/mediavault.js';
 import { initCareer } from './src/modules/career.js';
 const fetchPolyglotData = _fetchP;
+window.initGuitarModule = initGuitarModule;
 
 
 // Re-bind $ from window (set by db.js)
@@ -67,6 +69,7 @@ viewBtns.forEach(btn => {
     if (viewId === 'plan') { renderRoutines(); renderPlanner(); loadGCal(); }
     if (viewId === 'finances') { fetchFinanceData(); }
     if (viewId === 'polyglot') { fetchPolyglotData(); }
+    if (viewId === 'guitar') { window.initGuitarModule(); }
     if (viewId === 'discover') { fetchDiscoverData(); }
     if (viewId === 'trabajo') { initCareer(); }
   };

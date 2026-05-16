@@ -37,9 +37,10 @@
                 <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards <span id="cards-pending-badge" class="tab-badge" style="display:none;">0</span></button>
                 <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
                 <button class="tab-btn" data-view="finances"><i data-lucide="dollar-sign"></i> Finanzas</button>
-                <button class="tab-btn" data-view="polyglot">🌍 Polyglot</button>
-                <button class="tab-btn" data-view="discover">🌐 Discover</button>
-                <button class="tab-btn" data-view="trabajo">💼 Trabajo</button>
+                <button class="tab-btn" data-view="polyglot"><i data-lucide="book-open"></i> Polyglot</button>
+                <button class="tab-btn" data-view="guitar"><i data-lucide="music"></i> Guitar Master</button>
+                <button class="tab-btn" data-view="discover"><i data-lucide="globe"></i> Discover</button>
+                <button class="tab-btn" data-view="trabajo"><i data-lucide="briefcase"></i> Trabajo</button>
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
@@ -1096,6 +1097,97 @@
         <div id="career-tab-empresas" class="career-tab-content">
           <p style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.75rem;">Empresas con cultura remoto-friendly donde aplicar directamente</p>
           <div id="career-empresas"></div>
+        </div>
+      </section>
+
+      <!-- ========== VISTA GUITAR MASTER ========== -->
+      <section id="view-guitar" class="view">
+        <div class="polyglot-header">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="polyglot-icon" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">
+              <i data-lucide="music"></i>
+            </div>
+            <div>
+              <h2 style="margin:0; font-size:1.5rem;">Guitar Master</h2>
+              <p style="margin:0; font-size:0.8rem; color:var(--text-dim);">Entrena tu oído y domina el mástil</p>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="window.openInspirarmeGuitarModal()">
+            <i data-lucide="zap"></i> Inspirarme (Teoría)
+          </button>
+        </div>
+
+        <div class="polyglot-dashboard" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <div class="polyglot-stat-card">
+            <span class="label">Escalas Aprendidas</span>
+            <span class="value" id="guitar-scales-count">0</span>
+          </div>
+          <div class="polyglot-stat-card">
+            <span class="label">Triadas Dominadas</span>
+            <span class="value" id="guitar-triads-count">0</span>
+          </div>
+          <div class="polyglot-stat-card">
+              <span class="label">XP Musical</span>
+              <span class="value" id="guitar-xp">0</span>
+          </div>
+        </div>
+
+        <div class="polyglot-main-layout">
+          <div class="polyglot-list-section">
+            <div class="polyglot-filters" style="margin-bottom: 1rem;">
+                <select id="guitar-level-filter" class="finance-input" style="max-width:180px;" onchange="window.filterGuitarLevel(this.value)">
+                    <option value="all">Todos los niveles</option>
+                    <option value="1">Nivel 1: ADN (Intervalos)</option>
+                    <option value="2">Nivel 2: Triadas</option>
+                    <option value="3">Nivel 3: CAGED</option>
+                    <option value="4">Nivel 4: Armonía</option>
+                </select>
+            </div>
+            <div id="guitar-lesson-list" class="polyglot-phrase-list">
+              <div style="text-align:center; padding: 2rem; color: var(--text-dim);">
+                <i data-lucide="music" style="width: 40px; height: 40px; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <p>Usa "Inspirarme" para empezar tu ruta de teoría musical.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="polyglot-practice-section">
+            <div class="polyglot-practice-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="margin:0;">🎸 Práctica del Mástil</h3>
+                <span id="guitar-current-level" style="font-size:0.7rem; color:var(--accent); font-weight:700; text-transform:uppercase;">Nivel 1</span>
+              </div>
+              <div id="guitar-fretboard-practice-area">
+                 <div id="guitar-fretboard-ref" style="font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 1rem; text-align: center;">Selecciona una lección</div>
+                 
+                 <!-- Guitar Fretboard UI -->
+                 <div class="guitar-fretboard-container" style="position: relative; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 10px;">
+                    <div id="guitar-fretboard-visual" style="min-width: 800px; height: 180px; background: #1a1a24; border-radius: 8px; border: 2px solid #333; position: relative;">
+                        <!-- Strings -->
+                        <div style="position:absolute; top:20px; left:0; right:0; height:1px; background:#555; box-shadow: 0 1px 2px rgba(0,0,0,0.5);"></div>
+                        <div style="position:absolute; top:48px; left:0; right:0; height:1.5px; background:#666;"></div>
+                        <div style="position:absolute; top:76px; left:0; right:0; height:2px; background:#777;"></div>
+                        <div style="position:absolute; top:104px; left:0; right:0; height:2.5px; background:#888;"></div>
+                        <div style="position:absolute; top:132px; left:0; right:0; height:3px; background:#999;"></div>
+                        <div style="position:absolute; top:160px; left:0; right:0; height:4px; background:#aaa;"></div>
+                        
+                        <!-- Drawing Canvas Overlay -->
+                        <canvas id="guitar-fretboard-canvas" width="800" height="180" style="position:absolute; top:0; left:0; cursor: crosshair;"></canvas>
+                    </div>
+                 </div>
+
+                 <div style="display:flex; justify-content:center; gap:1rem;">
+                    <button class="btn-secondary" style="flex:1;" onclick="window.clearGuitarCanvas()"><i data-lucide="rotate-ccw"></i> Borrar</button>
+                    <button class="btn-primary" style="flex:2;" onclick="window.checkGuitarPractice()"><i data-lucide="check"></i> Validar Trazo</button>
+                 </div>
+                 
+                 <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 0.8rem;">
+                    <strong style="color:var(--accent); display:block; margin-bottom:0.5rem;">💡 Tip del Maestro:</strong>
+                    <p id="guitar-theory-tip" style="margin:0; color:var(--text-dim);">Dibuja los puntos sobre las cuerdas para marcar la escala o el acorde solicitado.</p>
+                 </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
