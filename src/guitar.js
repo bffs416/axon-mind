@@ -132,10 +132,21 @@ function renderActiveDots() {
     const x = dot.fret === 0 ? 37.5 : 40 + (dot.fret * fretSpacing) - (fretSpacing/2);
     const y = stringsY[dot.string - 1];
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 10);
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 11);
     circle.setAttribute('fill', dot.status === 'correct' ? '#10b981' : dot.status === 'wrong' ? '#ef4444' : '#8b5cf6');
     circle.setAttribute('stroke', '#fff'); circle.setAttribute('stroke-width', '2');
     dotsGroup.appendChild(circle);
+
+    // Note label
+    if (dot.label || (window.guitarState.currentLesson?.positions.find(p => p.string === dot.string && p.fret === dot.fret)?.label)) {
+      const label = dot.label || window.guitarState.currentLesson?.positions.find(p => p.string === dot.string && p.fret === dot.fret)?.label;
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', x); text.setAttribute('y', y + 4);
+      text.setAttribute('fill', '#fff'); text.setAttribute('font-size', '10');
+      text.setAttribute('font-weight', '800'); text.setAttribute('text-anchor', 'middle');
+      text.textContent = label;
+      dotsGroup.appendChild(text);
+    }
   });
 }
 
@@ -152,9 +163,16 @@ window.toggleGuitarHint = () => {
       const x = pos.fret === 0 ? 37.5 : 40 + (pos.fret * fretSpacing) - (fretSpacing/2);
       const y = stringsY[pos.string - 1];
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 8);
+      circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 9);
       circle.setAttribute('fill', '#fff');
       hintGroup.appendChild(circle);
+
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', x); text.setAttribute('y', y + 3);
+      text.setAttribute('fill', '#0f172a'); text.setAttribute('font-size', '8');
+      text.setAttribute('font-weight', '900'); text.setAttribute('text-anchor', 'middle');
+      text.textContent = pos.label;
+      hintGroup.appendChild(text);
     });
   }
 };
