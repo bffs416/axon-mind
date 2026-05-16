@@ -8,7 +8,28 @@ window.guitarState = {
   xp: 0,
   filterLevel: 'all',
   selectedDots: [],
-  showHint: false
+  showHint: false,
+  activeZone: 'caged'
+};
+
+window.switchGuitarZone = (zoneId, btn) => {
+    window.guitarState.activeZone = zoneId;
+    
+    // Update Sidebar Buttons
+    document.querySelectorAll('.guitar-zone-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    
+    // Update View
+    document.querySelectorAll('.guitar-zone-view').forEach(v => v.classList.remove('active'));
+    const target = document.getElementById('zone-' + zoneId);
+    if (target) target.classList.add('active');
+    
+    // Re-init icons if needed
+    if (window.lucide) window.lucide.createIcons();
+    
+    // Trigger specific zone logic
+    if (zoneId === 'caged') drawFretboardUI();
+    showToast(`🚀 Zona: ${zoneId.toUpperCase()}`);
 };
 
 // --- AUDIO ENGINE ---
