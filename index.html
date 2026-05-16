@@ -1158,22 +1158,20 @@
                 <span id="guitar-current-level" style="font-size:0.7rem; color:var(--accent); font-weight:700; text-transform:uppercase;">Nivel 1</span>
               </div>
               <div id="guitar-fretboard-practice-area">
-                 <div id="guitar-fretboard-ref" style="font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; text-align: center;">Selecciona una lección</div>
-                 <div id="guitar-lesson-desc" style="font-size: 0.8rem; color: var(--text-dim); text-align: center; margin-bottom: 1.5rem;">Haz clic en "Inspirarme" para empezar</div>
+                 <div id="guitar-fretboard-ref" style="font-size: 1.4rem; font-weight: 800; color: var(--accent); margin-bottom: 0.5rem; text-align: center;">Selecciona una lección</div>
+                 <div id="guitar-lesson-desc" style="font-size: 0.9rem; color: var(--text-dim); text-align: center; margin-bottom: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto;">Haz clic en "Inspirarme" para empezar tu viaje musical.</div>
                  
                  <!-- Interactive Guitar Fretboard -->
-                 <div class="guitar-fretboard-container" style="position: relative; margin-bottom: 1.5rem; background: #0f172a; border-radius: 12px; border: 2px solid #334155; padding: 20px 10px; overflow-x: auto; box-shadow: inset 0 0 40px rgba(0,0,0,0.5);">
+                 <div class="guitar-fretboard-container" style="position: relative; margin-bottom: 1rem; background: #0f172a; border-radius: 12px; border: 2px solid #334155; padding: 30px 10px; overflow-x: auto; box-shadow: inset 0 0 50px rgba(0,0,0,0.8);">
                     <svg id="guitar-svg" width="850" height="180" viewBox="0 0 850 180" style="display: block; margin: 0 auto; cursor: pointer;">
                         <!-- Fretboard Wood -->
-                        <rect x="40" y="0" width="810" height="180" fill="#1e293b" />
+                        <rect x="40" y="0" width="810" height="180" fill="#1e293b" rx="4" />
                         
                         <!-- The Nut (Cejuela) -->
-                        <rect x="35" y="0" width="10" height="180" fill="#f8fafc" />
+                        <rect x="35" y="0" width="10" height="180" fill="#f8fafc" rx="2" />
                         
-                        <!-- Frets -->
+                        <!-- Frets and Markers will be injected by JS -->
                         <g id="guitar-frets-group"></g>
-                        
-                        <!-- Fret Markers (Dots) -->
                         <g id="guitar-markers-group"></g>
 
                         <!-- Strings -->
@@ -1186,6 +1184,9 @@
                             <line x1="35" y1="165" x2="850" y2="165" stroke="#e2e8f0" stroke-width="4" />
                         </g>
 
+                        <!-- Hint Layer (Ghost notes) -->
+                        <g id="guitar-hints-group" style="opacity: 0.3;"></g>
+
                         <!-- Interaction Layer -->
                         <g id="guitar-interaction-layer"></g>
 
@@ -1194,15 +1195,36 @@
                     </svg>
                  </div>
 
-                 <div style="display:flex; justify-content:center; gap:1rem;">
+                 <div style="display:flex; justify-content:center; gap:0.8rem; margin-bottom: 2rem;">
                     <button class="btn-secondary" style="flex:1;" onclick="window.clearGuitarDots()"><i data-lucide="rotate-ccw"></i> Limpiar</button>
+                    <button class="btn-secondary" style="flex:1;" onclick="window.toggleGuitarHint()"><i data-lucide="eye"></i> Ayuda</button>
                     <button class="btn-primary" style="flex:2;" onclick="window.validateGuitarSelection()"><i data-lucide="check-circle"></i> Validar Posición</button>
                  </div>
-                 
-                 <div id="guitar-feedback-panel" style="margin-top: 1.5rem; padding: 1rem; background: rgba(139, 92, 246, 0.05); border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.1); display: none;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span id="guitar-feedback-icon" style="font-size:1.5rem;">🎯</span>
-                        <p id="guitar-feedback-text" style="margin:0; font-size: 0.85rem; font-weight: 500;"></p>
+
+                 <div id="guitar-feedback-panel" style="margin-top: 1rem; padding: 1.2rem; background: rgba(139, 92, 246, 0.05); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.1); display: none; animation: slide-up 0.3s ease;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span id="guitar-feedback-icon" style="font-size:2rem;">🎯</span>
+                        <div>
+                            <div id="guitar-feedback-title" style="font-weight:700; color:var(--text);">¡Muy bien!</div>
+                            <p id="guitar-feedback-text" style="margin:0; font-size: 0.85rem; color:var(--text-dim);"></p>
+                        </div>
+                    </div>
+                 </div>
+
+                 <!-- Circle of Fifths Section -->
+                 <div style="margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 2rem;">
+                    <h3 style="text-align:center; margin-bottom: 1.5rem;">🎡 Círculo de Armonías (Quintas)</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2rem; align-items:center;">
+                        <div id="circle-of-fifths-container" style="display:flex; justify-content:center;">
+                            <!-- SVG Circle will be here -->
+                        </div>
+                        <div style="background: var(--bg-card); padding: 1.5rem; border-radius: 15px; border: 1px solid var(--border);">
+                            <h4 id="circle-key-title" style="color:var(--accent); margin-top:0;">Tonalidad: C (Do Mayor)</h4>
+                            <p id="circle-key-desc" style="font-size:0.85rem; color:var(--text-dim); line-height:1.5;">El Círculo de Quintas te muestra qué acordes "se llevan bien". Los acordes vecinos son los que usarás para crear progresiones y canciones.</p>
+                            <div id="circle-key-chords" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:1rem;">
+                                <!-- Relative chords will appear here -->
+                            </div>
+                        </div>
                     </div>
                  </div>
               </div>
