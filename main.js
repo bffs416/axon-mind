@@ -3954,10 +3954,22 @@ window.fetchDolarValue = async function() {
             const rate = data[0].rate;
             const badge = $('dolar-badge');
             if (badge) {
-                if (rate >= 3500 && rate <= 3600) {
+                const isGoodPrice = rate >= 3500 && rate <= 3600;
+                if (isGoodPrice) {
                     badge.innerHTML = `💵 $${Number(rate).toLocaleString('es-CO')} (COMPRAR)`;
                     badge.style.background = 'rgba(16, 185, 129, 0.2)';
                     badge.style.color = '#10b981';
+                    
+                    // Notification logic: only once per day
+                    const lastDolarAlert = localStorage.getItem('axon_last_dolar_alert');
+                    const today = new Date().toDateString();
+                    if (lastDolarAlert !== today) {
+                        const granted = await ensureNotificationPermission();
+                        if (granted) {
+                            showNotification('💵 Alerta Dólar', `El dólar está a $${Number(rate).toLocaleString('es-CO')}. ¡Excelente oportunidad para comprar! 🚀`);
+                            localStorage.setItem('axon_last_dolar_alert', today);
+                        }
+                    }
                 } else {
                     badge.innerHTML = `💵 $${Number(rate).toLocaleString('es-CO')}`;
                     badge.style.background = 'var(--bg-card-hover)';
@@ -4050,12 +4062,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function checkPolyglotReminders() {
+    // Cooldown: at most once every 6 hours to avoid being "too intense"
+    const lastReminder = localStorage.getItem('axon_last_polyglot_reminder');
+    const now = new Date();
+    if (lastReminder && (now - new Date(lastReminder)) < 6 * 3600 * 1000) {
+        return;
+    }
+
     // Only check if we are not already in a study session
     const studyModal = document.getElementById('polyglot-study-modal');
     if (studyModal && studyModal.style.display === 'flex') return;
 
     // Use a small buffer (30s) to ensure we catch things due "now"
-    const now = new Date();
     const queryTime = new Date(now.getTime() + 30000).toISOString(); 
 
     const { data: entries, error } = await supabase
@@ -4074,6 +4092,7 @@ async function checkPolyglotReminders() {
         const granted = await ensureNotificationPermission();
         if (granted) {
             showNotification('🌍 Axon Polyglot', `Tienes ${entries.length} repasos de idiomas pendientes. ¡Es hora de practicar! 🧠`);
+            localStorage.setItem('axon_last_polyglot_reminder', now.toISOString());
         }
     }
 }

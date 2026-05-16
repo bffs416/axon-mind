@@ -716,9 +716,10 @@ window.togglePolyglotWriting = (btn, langId, refText) => {
 
   // Init canvas
   const canvas = container.querySelector('canvas');
-  if (canvas && !canvas.dataset.initialized) {
+  if (canvas && (!canvas.dataset.initialized || canvas.dataset.ref !== refText)) {
     canvas.dataset.initialized = 'true';
-    initPolyglotCanvas(canvas);
+    canvas.dataset.ref = refText;
+    initPolyglotCanvas(canvas, refText);
   }
 };
 
@@ -736,7 +737,7 @@ window.clearPolyglotCanvas = (btn) => {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 };
 
-function initPolyglotCanvas(canvas) {
+function initPolyglotCanvas(canvas, refText = "") {
   let drawing = false;
   const ctx = canvas.getContext('2d');
   let lastX = 0, lastY = 0;
@@ -745,16 +746,29 @@ function initPolyglotCanvas(canvas) {
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
-    // Redraw with background
+    
+    // Background color
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-deep').trim() || '#0a0a0f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Draw light grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    
+    // Reference text (LARGE and CENTERED in background)
+    if (refText) {
+      // Use a responsive font size based on canvas height
+      const fontSize = Math.min(canvas.height * 0.6, 120);
+      ctx.font = `${fontSize}px "Outfit", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'; // Subtle ghost text
+      ctx.fillText(refText, canvas.width / 2, canvas.height / 2);
+    }
+
+    // Light grid for guidance
+    ctx.strokeStyle = 'rgba(255,255,255,0.02)';
     ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 20) {
+    for (let x = 0; x < canvas.width; x += 40) {
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
     }
-    for (let y = 0; y < canvas.height; y += 20) {
+    for (let y = 0; y < canvas.height; y += 40) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
   }
@@ -767,7 +781,9 @@ function initPolyglotCanvas(canvas) {
     return { x: (e.clientX || e.pageX) - rect.left, y: (e.clientY || e.pageY) - rect.top };
   }
 
+  // Prevent event propagation to avoid collapsing the accordion
   canvas.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
     drawing = true;
     const pos = getPos(e);
     lastX = pos.x; lastY = pos.y;
@@ -776,20 +792,32 @@ function initPolyglotCanvas(canvas) {
 
   canvas.addEventListener('pointermove', (e) => {
     if (!drawing) return;
+    e.stopPropagation();
     const pos = getPos(e);
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(pos.x, pos.y);
     ctx.strokeStyle = '#8b5cf6';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.stroke();
     lastX = pos.x; lastY = pos.y;
   });
 
-  canvas.addEventListener('pointerup', () => { drawing = false; });
-  canvas.addEventListener('pointerleave', () => { drawing = false; });
+  canvas.addEventListener('pointerup', (e) => { 
+    e.stopPropagation();
+    drawing = false; 
+    // Evaluation heuristic: if user drew something, show a small visual cue
+    // (In a real app, this would trigger OCR/HWR)
+  });
+  
+  canvas.addEventListener('pointerleave', (e) => { 
+    drawing = false; 
+  });
+  
+  // Also stop clicks from bubbling
+  canvas.addEventListener('click', (e) => e.stopPropagation());
 }
 
 // SRS for individual entry
@@ -905,10 +933,11 @@ window.practiceAlphabetChar = (char) => {
   area.style.display = 'block';
   ref.textContent = char;
 
-  if (!canvas.dataset.initialized) {
+  if (!canvas.dataset.initialized || canvas.dataset.ref !== char) {
     canvas.dataset.initialized = 'true';
+    canvas.dataset.ref = char;
     if (typeof initPolyglotCanvas === 'function') {
-      initPolyglotCanvas(canvas);
+      initPolyglotCanvas(canvas, char);
     }
   }
 
@@ -918,7 +947,7 @@ window.practiceAlphabetChar = (char) => {
     content.parentElement.scrollTop = 0;
   }
   
-  window.clearAlphabetCanvas();
+  window.clearAlphabetCanvas(char);
 };
 
 window.closeAlphabetPractice = () => {
@@ -926,15 +955,98 @@ window.closeAlphabetPractice = () => {
   if (area) area.style.display = 'none';
 };
 
-window.clearAlphabetCanvas = () => {
+window.clearAlphabetCanvas = (char = "") => {
   const canvas = $('polyglot-alphabet-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width;
   canvas.height = rect.height;
-  ctx.fillStyle = '#0a0a0f';
+  
+  // Background
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-deep').trim() || '#0a0a0f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Redraw reference in background after clear
+  const refText = char || canvas.dataset.ref || "";
+  if (refText) {
+    const fontSize = Math.min(canvas.height * 0.6, 120);
+    ctx.font = `${fontSize}px "Outfit", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillText(refText, canvas.width / 2, canvas.height / 2);
+  }
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+};
+
+window.clearPolyglotCanvas = (btn) => {
+  const container = btn.closest('.polyglot-canvas-container');
+  if (!container) return;
+  const canvas = container.querySelector('canvas');
+  if (!canvas) return;
+  const refText = canvas.dataset.ref || "";
+  const ctx = canvas.getContext('2d');
+  
+  // Reset with background and ref text
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-deep').trim() || '#0a0a0f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  if (refText) {
+    const fontSize = Math.min(canvas.height * 0.6, 120);
+    ctx.font = `${fontSize}px "Outfit", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillText(refText, canvas.width / 2, canvas.height / 2);
+  }
+  
+  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+};
+
+// ===== INSPIRARME =====
+window.openInspirarmeModal = async () => {
+  if (!window.polyglotState.phrases || window.polyglotState.phrases.length === 0) {
+    showToast('⚠️ No hay frases aún. Agrega algunas primero.');
+    return;
+  }
+  
+  const randomPhrase = window.polyglotState.phrases[Math.floor(Math.random() * window.polyglotState.phrases.length)];
+  const sourceText = window.polyglotState.sourceLanguage === 'en' ? (randomPhrase.source_en || randomPhrase.source_es) : randomPhrase.source_es;
+  
+  const modal = document.createElement('div');
+  modal.id = 'polyglot-inspiration-modal';
+  modal.className = 'modal';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 400px; text-align: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; position: relative; animation: modal-scale 0.3s ease-out;">
+      <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+      <div style="font-size: 3rem; margin-bottom: 1rem;">💡</div>
+      <h3 style="margin-bottom: 1rem; color: var(--accent);">Frase Inspiradora</h3>
+      <div style="font-size: 1.2rem; font-weight: 600; line-height: 1.5; margin-bottom: 1.5rem; color: var(--text);">"${sourceText}"</div>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button class="btn-primary" onclick="this.closest('.modal').remove(); window.openPolyglotStudy();">📚 Estudiar ahora</button>
+        <button class="btn-secondary" onclick="this.closest('.modal').remove(); window.openInspirarmeModal();">🔄 Otra frase</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
 };
 
 // ===== NOTIFICATIONS TEST =====

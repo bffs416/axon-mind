@@ -123,29 +123,64 @@ window.captureInspiration = async () => {
           if (!raw) return;
           // n8n webhook returns [{...}] not {...}
           const enriched = Array.isArray(raw) ? raw[0] : raw;
-          if (!enriched) return;
+          if (!enriched) {
+            console.warn('Inspiration: Empty response from distiller');
+            return;
+          }
+          
+          console.log('Inspiration: Enriched data received', enriched);
+          
           const updateData = {};
-          if (enriched.categoria) updateData.category = enriched.categoria;
+          
+          // Map dynamic category to fixed categories if possible
+          if (enriched.categoria) {
+            const cat = enriched.categoria.toLowerCase();
+            if (cat.includes('marketing')) updateData.category = 'Marketing Digital';
+            else if (cat.includes('ia') || cat.includes('inteligencia') || cat.includes('automatización')) updateData.category = 'IA & Automatización';
+            else if (cat.includes('desarrollo') || cat.includes('programación') || cat.includes('código')) updateData.category = 'Desarrollo Web';
+            else if (cat.includes('finanzas') || cat.includes('economía')) updateData.category = 'Finanzas';
+            else if (cat.includes('diseño') || cat.includes('ux') || cat.includes('ui')) updateData.category = 'Diseño';
+            else if (cat.includes('productividad') || cat.includes('organización')) updateData.category = 'Productividad';
+            else if (cat.includes('negocio') || cat.includes('emprendimiento')) updateData.category = 'Negocios';
+            else if (cat.includes('salud') || cat.includes('bienestar')) updateData.category = 'Salud';
+            else updateData.category = 'Otro';
+          }
+          
           if (enriched.resumen) updateData.summary = enriched.resumen;
-          if (enriched.palabras_clave?.length) updateData.tools = enriched.palabras_clave;
+          
+          // Handle keywords as tools
+          if (enriched.palabras_clave) {
+            const keywords = Array.isArray(enriched.palabras_clave) ? enriched.palabras_clave : [enriched.palabras_clave];
+            updateData.tools = keywords.map(k => k.trim()).filter(Boolean);
+          }
+          
           if (enriched.accion) updateData.action = enriched.accion;
           
           let fullDesc = '';
-          if (enriched.subcategorias?.length) {
-            fullDesc += '📌 SUBCATEGORÍAS:\n' + enriched.subcategorias.join(', ') + '\n\n';
+          if (enriched.subcategorias) {
+            const subs = Array.isArray(enriched.subcategorias) ? enriched.subcategorias : [enriched.subcategorias];
+            fullDesc += '📌 SUBCATEGORÍAS:\n' + subs.join(', ') + '\n\n';
           }
-          if (enriched.content?.parts?.[0]?.text) {
-            fullDesc += '📝 TRANSCRIPCIÓN:\n' + enriched.content.parts[0].text;
+          
+          // Content extraction (check multiple possible structures)
+          const transcription = enriched.content?.parts?.[0]?.text || enriched.transcripcion || enriched.texto;
+          if (transcription) {
+            fullDesc += '📝 TRANSCRIPCIÓN:\n' + transcription;
           }
+          
           if (fullDesc) updateData.description = fullDesc;
 
           if (Object.keys(updateData).length) {
-            supabase.from('inspirations').update(updateData).eq('id', inspId).then(() => {
+            console.log('Inspiration: Updating Supabase with', updateData);
+            supabase.from('inspirations').update(updateData).eq('id', inspId).then(({ error }) => {
+              if (error) console.error('Inspiration: Update error', error);
               if (window.fetchDiscoverData) window.fetchDiscoverData();
             });
           }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error('Inspiration: Distillation fetch failed', err);
+        });
     }
   } catch (e) {
     console.error(e);
