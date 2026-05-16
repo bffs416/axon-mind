@@ -245,6 +245,79 @@ window.filterPolyglotSearch = (q) => {
   renderPhraseList();
 };
 
+window.magicTranslate = async () => {
+  const source_es = $('polyglot-source-es').value.trim();
+  if (!source_es) {
+    showToast('⚠️ Escribe algo en español primero');
+    return;
+  }
+
+  const btn = $('btn-magic-translate');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ Mago trabajando...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+
+  try {
+    const response = await fetch(POLYGLOT_TRANSLATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phrase: source_es })
+    });
+    
+    if (!response.ok) throw new Error('Network response was not ok');
+    
+    const raw = await response.json();
+    const data = Array.isArray(raw) ? raw[0] : raw;
+
+    if (data.source_en) {
+      $('polyglot-source-en').value = data.source_en;
+    }
+    
+    if (data.category) {
+      $('polyglot-phrase-category').value = data.category;
+    }
+
+    // The webhook should return an array of translations or a structured object
+    const translations = data.translations || [];
+    
+    if (translations.length > 0) {
+      translations.forEach(t => {
+        const langId = t.language_id || t.lang;
+        const row = document.querySelector(`.polyglot-lang-entry-form input.pe-lang-id[value="${langId}"]`)?.closest('.polyglot-lang-entry-form');
+        
+        if (row) {
+          const nativeInput = row.querySelector('.pe-native');
+          const phoneticInput = row.querySelector('.pe-phonetic');
+          const literalInput = row.querySelector('.pe-literal');
+          const naturalInput = row.querySelector('.pe-natural');
+          
+          if (nativeInput && t.native_text) nativeInput.value = t.native_text;
+          if (phoneticInput && t.phonetic) phoneticInput.value = t.phonetic;
+          if (literalInput && t.literal_translation) literalInput.value = t.literal_translation;
+          if (naturalInput && t.natural_translation) naturalInput.value = t.natural_translation;
+          
+          row.open = true;
+          const summary = row.querySelector('summary');
+          if (summary) {
+            summary.innerHTML = summary.innerHTML.replace('⬜', '✅');
+          }
+        }
+      });
+      showToast('✨ ¡El Mago ha completado las traducciones!');
+    } else {
+      showToast('⚠️ El mago no devolvió traducciones válidas.');
+    }
+  } catch (e) {
+    console.error('Magic Translate error:', e);
+    showToast('❌ Error del Mago: Revisa tu conexión.');
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+};
+
 // ===== PHRASE CRUD =====
 window.openPolyglotPhraseModal = async (id) => {
   const modal = $('polyglot-phrase-modal');

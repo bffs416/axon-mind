@@ -1152,6 +1152,17 @@
             <button class="btn-icon" onclick="window.closeModal('polyglot-phrase-modal')"><i data-lucide="x"></i></button>
           </div>
           <input type="hidden" id="edit-polyglot-phrase-id">
+          
+          <div class="form-row" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px;">
+            <label class="input-label" style="color: #a78bfa; display: flex; align-items: center; gap: 5px;">
+              <i data-lucide="zap" style="width: 14px;"></i> Mago Políglota AI
+            </label>
+            <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.8rem;">Escribe en español y el mago completará todos los idiomas por ti.</p>
+            <button class="btn btn-primary" id="btn-magic-translate" style="width: 100%; background: linear-gradient(135deg, #6366f1, #a855f7); border: none; font-weight: 600; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);" onclick="window.magicTranslate()">
+              ✨ Auto-completar idiomas
+            </button>
+          </div>
+
           <div class="polyglot-phrase-form">
             <div class="form-row-inline">
               <div class="form-row" style="flex:1;">
