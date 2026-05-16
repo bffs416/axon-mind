@@ -3,6 +3,7 @@ import {
   POLYGLOT_LANGUAGES, POLYGLOT_LANG_IDS, POLYGLOT_ALPHABETS,
   showNotification, ensureNotificationPermission
 } from './db.js';
+import { POLYGLOT_MASTER_CATALOG } from './master_catalog.js';
 
 // ==================== POLYGLOT HUB ====================
 window.polyglotState = {
@@ -319,7 +320,7 @@ window.magicTranslate = async () => {
 };
 
 // ===== PHRASE CRUD =====
-window.openPolyglotPhraseModal = async (id) => {
+window.openPolyglotPhraseModal = async (id, prefillEs = '', prefillEn = '') => {
   const modal = $('polyglot-phrase-modal');
   if (!modal) return;
 
@@ -338,8 +339,8 @@ window.openPolyglotPhraseModal = async (id) => {
   } else {
     $('polyglot-phrase-modal-title').textContent = '🌍 Nueva Frase';
     $('edit-polyglot-phrase-id').value = '';
-    $('polyglot-source-es').value = '';
-    $('polyglot-source-en').value = '';
+    $('polyglot-source-es').value = prefillEs || '';
+    $('polyglot-source-en').value = prefillEn || '';
     $('polyglot-phrase-category').value = 'Saludos';
     renderLangAccordion([]);
   }
@@ -1093,29 +1094,56 @@ window.clearPolyglotCanvas = (btn) => {
   }
 };
 
-// ===== INSPIRARME =====
+// ===== INSPIRARME (Ruta Conversacional Secuencial) =====
 window.openInspirarmeModal = async () => {
-  if (!window.polyglotState.phrases || window.polyglotState.phrases.length === 0) {
-    showToast('⚠️ No hay frases aún. Agrega algunas primero.');
-    return;
-  }
+  // Obtenemos el progreso actual del catálogo maestro
+  let currentIndex = parseInt(localStorage.getItem('axon_polyglot_master_index') || '0');
   
-  const randomPhrase = window.polyglotState.phrases[Math.floor(Math.random() * window.polyglotState.phrases.length)];
-  const sourceText = window.polyglotState.sourceLanguage === 'en' ? (randomPhrase.source_en || randomPhrase.source_es) : randomPhrase.source_es;
+  // Si llegamos al final, reiniciamos o mostramos mensaje
+  if (currentIndex >= POLYGLOT_MASTER_CATALOG.length) {
+    showToast('🏆 ¡Felicidades! Has completado la ruta conversacional básica.');
+    currentIndex = 0;
+    localStorage.setItem('axon_polyglot_master_index', '0');
+  }
+
+  const phrase = POLYGLOT_MASTER_CATALOG[currentIndex];
+  const sourceText = phrase.es;
+  const targetText = phrase.en;
+  const level = phrase.level || 1;
+  const category = phrase.cat || 'General';
   
   const modal = document.createElement('div');
   modal.id = 'polyglot-inspiration-modal';
   modal.className = 'modal';
   modal.style.display = 'flex';
   modal.innerHTML = `
-    <div class="modal-content" style="max-width: 400px; text-align: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; position: relative; animation: modal-scale 0.3s ease-out;">
+    <div class="modal-content" style="max-width: 420px; text-align: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; position: relative; animation: modal-scale 0.3s ease-out; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
       <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
-      <div style="font-size: 3rem; margin-bottom: 1rem;">💡</div>
-      <h3 style="margin-bottom: 1rem; color: var(--accent);">Frase Inspiradora</h3>
-      <div style="font-size: 1.2rem; font-weight: 600; line-height: 1.5; margin-bottom: 1.5rem; color: var(--text);">"${sourceText}"</div>
-      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button class="btn-primary" onclick="this.closest('.modal').remove(); window.openPolyglotStudy();">📚 Estudiar ahora</button>
-        <button class="btn-secondary" onclick="this.closest('.modal').remove(); window.openInspirarmeModal();">🔄 Otra frase</button>
+      
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🛤️</div>
+      <div style="font-size: 0.7rem; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 2px;">
+        Paso ${currentIndex + 1} de ${POLYGLOT_MASTER_CATALOG.length}
+      </div>
+      
+      <div style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: rgba(139, 92, 246, 0.1); color: var(--accent); font-size: 0.65rem; font-weight: 700; margin-bottom: 1.5rem; text-transform: uppercase; border: 1px solid rgba(139, 92, 246, 0.2);">
+        NIVEL ${level} • ${category}
+      </div>
+
+      <div style="font-size: 1.4rem; font-weight: 700; line-height: 1.3; margin-bottom: 0.5rem; color: var(--text);">"${sourceText}"</div>
+      <div style="font-size: 1rem; color: var(--text-dim); margin-bottom: 2.5rem; font-style: italic;">${targetText}</div>
+      
+      <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+        <button class="btn-primary" style="padding: 14px; font-weight: 700; font-size: 0.9rem;" onclick="localStorage.setItem('axon_polyglot_master_index', ${currentIndex + 1}); this.closest('.modal').remove(); window.openPolyglotPhraseModal(null, '${sourceText.replace(/'/g, "\\'")}', '${targetText.replace(/'/g, "\\'")}');">
+          ✨ Estudiar este paso
+        </button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-secondary" style="flex: 1; background: transparent; border: 1px solid var(--border); font-size: 0.75rem;" onclick="localStorage.setItem('axon_polyglot_master_index', ${currentIndex + 1}); this.closest('.modal').remove(); window.openInspirarmeModal();">
+            ⏩ Saltar paso
+          </button>
+          <button class="btn-secondary" style="flex: 1; background: transparent; border: 1px solid var(--border); font-size: 0.75rem;" onclick="if(confirm('¿Reiniciar conversación desde el inicio?')){ localStorage.setItem('axon_polyglot_master_index', '0'); this.closest('.modal').remove(); window.openInspirarmeModal(); }">
+            🔄 Reiniciar
+          </button>
+        </div>
       </div>
     </div>
   `;
