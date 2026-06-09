@@ -1,4 +1,4 @@
-﻿import { supabase, $, showToast, initIcons, capitalizeFirstLetter } from './config.js';
+import { supabase, FINANCE_ASSISTANT_URL, $, showToast, initIcons, capitalizeFirstLetter } from './config.js';
 
 export function initVault(deps) {
   const { fetchTasks, renderRoutines, renderPlanner } = deps;
@@ -149,11 +149,11 @@ export function initVault(deps) {
       showToast("🤖 Analizando transacción con IA...");
       try {
           const categories = (window.financeState.categories || []).map(c => c.name).join(", ");
-          const res = await fetch('https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/finance-assistant', {
+          const res = await fetch(FINANCE_ASSISTANT_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
-                  text: doc.content,
+                  text: doc.content + " (Nota: Mantén el monto como un número entero en COP, sin puntos ni comas decimales. Ej: '103753' o '103.753' es 103753, NO 103.75)",
                   categories: categories 
               })
           });
@@ -216,11 +216,11 @@ export function initVault(deps) {
       showToast("🤖 Analizando transacción con IA...");
       try {
           const categories = (window.financeState.categories || []).map(c => c.name).join(", ");
-          const res = await fetch('https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/finance-assistant', {
+          const res = await fetch(FINANCE_ASSISTANT_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
-                  text: text,
+                  text: text + " (Nota: Mantén el monto como un número entero en COP, sin puntos ni comas decimales. Ej: '103753' o '103.753' es 103753, NO 103.75)",
                   categories: categories
               })
           });

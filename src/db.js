@@ -1,18 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
-import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle } from 'lucide';
+import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb } from 'lucide';
 
 // ==================== SUPABASE ====================
 export const supabase = createClient(
-  'https://blwaxxacneipoaufpiag.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsd2F4eGFjbmVpcG9hdWZwaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5Mzg0ODgsImV4cCI6MjA3MzUxNDQ4OH0.MYorhHHAEOnFj5DPYZHozi5pyDZbtJQDBOeD2Te3WXU'
+  window.location.origin,
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJwb3N0Z3JlcyIsImlhdCI6MTc4MDk1NTU3OSwiZXhwIjoyMDk2MzE1NTc5fQ.LQcQih063fmKguL8WQy8gqbTOO9QdSwg_p-M5zZPV84'
 );
 
 // ==================== URLS ====================
-export const N8N_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/pomodoro-sync';
-export const ARCHITECT_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-architect';
-export const SLICER_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/axon-slicer';
-export const POLYGLOT_TRANSLATE_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/polyglot-translate';
-export const DISTILL_URL = 'https://n8n-tuzb.srv1017783.hstgr.cloud/webhook/distill-media';
+export const N8N_URL = window.location.origin + '/webhook/pomodoro-sync';
+export const ARCHITECT_URL = window.location.origin + '/webhook/axon-architect';
+export const SLICER_URL = window.location.origin + '/webhook/axon-slicer';
+export const POLYGLOT_TRANSLATE_URL = window.location.origin + '/webhook/polyglot-translate';
+export const DISTILL_URL = window.location.origin + '/webhook/distill-media';
+export const FINANCE_ASSISTANT_URL = window.location.origin + '/webhook/finance-assistant';
 
 // ==================== THEME ====================
 export function setTheme(theme) {
@@ -96,7 +97,7 @@ export const $ = window.$;
 window.closeModal = (id) => { $(id).style.display = 'none'; };
 
 export function initIcons() {
-  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle } });
+  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb } });
 }
 window.initIcons = initIcons;
 

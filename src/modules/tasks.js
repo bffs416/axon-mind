@@ -1,4 +1,4 @@
-﻿import { supabase, $, showToast, initIcons, fireConfetti, capitalizeFirstLetter, linkify, formatDuration } from './config.js';
+import { supabase, $, showToast, initIcons, fireConfetti, capitalizeFirstLetter, linkify, formatDuration } from './config.js';
 import { ARCHITECT_URL, SLICER_URL } from './config.js';
 
 export function initTasks(deps) {
@@ -981,5 +981,6 @@ export function initTasks(deps) {
       return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
+  window.fetchTasks = fetchTasks;
   return { fetchTasks, loadStats: window.loadStats || (() => {}) };
 }

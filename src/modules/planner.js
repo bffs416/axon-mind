@@ -1,9 +1,10 @@
-﻿import { supabase, $, showToast } from './config.js';
+import { supabase, $, showToast } from './config.js';
 import { format12h, formatDuration, timeToMin, minToTime } from './config.js';
 
 export function initPlanner() {
   // ==================== ROUTINES ====================
   const routines = JSON.parse(localStorage.getItem('axon_routines') || '[]');
+  window.routines = routines;
   
   window.selectRoutineDays = (type) => {
     const checkboxes = document.querySelectorAll('#routine-days-container input');
@@ -134,17 +135,17 @@ export function initPlanner() {
   };
   
   // ==================== GOOGLE CALENDAR EMBED ====================
-  let gcalId1 = localStorage.getItem('axon_gcal_id_1') || 'bffs.16.04.95@gmail.com';
-  let gcalId2 = localStorage.getItem('axon_gcal_id_2') || 'ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com';
-  let gcalId3 = localStorage.getItem('axon_gcal_id_3') || '42ed8e94b879dca88ae92956a9bf0f4780da36fbbde26f849aabb32a437c2e13@group.calendar.google.com';
+  window.gcalId1 = localStorage.getItem('axon_gcal_id_1') || 'bffs.16.04.95@gmail.com';
+  window.gcalId2 = localStorage.getItem('axon_gcal_id_2') || 'ec2bb1482572211b29bf0aaf281832d2701bfff84fb598ab4d91c70d2c3935c2@group.calendar.google.com';
+  window.gcalId3 = localStorage.getItem('axon_gcal_id_3') || '42ed8e94b879dca88ae92956a9bf0f4780da36fbbde26f849aabb32a437c2e13@group.calendar.google.com';
   let gcalViewMode = localStorage.getItem('axon_gcal_view') || 'WEEK';
   
   function buildGCalUrl() {
       const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Bogota');
       let url = `https://calendar.google.com/calendar/embed?showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=1&showTz=0&mode=${gcalViewMode}&wkst=1&bgcolor=%23ffffff&ctz=${tz}`;
-      if (gcalId1) url += `&src=${encodeURIComponent(gcalId1)}&color=%234285F4`;
-      if (gcalId2) url += `&src=${encodeURIComponent(gcalId2)}&color=%23E67C73`;
-      if (gcalId3) url += `&src=${encodeURIComponent(gcalId3)}&color=%237986CB`;
+      if (window.gcalId1) url += `&src=${encodeURIComponent(window.gcalId1)}&color=%234285F4`;
+      if (window.gcalId2) url += `&src=${encodeURIComponent(window.gcalId2)}&color=%23E67C73`;
+      if (window.gcalId3) url += `&src=${encodeURIComponent(window.gcalId3)}&color=%237986CB`;
       return url;
   }
   
@@ -170,19 +171,19 @@ export function initPlanner() {
   };
   
   window.openGCalSettings = () => {
-      $('gcal-id-1').value = gcalId1;
-      $('gcal-id-2').value = gcalId2;
-      $('gcal-id-3').value = gcalId3;
+      $('gcal-id-1').value = window.gcalId1;
+      $('gcal-id-2').value = window.gcalId2;
+      $('gcal-id-3').value = window.gcalId3;
       $('gcal-settings-modal').style.display = 'flex';
   };
   
   window.saveGCalUrl = () => {
-      gcalId1 = $('gcal-id-1').value.trim();
-      gcalId2 = $('gcal-id-2').value.trim();
-      gcalId3 = $('gcal-id-3').value.trim();
-      localStorage.setItem('axon_gcal_id_1', gcalId1);
-      localStorage.setItem('axon_gcal_id_2', gcalId2);
-      localStorage.setItem('axon_gcal_id_3', gcalId3);
+      window.gcalId1 = $('gcal-id-1').value.trim();
+      window.gcalId2 = $('gcal-id-2').value.trim();
+      window.gcalId3 = $('gcal-id-3').value.trim();
+      localStorage.setItem('axon_gcal_id_1', window.gcalId1);
+      localStorage.setItem('axon_gcal_id_2', window.gcalId2);
+      localStorage.setItem('axon_gcal_id_3', window.gcalId3);
       $('gcal-settings-modal').style.display = 'none';
       loadGCal();
       showToast('✅ Calendarios guardados');
@@ -208,7 +209,7 @@ export function initPlanner() {
   
   // Cargar calendario al iniciar
   document.addEventListener('DOMContentLoaded', () => {
-      if (gcalUrl) loadGCal();
+      loadGCal();
   });
   
   // ==================== WEEKLY PLANNER ====================
@@ -242,6 +243,7 @@ export function initPlanner() {
       time: r.time, taskTitle: `${r.emoji} ${r.name}`, isRoutine: true, duration: r.duration, synced: false
     }));
   }
+  window.getRoutineBlocksForDay = getRoutineBlocksForDay;
   
   function renderPlanner() {
     const days = getWeekDays(), today = new Date().toDateString();
@@ -376,7 +378,7 @@ export function initPlanner() {
     calStatus.textContent = 'Cleaning day...';
     // Limpiar ambos calendarios
     try {
-      const calendars = [gcalId2, gcalId3].filter(Boolean);
+      const calendars = [window.gcalId2, window.gcalId3].filter(Boolean);
       for (const calId of calendars) {
         const url = new URL(N8N_URL);
         await fetch(url.toString(), {
@@ -424,7 +426,7 @@ export function initPlanner() {
       calStatus.textContent = 'Clearing Week...';
       showToast("⏳ Iniciando limpieza en Google Calendar...");
       
-      const calendars = [gcalId2, gcalId3].filter(Boolean);
+      const calendars = [window.gcalId2, window.gcalId3].filter(Boolean);
       for (const dateStr of days) {
         for (const calId of calendars) {
           try {

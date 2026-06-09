@@ -1,4 +1,4 @@
-import { supabase, $, showToast, escHtml } from './db.js';
+import { supabase, $, showToast, escHtml, ensureNotificationPermission, showNotification } from './db.js';
 import { DISTILL_URL } from './db.js';
 
 // Current filter state
@@ -407,4 +407,123 @@ window.saveInspirationEdit = async (id) => {
     console.error(e);
     showToast('⚠️ Error al guardar'); 
   }
+};
+
+// ==================== DISCOVER MODULE ====================
+window._inspirations = [];
+window._mediaItems = [];
+let _dolarHistory = [];
+
+async function fetchDiscoverData() {
+  const [insRes, medRes, dolRes] = await Promise.all([
+    supabase.from('inspirations').select('*').order('created_at', { ascending: false }),
+    supabase.from('media_vault').select('*').order('created_at', { ascending: false }),
+    supabase.from('dolar_history').select('*').order('date', { ascending: false }).limit(30)
+  ]);
+  if (insRes.data) window._inspirations = insRes.data;
+  if (medRes.data) window._mediaItems = medRes.data;
+  if (dolRes.data) _dolarHistory = dolRes.data;
+  renderInspirations();
+  if (window.renderMediaVault) window.renderMediaVault();
+  updateDolarBadge();
+  renderDolarDetail();
+  renderDolarChart();
+}
+window.fetchDiscoverData = fetchDiscoverData;
+
+function updateDolarBadge() {
+  const badge = $('dolar-badge'); if (!badge) return;
+  if (!_dolarHistory.length) { badge.textContent = '💵 --'; return; }
+  const latest = _dolarHistory[0];
+  const rate = Number(latest.rate);
+  badge.textContent = '💵 ' + rate.toLocaleString('es-CO');
+  badge.style.color = (rate >= 3500 && rate <= 3600) ? 'var(--success)' : '';
+}
+
+function renderDolarDetail() {
+  const rateEl = $('dolar-detail-rate'); if (!rateEl) return;
+  const statusEl = $('dolar-detail-status'); if (!statusEl) return;
+  if (!_dolarHistory.length) { rateEl.textContent = '💵 -- COP'; statusEl.textContent = 'Sin datos aún'; return; }
+  const latest = _dolarHistory[0];
+  const rate = Number(latest.rate);
+  rateEl.textContent = '💵 ' + rate.toLocaleString('es-CO') + ' COP';
+  const inRange = rate >= 3500 && rate <= 3600;
+  rateEl.style.color = inRange ? 'var(--success)' : 'var(--text)';
+  statusEl.textContent = inRange ? '✅ En rango de compra' : (rate < 3500 ? '💪 Peso fuerte' : '💵 Dólar caro');
+  statusEl.style.color = inRange ? 'var(--success)' : 'var(--text-dim)';
+}
+
+function renderDolarChart() {
+  const canvas = document.getElementById('dolar-chart'); if (!canvas || !_dolarHistory.length) return;
+  if (!window._dolarChart) {
+    const ctx = canvas.getContext('2d');
+    window._dolarChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: _dolarHistory.slice().reverse().map(d => d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : ''),
+        datasets: [{
+          label: 'USD/COP',
+          data: _dolarHistory.slice().reverse().map(d => Number(d.rate)),
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139,92,246,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        scales: { x: { ticks: { color: '#64748b', font: { size: 8 } } }, y: { ticks: { color: '#64748b', font: { size: 8 } } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+}
+
+window.fetchDolarValue = async function() {
+    try {
+        const { data, error } = await supabase
+            .from('dolar_history')
+            .select('rate')
+            .order('created_at', { ascending: false })
+            .limit(1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+            const rate = data[0].rate;
+            const badge = $('dolar-badge');
+            if (badge) {
+                const isGoodPrice = rate >= 3500 && rate <= 3600;
+                if (isGoodPrice) {
+                    badge.innerHTML = `💵 $${Number(rate).toLocaleString('es-CO')} (COMPRAR)`;
+                    badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                    badge.style.color = '#10b981';
+                    
+                    // Notification logic: only once per day
+                    const lastDolarAlert = localStorage.getItem('axon_last_dolar_alert');
+                    const today = new Date().toDateString();
+                    if (lastDolarAlert !== today) {
+                        const granted = await ensureNotificationPermission();
+                        if (granted) {
+                            showNotification('💵 Alerta Dólar', `El dólar está a $${Number(rate).toLocaleString('es-CO')}. ¡Excelente oportunidad para comprar! 🚀`);
+                            localStorage.setItem('axon_last_dolar_alert', today);
+                        }
+                    }
+                } else {
+                    badge.innerHTML = `💵 $${Number(rate).toLocaleString('es-CO')}`;
+                    badge.style.background = 'var(--bg-card-hover)';
+                    badge.style.color = 'var(--text-dim)';
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error fetching dolar value:', e);
+    }
+};
+
+window.openDolarDetail = async function() {
+    showToast('Actualizando precio del dólar...');
+    await window.fetchDolarValue();
+    await fetchDiscoverData();
+    const tab = document.querySelector('.finance-subtab[data-dtab="dolar"]');
+    if (tab) tab.click();
 };

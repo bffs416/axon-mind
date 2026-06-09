@@ -1,7 +1,8 @@
-﻿import { $, showToast, playSound, showNotification, ensureNotificationPermission, motivations, fireConfetti } from './config.js';
+import { $, showToast, playSound, showNotification, ensureNotificationPermission, motivations, fireConfetti } from './config.js';
 import { supabase, N8N_URL } from './config.js';
 
 export function initTimer() {
+  let wakeLock = null;
   // ==================== BACKGROUND EXECUTION ====================
   async function requestWakeLock() {
     if ('wakeLock' in navigator && !wakeLock) {
@@ -33,6 +34,7 @@ export function initTimer() {
   }
   
   function restoreTimerState() {
+    window.restoreTimerState = restoreTimerState;
     const saved = sessionStorage.getItem('axon_timer');
     if (!saved) return false;
     try {
@@ -306,7 +308,7 @@ export function initTimer() {
         url.searchParams.append('taskId', block.title);
   
         // Rutinas → calendar 2, Proyectos → calendar 3
-        const calendarId = block.isRoutine ? gcalId2 : gcalId3;
+        const calendarId = block.isRoutine ? window.gcalId2 : window.gcalId3;
         await fetch(url.toString(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -336,5 +338,6 @@ export function initTimer() {
     showToast(`✅ ${synced} bloques sincronizados con Google Calendar`);
   };
 
-  return { startTimer: window.startTimer };
+  window.startTimer = startTimer;
+  return { startTimer };
 }

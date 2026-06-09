@@ -22,7 +22,7 @@ const getCobaltUrl = node({
     name: 'Get Audio URL (Cobalt)',
     parameters: {
       method: 'POST',
-      url: 'https://api.cobalt.tools/api/json',
+      url: 'http://192.168.2.16:8089/',
       sendHeaders: true,
       headerParameters: {
         parameters: [
@@ -34,7 +34,7 @@ const getCobaltUrl = node({
       specifyBody: 'json',
       jsonBody: `={
   "url": "{{ $json.body.url }}",
-  "isAudioOnly": true
+  "downloadMode": "audio"
 }`
     },
     position: [300, 300]
