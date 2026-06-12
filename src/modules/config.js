@@ -1,6 +1,6 @@
 // ==================== AXON MIND — CONFIG & SHARED DEPENDENCIES ====================
 import { createClient } from '@supabase/supabase-js';
-import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb } from 'lucide';
+import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb, Globe, Briefcase, Send, Camera, Video } from 'lucide';
 
 // ==================== SUPABASE ====================
 export const supabase = createClient(
@@ -10,6 +10,8 @@ export const supabase = createClient(
 
 // ==================== WEBHOOK URLs ====================
 export const N8N_URL = window.location.origin + '/webhook/pomodoro-sync';
+
+export const modes = { pomodoro: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60 };
 export const ARCHITECT_URL = window.location.origin + '/webhook/axon-architect';
 export const SLICER_URL = window.location.origin + '/webhook/axon-slicer';
 export const POLYGLOT_TRANSLATE_URL = window.location.origin + '/webhook/polyglot-translate';
@@ -30,7 +32,7 @@ window.closeModal = (id) => { $(id).style.display = 'none'; };
 
 // ==================== ICONS ====================
 export function initIcons() {
-  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb } });
+  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb, Camera, Video, globe: Globe, briefcase: Briefcase, send: Send } });
 }
 window.initIcons = initIcons;
 
@@ -147,6 +149,11 @@ export const format12h = (tStr) => {
 export const formatDuration = (min) => {
   const h = Math.floor(min/60), m = min%60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
+export const escHtml = (str) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 };
 
 export const motivations = [

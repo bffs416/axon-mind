@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb } from 'lucide';
+import { createIcons, Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb, Camera, Video } from 'lucide';
 
 // ==================== SUPABASE ====================
 export const supabase = createClient(
@@ -97,7 +97,7 @@ export const $ = window.$;
 window.closeModal = (id) => { $(id).style.display = 'none'; };
 
 export function initIcons() {
-  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb } });
+  createIcons({ icons: { Play, Pause, RotateCcw, Calendar, ListTodo, Plus, Check, Circle, CheckCircle, BarChart3, UploadCloud, Edit2, Trash2, X, Zap, Layers, BookOpen, DollarSign, Music, Globe, Briefcase, Map, Component, Mic, Activity, Headphones, Eye, PlayCircle, Brain, Search, Cloud, DownloadCloud, FileText, Braces, Sparkles, Lightbulb, Camera, Video } });
 }
 window.initIcons = initIcons;
 

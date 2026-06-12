@@ -1,4 +1,4 @@
-﻿import { supabase, $, showToast, initIcons } from './config.js';
+import { supabase, $, showToast, initIcons, capitalizeFirstLetter } from './config.js';
 
 export function initCards() {
   // ==================== AXON CARDS LOGIC (SRS) ====================

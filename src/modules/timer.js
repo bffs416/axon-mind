@@ -1,5 +1,5 @@
 import { $, showToast, playSound, showNotification, ensureNotificationPermission, motivations, fireConfetti } from './config.js';
-import { supabase, N8N_URL } from './config.js';
+import { supabase, N8N_URL, modes } from './config.js';
 
 export function initTimer() {
   let wakeLock = null;
@@ -257,7 +257,7 @@ export function initTimer() {
   });
   
   // ==================== CALENDAR SYNC ====================
-  async function syncCalendar(status, startTime = null, endTime = null) {
+  window.syncCalendar = async function syncCalendar(status, startTime = null, endTime = null) {
     calStatus.textContent = 'Syncing...';
     const url = new URL(N8N_URL);
     if (startTime) { url.searchParams.append('startTime', startTime); url.searchParams.append('endTime', endTime); url.searchParams.append('taskId', selectedTaskTitle); }

@@ -1,4 +1,4 @@
-import { supabase, $, showToast } from './config.js';
+import { supabase, $, showToast, escHtml } from './config.js';
 import { format12h, formatDuration, timeToMin, minToTime } from './config.js';
 
 export function initPlanner() {
@@ -213,7 +213,7 @@ export function initPlanner() {
   });
   
   // ==================== WEEKLY PLANNER ====================
-  function getWeekDays() {
+  window.getWeekDays = function getWeekDays() {
     const today = new Date();
     // Forzamos mediodía para evitar problemas de saltos de día por zona horaria o horario de verano
     const base = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0);
@@ -236,7 +236,7 @@ export function initPlanner() {
   }
   const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   
-  function getRoutineBlocksForDay(date) {
+  window.getRoutineBlocksForDay = function getRoutineBlocksForDay(date) {
     const dayOfWeek = date.getDay();
     return routines.filter(r => r.days.includes(dayOfWeek)).map(r => ({
       id: `routine-${r.id}-${date.toISOString().slice(0,10)}`,
@@ -245,7 +245,7 @@ export function initPlanner() {
   }
   window.getRoutineBlocksForDay = getRoutineBlocksForDay;
   
-  function renderPlanner() {
+  window.renderPlanner = function renderPlanner() {
     const days = getWeekDays(), today = new Date().toDateString();
   
     $('week-grid').innerHTML = days.map((d,i) => {
@@ -464,3 +464,86 @@ export function initPlanner() {
 
   return { renderRoutines, renderPlanner, loadGCal: window.loadGCal };
 }
+
+// ==================== TEMPLATES (Cloud / Local Storage) ====================
+window.openSaveTemplateModal = () => {
+  const modal = $('save-template-modal');
+  if (!modal) { showToast('⚠️ Modal no encontrado'); return; }
+  $('template-name-input').value = '';
+  modal.style.display = 'flex';
+};
+
+window.confirmSaveTemplate = () => {
+  const name = $('template-name-input')?.value.trim();
+  if (!name) { showToast('⚠️ Dale un nombre a la plantilla'); return; }
+
+  const template = {
+    id: Date.now().toString(),
+    name,
+    routines: JSON.parse(localStorage.getItem('axon_routines') || '[]'),
+    weekPlan: JSON.parse(localStorage.getItem('axon_week_plan') || '[]'),
+    savedAt: new Date().toISOString()
+  };
+
+  const templates = JSON.parse(localStorage.getItem('axon_templates') || '[]');
+  // Evitar duplicados por nombre
+  const existingIdx = templates.findIndex(t => t.name === name);
+  if (existingIdx >= 0) {
+    templates[existingIdx] = template;
+  } else {
+    templates.push(template);
+  }
+  localStorage.setItem('axon_templates', JSON.stringify(templates));
+
+  $('save-template-modal').style.display = 'none';
+  showToast(`☁️ Plantilla "${name}" guardada`);
+};
+
+window.openLoadTemplateModal = () => {
+  const modal = $('load-template-modal');
+  if (!modal) { showToast('⚠️ Modal no encontrado'); return; }
+
+  const templates = JSON.parse(localStorage.getItem('axon_templates') || '[]');
+  const list = $('templates-list');
+  if (!list) return;
+
+  if (templates.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;text-align:center;">No hay plantillas guardadas aún.</p>';
+  } else {
+    list.innerHTML = templates.map(t => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);">
+        <span>☁️ ${escHtml(t.name)} <small style="opacity:0.5;font-size:0.65rem;">${new Date(t.savedAt).toLocaleDateString()}</small></span>
+        <button class="btn-mini" onclick="window.applyTemplate('${t.id}')" style="background:var(--accent);color:black;">Cargar</button>
+      </div>
+    `).join('');
+  }
+
+  modal.style.display = 'flex';
+};
+
+window.applyTemplate = (templateId) => {
+  if (!window.confirm('⚠️ ¿Sobrescribir la planificación actual con esta plantilla? Las rutinas y bloques actuales se perderán.')) return;
+
+  const templates = JSON.parse(localStorage.getItem('axon_templates') || '[]');
+  const template = templates.find(t => t.id === templateId);
+  if (!template) { showToast('⚠️ Plantilla no encontrada'); return; }
+
+  // Restaurar rutinas y plan
+  localStorage.setItem('axon_routines', JSON.stringify(template.routines));
+  localStorage.setItem('axon_week_plan', JSON.stringify(template.weekPlan));
+
+  // Recargar datos globales
+  if (window.routines) {
+    window.routines.length = 0;
+    window.routines.push(...template.routines);
+  }
+  window.weekPlan.length = 0;
+  window.weekPlan.push(...template.weekPlan);
+
+  // Re-render
+  if (window.renderRoutines) window.renderRoutines();
+  if (window.renderPlanner) window.renderPlanner();
+
+  $('load-template-modal').style.display = 'none';
+  showToast(`☁️ Plantilla "${template.name}" cargada`);
+};

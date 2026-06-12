@@ -20,6 +20,7 @@ import { initVault } from './src/modules/vault.js';
 import { initJournal } from './src/modules/journal.js';
 import { initWater } from './src/modules/water.js';
 import { initCareer } from './src/modules/career.js';
+import { initStoryboarder } from './src/modules/storyboarder/storyboarder.js';
 
 import { initGuitarModule } from './src/guitar.js';
 import './src/inspirations.js';
@@ -48,6 +49,7 @@ window.interrogation = { round: 0, idea: '', projectTitle: '', questions: [], al
 window.showFrozen = false;
 window.wakeLock = null;
 window.weekPlan = weekPlan;
+window.modes = modes;
 
 // Re-bind helper function
 window.$ = id => document.getElementById(id);
@@ -114,6 +116,8 @@ const waterModule = initWater();
 // ==================== TAB ROUTING ====================
 const viewBtns = document.querySelectorAll('.tab-btn');
 const views = document.querySelectorAll('.view');
+const dropdown = $('sb-nav-dropdown');
+const dropdownTrigger = $('sb-dropdown-trigger');
 
 viewBtns.forEach(btn => {
   btn.onclick = () => {
@@ -124,6 +128,18 @@ viewBtns.forEach(btn => {
     btn.classList.add('active');
     const targetView = $('view-' + viewId);
     if (targetView) targetView.classList.add('active');
+
+    // Manejo del texto y estado activo del botón "Más..."
+    const isInsideDropdown = btn.closest('.dropdown-content') !== null;
+    if (isInsideDropdown && dropdownTrigger) {
+      const textNoBadge = btn.innerText.replace(/\s\d+$/, '').trim();
+      dropdownTrigger.querySelector('span').textContent = 'Más: ' + textNoBadge;
+      dropdownTrigger.classList.add('active');
+      if (dropdown) dropdown.classList.remove('open');
+    } else if (dropdownTrigger) {
+      dropdownTrigger.querySelector('span').textContent = 'Más';
+      dropdownTrigger.classList.remove('active');
+    }
 
     if (viewId === 'stats') { if (window.loadStats) window.loadStats(); }
     if (viewId === 'cards') { if (window.loadCards) window.loadCards(); }
@@ -139,8 +155,30 @@ viewBtns.forEach(btn => {
     if (viewId === 'guitar') { if (window.initGuitarModule) window.initGuitarModule(); }
     if (viewId === 'discover') { if (window.fetchDiscoverData) window.fetchDiscoverData(); }
     if (viewId === 'trabajo') { if (window.initCareer) window.initCareer(); }
+    if (viewId === 'storyboarder') { initStoryboarder(); }
   };
 });
+
+window.goToStoryboarder = (projectName) => {
+  const btn = document.querySelector('.tab-btn[data-view="storyboarder"]');
+  if (btn) {
+    btn.click();
+  }
+  if (window.selectStoryboardProject) {
+    window.selectStoryboardProject(projectName);
+  }
+};
+
+// Eventos para abrir/cerrar el dropdown de navegación
+if (dropdownTrigger && dropdown) {
+  dropdownTrigger.onclick = (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  };
+  document.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+  });
+}
 
 // ==================== GLOBAL AUTO-CAPITALIZATION ====================
 document.addEventListener('input', (e) => {
@@ -233,6 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.fetchInbox) window.fetchInbox();
         if (window.fetchTasks) window.fetchTasks();
         if (window.loadCards) window.loadCards();
+        initStoryboarder();
         initIcons();
         
         // Request notification permission on load

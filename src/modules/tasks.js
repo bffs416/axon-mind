@@ -150,6 +150,7 @@ export function initTasks(deps) {
                  `<button class="btn-mini" onclick="event.stopPropagation();window.toggleFreezeTask('${task.id}', '${task.status}')" title="A la Nevera">❄️</button>` :
                  `<button class="btn-mini" onclick="event.stopPropagation();window.toggleFreezeTask('${task.id}', '${task.status}')" title="Descongelar">🔥</button>`
               }
+              <button class="btn-mini" onclick="event.stopPropagation();window.goToStoryboarder(decodeURIComponent('${encodeURIComponent(task.title)}'))" title="Guion y Storyboard"><i data-lucide="camera"></i></button>
               <button class="btn-mini" onclick="event.stopPropagation();window.editTask('${task.id}', event)" title="Editar"><i data-lucide="edit-2"></i></button>
               <button class="btn-mini" onclick="event.stopPropagation();window.deleteTask('${task.id}', event)" title="Eliminar"><i data-lucide="trash-2"></i></button>
               <button class="btn-mini" onclick="event.stopPropagation();window.openSchedule('${task.title.replace(/'/g,"\\'")}', ${task.duration || 25})" title="Agendar"><i data-lucide="calendar"></i></button>
@@ -953,7 +954,7 @@ export function initTasks(deps) {
     const dur = window.currentScheduleDuration || 25;
     const start = new Date(t), end = new Date(start.getTime() + dur * 60000);
     selectedTaskTitle = taskToSchedule;
-    await syncCalendar('scheduled', start.toISOString(), end.toISOString());
+    await window.syncCalendar('scheduled', start.toISOString(), end.toISOString());
     $('schedule-modal').style.display = 'none';
     showToast(`📅 ¡Agendado (${formatDuration(dur)})! Tu teléfono te avisará.`);
   };
@@ -982,5 +983,19 @@ export function initTasks(deps) {
   };
 
   window.fetchTasks = fetchTasks;
+
+  // 👇 JSON IMPORT TOGGLE (dentro del modal de tareas)
+  window.toggleJsonImport = () => {
+    const container = $('json-import-container');
+    if (container) {
+      const isVisible = container.style.display !== 'none';
+      container.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible) {
+        const input = container.querySelector('textarea');
+        if (input) input.focus();
+      }
+    }
+  };
+
   return { fetchTasks, loadStats: window.loadStats || (() => {}) };
 }

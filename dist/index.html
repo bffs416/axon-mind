@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" crossorigin src="/assets/index-MUXJ1ta7.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-BRvOoVVa.css">
+  <script type="module" crossorigin src="/assets/index-BC-GSgc_.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CgEmgKxb.css">
 </head>
 <body>
     <canvas id="confetti-canvas"></canvas>
@@ -33,15 +33,24 @@
             <nav class="tab-nav">
                 <button class="tab-btn active" data-view="focus"><i data-lucide="play"></i> Focus</button>
                 <button class="tab-btn" data-view="plan"><i data-lucide="calendar"></i> Planificar</button>
-                <button class="tab-btn" data-view="inbox"><i data-lucide="zap"></i> Inbox</button>
                 <button class="tab-btn" data-view="vault"><i data-lucide="brain"></i> Cerebro</button>
-                <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards <span id="cards-pending-badge" class="tab-badge" style="display:none;">0</span></button>
-                <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
                 <button class="tab-btn" data-view="finances"><i data-lucide="dollar-sign"></i> Finanzas</button>
-                <button class="tab-btn" data-view="polyglot"><i data-lucide="book-open"></i> Polyglot</button>
-                <!-- <button class="tab-btn" data-view="guitar"><i data-lucide="music"></i> Guitar Master</button> -->
-                <button class="tab-btn" data-view="discover"><i data-lucide="globe"></i> Discover</button>
-                <button class="tab-btn" data-view="trabajo"><i data-lucide="briefcase"></i> Trabajo</button>
+                
+                <!-- Menú Desplegable "Más..." -->
+                <div class="nav-dropdown" id="sb-nav-dropdown">
+                    <button class="dropdown-trigger-btn" id="sb-dropdown-trigger" type="button">
+                        <span>Más</span> <span style="font-size: 0.7rem; margin-left: 2px;">▼</span>
+                    </button>
+                    <div class="dropdown-content">
+                        <button class="tab-btn" data-view="inbox"><i data-lucide="zap"></i> Inbox</button>
+                        <button class="tab-btn" data-view="cards"><i data-lucide="layers"></i> Axon Cards <span id="cards-pending-badge" class="tab-badge" style="display:none;">0</span></button>
+                        <button class="tab-btn" data-view="stats"><i data-lucide="bar-chart-3"></i> Stats</button>
+                        <button class="tab-btn" data-view="polyglot"><i data-lucide="book-open"></i> Polyglot</button>
+                        <button class="tab-btn" data-view="discover"><i data-lucide="globe"></i> Discover</button>
+                        <button class="tab-btn" data-view="trabajo"><i data-lucide="briefcase"></i> Trabajo</button>
+                        <button class="tab-btn" data-view="storyboarder"><i data-lucide="camera"></i> Storyboarder</button>
+                    </div>
+                </div>
                 <div style="flex:1"></div>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="window.openMorningCheckin()" title="Apertura Matutina">☀️</button>
                 <button class="btn-ghost" style="padding: 0.5rem; color: var(--text-dim); font-size: 1.2rem;" onclick="document.getElementById('journal-modal').style.display='flex'" title="Cierre Cognitivo">🌙</button>
@@ -1101,6 +1110,11 @@
         </div>
       </section>
 
+      <!-- ========== VISTA STORYBOARDER ========== -->
+      <section id="view-storyboarder" class="view">
+        <!-- Contenido dinámico del Storyboarder inyectado por storyboarder.js -->
+      </section>
+
       <!-- SECCIÓN GUITAR MASTER OCULTA 
       <section id="view-guitar" class="view">
         ... (contenido oculto) ...
@@ -1522,13 +1536,13 @@ Ejemplo:
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem">
                         <h4 style="margin:0">Pasos del proyecto</h4>
                         <div style="display:flex; gap:0.3rem;">
-                            <button class="btn-mini" onclick="toggleJsonImport()" style="background:var(--bg-card); color:var(--text); font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem;">📄 JSON</button>
+                            <button class="btn-mini" onclick="window.toggleJsonImport()" style="background:var(--bg-card); color:var(--text); font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem;">📄 JSON</button>
                             <button class="btn-mini" onclick="window.sliceWithAI()" style="background:var(--accent); color:black; font-size:0.7rem; border-radius:4px; padding:0.2rem 0.5rem; font-weight:700">🔪 IA: Rebanar</button>
                         </div>
                     </div>
                     <div id="json-import-container" style="display:none; margin-bottom:1rem;">
                         <textarea id="json-import-input" placeholder='Pega tu JSON aquí... ej: [{"text": "Tarea 1"}]' style="width:100%; height:100px; font-family:monospace; font-size:0.75rem; background:var(--bg-deep); color:var(--success); border:1px solid var(--success);"></textarea>
-                        <button onclick="processJsonImport()" class="btn-primary" style="width:100%; margin-top:0.5rem; font-size:0.8rem; padding:0.4rem;">Confirmar Importación</button>
+                        <button onclick="window.processJsonCardImport()" class="btn-primary" style="width:100%; margin-top:0.5rem; font-size:0.8rem; padding:0.4rem;">Confirmar Importación</button>
                     </div>
                     <div id="modal-steps-list"></div>
                     <div class="step-input-group" style="display: flex; gap: 0.5rem;">
