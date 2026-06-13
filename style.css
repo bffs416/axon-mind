@@ -5312,3 +5312,83 @@ select.finance-input {
     width: 90%;
   }
 }
+
+/* ========== STORYBOARDER SKETCHPAD & REFERENCE BUTTONS ========== */
+.shot-img-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.shot-img-overlay-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(12, 10, 9, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  border-top: 1px solid var(--border);
+}
+
+.shot-img-wrapper:hover .shot-img-overlay-actions {
+  transform: translateY(0);
+}
+
+/* Make overlay actions persistent on mobile/tablets since they don't hover */
+@media (max-width: 1024px) {
+  .shot-img-overlay-actions {
+    transform: translateY(0);
+    background: rgba(12, 10, 9, 0.7);
+  }
+}
+
+.overlay-action-btn, .placeholder-action-btn {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.overlay-action-btn:hover, .placeholder-action-btn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.placeholder-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  justify-content: center;
+}
+
+/* Sketchpad CSS */
+.sketchpad-controls button.active {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border-color: var(--primary) !important;
+}
+
+#sb-sketchpad-modal .modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+

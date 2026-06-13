@@ -115,6 +115,42 @@ function renderMainLayout() {
       <img class="sb-lightbox-content" id="sb-lightbox-img">
       <div id="sb-lightbox-caption"></div>
     </div>
+
+    <!-- Sketchpad Modal -->
+    <div id="sb-sketchpad-modal" class="modal" style="display:none; z-index:200000; align-items:center; justify-content:center;">
+      <div class="modal-content" style="max-width: 700px; padding: 1.5rem; display:flex; flex-direction:column; gap:1rem; width:100%; box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0;">🎨 Dibujar Boceto de Referencia</h3>
+          <button class="btn-icon-sm" onclick="window.closeDrawingSketchpad()" style="background:none; border:none; color:var(--text); font-size:1.2rem; cursor:pointer;">✖</button>
+        </div>
+        
+        <!-- Controls bar -->
+        <div class="sketchpad-controls" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; background:var(--bg-deep); padding:0.5rem; border-radius:8px; border:1px solid var(--border);">
+          <div style="display:flex; align-items:center; gap:0.3rem;">
+            <label style="font-size:0.75rem; color:var(--text-dim);">Color:</label>
+            <input type="color" id="sketch-color" value="#ffffff" style="border:none; width:32px; height:32px; padding:0; background:none; cursor:pointer; outline:none;">
+          </div>
+          <div style="display:flex; align-items:center; gap:0.3rem; flex:1; min-width:120px;">
+            <label style="font-size:0.75rem; color:var(--text-dim);">Grosor:</label>
+            <input type="range" id="sketch-size" min="1" max="20" value="3" style="flex:1; accent-color:var(--primary);">
+          </div>
+          <button id="sketch-eraser" class="btn btn-secondary btn-sm" onclick="window.toggleSketchEraser()" style="padding:0.4rem 0.6rem; font-size:0.75rem;">🧽 Borrar</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.undoSketch()" style="padding:0.4rem 0.6rem; font-size:0.75rem;">↩️ Deshacer</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.clearSketchCanvas()" style="padding:0.4rem 0.6rem; font-size:0.75rem;">🗑️ Limpiar</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.toggleSketchTheme()" id="sketch-theme-btn" title="Alternar Pizarra Blanca/Negra" style="padding:0.4rem 0.6rem; font-size:0.75rem;">🌗 Pizarra</button>
+        </div>
+        
+        <!-- Canvas container -->
+        <div class="canvas-container" style="background:#121212; border-radius:8px; border:1px solid var(--border); overflow:hidden; position:relative; aspect-ratio:16/9; width:100%;">
+          <canvas id="sketch-canvas" style="display:block; width:100%; height:100%; cursor:crosshair; touch-action:none;"></canvas>
+        </div>
+        
+        <div class="modal-actions" style="margin-top:0.5rem; display:flex; justify-content:flex-end; gap:0.5rem;">
+          <button class="btn btn-ghost" onclick="window.closeDrawingSketchpad()" style="padding:0.5rem 1rem; font-size:0.85rem;">Cancelar</button>
+          <button class="btn btn-primary" onclick="window.saveSketch()" style="padding:0.5rem 1rem; font-size:0.85rem;">💾 Guardar Boceto</button>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -273,8 +309,27 @@ function renderDirectorMode(shots) {
     `;
 
     const imgPreviewHtml = s.reference_image_url 
-      ? `<img src="${s.reference_image_url}" class="shot-preview-img" onclick="window.openLightbox('${s.reference_image_url}', 'Toma ${s.shot_number}')" title="Haga clic para expandir">`
-      : `<div class="shot-preview-placeholder"><i data-lucide="upload-cloud"></i><span>Cargar Referencia</span></div>`;
+      ? `
+        <div class="shot-img-wrapper" style="position:relative; width:100%; height:100%;">
+          <img src="${s.reference_image_url}" class="shot-preview-img" onclick="window.openLightbox('${s.reference_image_url}', 'Toma ${s.shot_number}')" title="Haga clic para expandir">
+          <div class="shot-img-overlay-actions">
+            <button class="overlay-action-btn" onclick="event.stopPropagation(); window.triggerFileInput('${s.id}')" title="Subir Imagen">📂 Subir</button>
+            <button class="overlay-action-btn" onclick="event.stopPropagation(); window.promptImageLink('${s.id}')" title="Pegar Enlace">🔗 URL</button>
+            <button class="overlay-action-btn" onclick="event.stopPropagation(); window.openDrawingSketchpad('${s.id}')" title="Dibujar Boceto">🎨 Dibujar</button>
+          </div>
+        </div>
+      `
+      : `
+        <div class="shot-preview-placeholder">
+          <i data-lucide="image" style="width:24px; height:24px;"></i>
+          <span>Agregar Referencia</span>
+          <div class="placeholder-actions" onclick="event.stopPropagation()">
+            <button class="placeholder-action-btn" onclick="window.triggerFileInput('${s.id}')" title="Subir Imagen">📂 Subir</button>
+            <button class="placeholder-action-btn" onclick="window.promptImageLink('${s.id}')" title="Pegar Enlace">🔗 URL</button>
+            <button class="placeholder-action-btn" onclick="window.openDrawingSketchpad('${s.id}')" title="Dibujar Boceto">🎨 Dibujar</button>
+          </div>
+        </div>
+      `;
 
     return `
       <div class="director-shot-card" data-id="${s.id}">
@@ -287,7 +342,7 @@ function renderDirectorMode(shots) {
             </div>
           </div>
           
-          <div class="shot-img-container" onclick="window.triggerFileInput('${s.id}')">
+          <div class="shot-img-container">
             ${imgPreviewHtml}
             <input type="file" id="file-${s.id}" class="shot-file-input" style="display:none" onchange="window.handleShotImageUpload('${s.id}', this)">
           </div>
@@ -622,6 +677,204 @@ window.openLightbox = (src, caption) => {
 window.closeLightbox = () => {
   const modal = $('sb-lightbox-modal');
   if (modal) modal.style.display = 'none';
+};
+
+// ==================== SKETCHPAD CANVAS DRAWING ENGINE ====================
+
+let sketchCanvas = null;
+let sketchCtx = null;
+let isDrawing = false;
+let sketchColorInput = null;
+let sketchSizeInput = null;
+let isEraser = false;
+let undoStack = [];
+let maxUndoSteps = 25;
+let sketchTheme = 'dark'; // 'dark' (blackboard) or 'light' (whiteboard)
+let activeDrawingShotId = null;
+
+function initSketchpad() {
+  sketchCanvas = $('sketch-canvas');
+  if (!sketchCanvas) return;
+  sketchCtx = sketchCanvas.getContext('2d');
+  sketchColorInput = $('sketch-color');
+  sketchSizeInput = $('sketch-size');
+  
+  // Set internal resolution to 1280x720 (16:9 HD standard)
+  sketchCanvas.width = 1280;
+  sketchCanvas.height = 720;
+  
+  clearSketchCanvas();
+  
+  // Setup Pointer Events for Stylus (S Pen) and Mouse/Touch drawing
+  sketchCanvas.addEventListener('pointerdown', startDrawing);
+  sketchCanvas.addEventListener('pointermove', draw);
+  sketchCanvas.addEventListener('pointerup', stopDrawing);
+  sketchCanvas.addEventListener('pointerleave', stopDrawing);
+}
+
+function clearSketchCanvas() {
+  if (!sketchCtx || !sketchCanvas) return;
+  sketchCtx.fillStyle = sketchTheme === 'dark' ? '#121212' : '#ffffff';
+  sketchCtx.fillRect(0, 0, sketchCanvas.width, sketchCanvas.height);
+  saveCanvasState();
+}
+
+function saveCanvasState() {
+  if (!sketchCanvas) return;
+  if (undoStack.length >= maxUndoSteps) {
+    undoStack.shift();
+  }
+  undoStack.push(sketchCanvas.toDataURL());
+}
+
+window.undoSketch = () => {
+  if (undoStack.length <= 1) return; // Keep the original blank blackboard/whiteboard state
+  undoStack.pop(); // discard current state
+  const prevStateData = undoStack[undoStack.length - 1];
+  const img = new Image();
+  img.onload = () => {
+    sketchCtx.clearRect(0, 0, sketchCanvas.width, sketchCanvas.height);
+    sketchCtx.drawImage(img, 0, 0);
+  };
+  img.src = prevStateData;
+};
+
+window.clearSketchCanvas = () => {
+  clearSketchCanvas();
+};
+
+window.toggleSketchTheme = () => {
+  sketchTheme = sketchTheme === 'dark' ? 'light' : 'dark';
+  const colorInput = $('sketch-color');
+  if (colorInput) {
+    colorInput.value = sketchTheme === 'dark' ? '#ffffff' : '#000000';
+  }
+  clearSketchCanvas();
+  showToast(sketchTheme === 'dark' ? 'Pizarra Negra (Carbón)' : 'Pizarra Blanca (Papel)');
+};
+
+window.toggleSketchEraser = () => {
+  isEraser = !isEraser;
+  const eraserBtn = $('sketch-eraser');
+  if (eraserBtn) {
+    if (isEraser) {
+      eraserBtn.classList.add('active');
+      eraserBtn.style.background = 'var(--primary)';
+      eraserBtn.style.color = '#fff';
+    } else {
+      eraserBtn.classList.remove('active');
+      eraserBtn.style.background = '';
+      eraserBtn.style.color = '';
+    }
+  }
+};
+
+function getCoords(e) {
+  const rect = sketchCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (sketchCanvas.width / rect.width),
+    y: (e.clientY - rect.top) * (sketchCanvas.height / rect.height)
+  };
+}
+
+function startDrawing(e) {
+  isDrawing = true;
+  sketchCtx.beginPath();
+  const coords = getCoords(e);
+  sketchCtx.moveTo(coords.x, coords.y);
+  
+  sketchCtx.lineCap = 'round';
+  sketchCtx.lineJoin = 'round';
+  updateBrushSettings();
+  
+  sketchCtx.lineTo(coords.x, coords.y);
+  sketchCtx.stroke();
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+  const coords = getCoords(e);
+  sketchCtx.lineTo(coords.x, coords.y);
+  sketchCtx.stroke();
+}
+
+function stopDrawing() {
+  if (isDrawing) {
+    isDrawing = false;
+    sketchCtx.closePath();
+    saveCanvasState();
+  }
+}
+
+function updateBrushSettings() {
+  if (isEraser) {
+    sketchCtx.strokeStyle = sketchTheme === 'dark' ? '#121212' : '#ffffff';
+    sketchCtx.lineWidth = (sketchSizeInput?.value || 3) * 4; // Extra width for eraser
+  } else {
+    sketchCtx.strokeStyle = sketchColorInput?.value || '#ffffff';
+    sketchCtx.lineWidth = sketchSizeInput?.value || 3;
+  }
+}
+
+window.openDrawingSketchpad = (shotId) => {
+  activeDrawingShotId = shotId;
+  const modal = $('sb-sketchpad-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    if (!sketchCanvas) {
+      initSketchpad();
+    } else {
+      undoStack = [];
+      clearSketchCanvas();
+    }
+  }
+};
+
+window.closeDrawingSketchpad = () => {
+  const modal = $('sb-sketchpad-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+};
+
+window.saveSketch = async () => {
+  if (!activeDrawingShotId || !sketchCanvas) return;
+  
+  const saveBtn = document.querySelector('#sb-sketchpad-modal .btn-primary');
+  const originalText = saveBtn.innerHTML;
+  saveBtn.innerHTML = '⏳ Guardando...';
+  saveBtn.disabled = true;
+
+  try {
+    const blob = await new Promise(resolve => sketchCanvas.toBlob(resolve, 'image/png'));
+    const file = new File([blob], `sketch_${Date.now()}.png`, { type: 'image/png' });
+    const publicUrl = await storyboardDb.uploadReferenceImage(file);
+    
+    await window.updateShotField(activeDrawingShotId, 'reference_image_url', publicUrl);
+    
+    showToast('🎨 Boceto guardado en la toma');
+    window.closeDrawingSketchpad();
+    renderActiveSceneShots();
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ Error al guardar el boceto');
+  } finally {
+    saveBtn.innerHTML = originalText;
+    saveBtn.disabled = false;
+  }
+};
+
+window.promptImageLink = async (id) => {
+  const url = prompt('Introduce la URL/Enlace directo de la imagen de referencia:');
+  if (url === null) return;
+  if (url.trim() === '') {
+    await window.updateShotField(id, 'reference_image_url', '');
+    showToast('🗑️ Imagen de referencia eliminada');
+  } else {
+    await window.updateShotField(id, 'reference_image_url', url.trim());
+    showToast('🔗 Enlace de referencia agregado');
+  }
+  renderActiveSceneShots();
 };
 
 // ==================== INITIALIZATION & EVENT LISTENERS ====================
