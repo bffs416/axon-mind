@@ -4332,15 +4332,24 @@ select.finance-input {
 
 /* ==================== STORYBOARDER PRO ==================== */
 .storyboard-container {
+  /* Scope theme overrides locally to force dark cinema styling regardless of active portal theme */
+  --bg-deep: #0c0a09;
+  --bg-card: #1c1917;
+  --text: #f5f5f4;
+  --text-dim: #a8a29e;
+  --border: #292524;
+  --accent: #f59e0b;
+  --primary: #3b82f6;
+
   display: flex;
   flex-direction: column;
   height: calc(100vh - 120px);
-  background: var(--bg-deep, #0c0a09);
-  color: var(--text, #f5f5f4);
+  background: var(--bg-deep);
+  color: var(--text);
   font-family: 'Outfit', sans-serif;
   overflow: hidden;
   border-radius: var(--radius, 12px);
-  border: 1px solid var(--border, #292524);
+  border: 1px solid var(--border);
 }
 
 .storyboard-header-bar {
@@ -5178,4 +5187,128 @@ select.finance-input {
   background: var(--primary-low);
   color: var(--primary);
   font-weight: 600;
+}
+
+/* ========== RESPONSIVE MOBILE LAYOUT (STORYBOARDER & BOTTOM-SHEET) ========== */
+@media (max-width: 768px) {
+  /* Navigation dropdown becomes a sliding bottom-sheet to prevent clipping */
+  .dropdown-content {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 100%;
+    border-radius: var(--radius, 12px) var(--radius, 12px) 0 0;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.25);
+    background: var(--bg-card);
+    z-index: 2000;
+    display: none;
+    flex-direction: column;
+    padding: 1.25rem;
+    box-sizing: border-box;
+    gap: 0.5rem;
+    animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Handle bar indicator for mobile sliding sheets */
+  .dropdown-content::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: -0.5rem auto 0.75rem auto;
+  }
+
+  .nav-dropdown.open .dropdown-content {
+    display: flex;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  /* Storyboarder container responsiveness */
+  .storyboard-container {
+    height: auto;
+    max-height: 85vh;
+  }
+
+  /* Workspace - stack sidebar and stage */
+  .storyboard-workspace {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* Sidebar: horizontal scroll list of scenes */
+  .storyboard-sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-shrink: 0;
+  }
+
+  .sidebar-header {
+    padding: 0.5rem 0.75rem;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .sidebar-header h3 {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .sidebar-list {
+    flex-direction: row;
+    padding: 0.4rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .sidebar-item {
+    white-space: nowrap;
+    padding: 0.35rem 0.6rem;
+  }
+
+  /* Stage adjustments */
+  .storyboard-stage {
+    padding: 0.75rem;
+    overflow-y: visible;
+  }
+
+  /* Double columns tech/literary stack vertically */
+  .director-shot-card {
+    flex-direction: column;
+  }
+
+  .shot-col-technical {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem;
+  }
+
+  .shot-col-literary {
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  .scenarist-textarea-dialogue {
+    width: 90%;
+  }
 }
