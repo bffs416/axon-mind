@@ -509,16 +509,17 @@ window.updateShotField = async (id, field, value) => {
   scene[field] = value;
   
   try {
-    await storyboardDb.saveScene(scene);
-    // If scene heading changed, update local cache and other shots in this scene
     if (field === 'scene_heading') {
+      await storyboardDb.updateSceneHeading(scene.project_name, scene.scene_number, value);
       activeSceneHeading = value;
       allScenes.forEach(s => {
-        if (s.scene_number === activeSceneNum) {
+        if (s.scene_number === activeSceneNum && s.project_name === currentProject) {
           s.scene_heading = value;
         }
       });
       renderScenesSidebar();
+    } else {
+      await storyboardDb.saveScene(scene);
     }
   } catch (e) {
     showToast('⚠️ Error al guardar en base de datos');

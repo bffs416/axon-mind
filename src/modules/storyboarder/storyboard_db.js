@@ -82,6 +82,20 @@ export const storyboardDb = {
     }
   },
 
+  async updateSceneHeading(projectName, sceneNumber, newHeading) {
+    try {
+      const { error } = await supabase
+        .from('storyboard_scenes')
+        .update({ scene_heading: newHeading })
+        .eq('project_name', projectName)
+        .eq('scene_number', sceneNumber);
+      if (error) throw error;
+    } catch (e) {
+      console.error('Error updating scene heading:', e);
+      throw e;
+    }
+  },
+
   async deleteScene(id) {
     try {
       const { error } = await supabase
