@@ -209,9 +209,12 @@ function renderScenesSidebar() {
   const sceneNumbers = Object.keys(grouped).map(Number).sort((a,b) => a - b);
   
   list.innerHTML = sceneNumbers.map(num => `
-    <div class="sidebar-item ${num === activeSceneNum ? 'active' : ''}" onclick="window.selectStoryboardScene(${num})">
-      <span class="scene-num-badge">Esc ${num}</span>
-      <span class="scene-title-text">${grouped[num] || 'Escena Sin Título'}</span>
+    <div class="sidebar-item ${num === activeSceneNum ? 'active' : ''}" onclick="window.selectStoryboardScene(${num})" style="position:relative; display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <div style="display:flex; align-items:center; gap:0.5rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+        <span class="scene-num-badge">Esc ${num}</span>
+        <span class="scene-title-text">${grouped[num] || 'Escena Sin Título'}</span>
+      </div>
+      <button class="btn-delete-scene" onclick="event.stopPropagation(); window.deleteStoryboardScene(${num})" title="Eliminar Escena Completa" style="background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:0.8rem; opacity:0.5; padding: 2px 4px; transition: all 0.2s ease;">🗑️</button>
     </div>
   `).join('');
 }
@@ -227,6 +230,41 @@ window.selectStoryboardScene = (num) => {
   
   renderScenesSidebar();
   renderActiveSceneShots();
+};
+
+window.deleteStoryboardScene = async (sceneNum) => {
+  if (!confirm(`¿Eliminar la Escena ${sceneNum} y TODAS sus tomas de forma permanente?`)) return;
+  
+  try {
+    const shotsToDelete = allScenes.filter(s => s.scene_number === sceneNum && s.project_name === currentProject);
+    for (const s of shotsToDelete) {
+      await storyboardDb.deleteScene(s.id);
+    }
+    
+    // Update local cache
+    allScenes = allScenes.filter(s => !(s.scene_number === sceneNum && s.project_name === currentProject));
+    
+    if (activeSceneNum === sceneNum) {
+      const remainingNums = [...new Set(allScenes.map(s => s.scene_number))];
+      if (remainingNums.length > 0) {
+        activeSceneNum = Math.min(...remainingNums);
+        const nextScene = allScenes.find(s => s.scene_number === activeSceneNum);
+        activeSceneHeading = nextScene ? nextScene.scene_heading : 'INT. ESCENA - DIA';
+      } else {
+        activeSceneNum = 1;
+        activeSceneHeading = 'INT. ESCENA - DIA';
+        await createEmptyShot(1, activeSceneHeading, 1);
+        return;
+      }
+    }
+    
+    renderScenesSidebar();
+    renderActiveSceneShots();
+    showToast(`🗑️ Escena ${sceneNum} eliminada`);
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ Error al eliminar la escena');
+  }
 };
 
 window.selectStoryboardProject = async (projectName) => {

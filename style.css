@@ -5392,3 +5392,9 @@ select.finance-input {
   border: 1px solid var(--border);
 }
 
+.btn-delete-scene:hover {
+  color: var(--danger) !important;
+  opacity: 1 !important;
+  transform: scale(1.15);
+}
+
