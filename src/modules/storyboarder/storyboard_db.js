@@ -97,24 +97,21 @@ export const storyboardDb = {
 
   async uploadReferenceImage(file) {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `references/${fileName}`;
-
-      const { data, error } = await supabase.storage
-        .from('storyboard-refs')
-        .upload(filePath, file);
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('storyboard-refs')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result); // Returns Base64 Data URL
+        };
+        reader.onerror = (err) => {
+          console.error('FileReader error:', err);
+          reject(err);
+        };
+        reader.readAsDataURL(file);
+      });
     } catch (e) {
-      console.error('Error uploading image to storage:', e);
+      console.error('Error converting image to Base64:', e);
       throw e;
     }
   }
 };
+

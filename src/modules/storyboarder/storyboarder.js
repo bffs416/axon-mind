@@ -353,7 +353,7 @@ function renderDirectorMode(shots) {
 
           <div class="shot-links-container">
             <label>🔗 Enlaces de Referencia (Separar con comas):</label>
-            <textarea class="shot-links-textarea" placeholder="https://shotdeck.com/..., https://frameset.app/..." onchange="window.updateShotLinks('${s.id}', this.value)">${(s.reference_links || []).join(', ')}</textarea>
+            <textarea class="shot-links-textarea" placeholder="https://shotdeck.com/..., https://frameset.app/..." oninput="window.debouncedUpdateShotLinks('${s.id}', this.value)">${(s.reference_links || []).join(', ')}</textarea>
           </div>
         </div>
 
@@ -362,17 +362,17 @@ function renderDirectorMode(shots) {
           <div class="scenarist-editor">
             <div class="scenarist-field">
               <span class="scenarist-label">ACCIÓN</span>
-              <textarea class="scenarist-textarea" placeholder="Descripción de la acción física, sonido y ambiente..." onchange="window.updateShotField('${s.id}', 'action_description', this.value)">${s.action_description || ''}</textarea>
+              <textarea class="scenarist-textarea" placeholder="Descripción de la acción física, sonido y ambiente..." oninput="window.debouncedUpdateShotField('${s.id}', 'action_description', this.value)">${s.action_description || ''}</textarea>
             </div>
             
             <div class="scenarist-field">
               <span class="scenarist-label">PERSONAJE</span>
-              <input type="text" class="scenarist-input-char" placeholder="PERSONAJE" value="${s.character_name || ''}" onchange="window.updateShotField('${s.id}', 'character_name', this.value)" onkeydown="window.handleCharacterKeydown(event, '${s.id}')" id="char-input-${s.id}">
+              <input type="text" class="scenarist-input-char" placeholder="PERSONAJE" value="${s.character_name || ''}" oninput="window.debouncedUpdateShotField('${s.id}', 'character_name', this.value)" onkeydown="window.handleCharacterKeydown(event, '${s.id}')" id="char-input-${s.id}">
             </div>
 
             <div class="scenarist-field">
               <span class="scenarist-label">DIÁLOGO</span>
-              <textarea class="scenarist-textarea-dialogue" placeholder="(Diálogo del personaje...)" onchange="window.updateShotField('${s.id}', 'dialogue', this.value)" onkeydown="window.handleDialogueKeydown(event, '${s.id}')" id="dialogue-input-${s.id}">${s.dialogue || ''}</textarea>
+              <textarea class="scenarist-textarea-dialogue" placeholder="(Diálogo del personaje...)" oninput="window.debouncedUpdateShotField('${s.id}', 'dialogue', this.value)" onkeydown="window.handleDialogueKeydown(event, '${s.id}')" id="dialogue-input-${s.id}">${s.dialogue || ''}</textarea>
             </div>
           </div>
         </div>
@@ -877,6 +877,47 @@ window.promptImageLink = async (id) => {
   renderActiveSceneShots();
 };
 
+// ==================== DEBOUNCED AUTOSAVE HELPERS ====================
+
+let debounceTimers = {};
+window.debouncedUpdateShotField = (id, field, value) => {
+  const timerKey = `${id}_${field}`;
+  if (debounceTimers[timerKey]) {
+    clearTimeout(debounceTimers[timerKey]);
+  }
+  
+  // Update local cache immediately so client views are in sync
+  const shot = allScenes.find(s => s.id === id);
+  if (shot) {
+    shot[field] = value;
+  }
+  
+  debounceTimers[timerKey] = setTimeout(async () => {
+    try {
+      await window.updateShotField(id, field, value);
+      delete debounceTimers[timerKey];
+    } catch (e) {
+      console.error(e);
+    }
+  }, 1000);
+};
+
+let debounceLinksTimers = {};
+window.debouncedUpdateShotLinks = (id, val) => {
+  if (debounceLinksTimers[id]) {
+    clearTimeout(debounceLinksTimers[id]);
+  }
+  
+  debounceLinksTimers[id] = setTimeout(async () => {
+    try {
+      await window.updateShotLinks(id, val);
+      delete debounceLinksTimers[id];
+    } catch (e) {
+      console.error(e);
+    }
+  }, 1000);
+};
+
 // ==================== INITIALIZATION & EVENT LISTENERS ====================
 
 function setupEventListeners() {
@@ -924,13 +965,16 @@ function setupEventListeners() {
   // Scene Heading Input
   const headingInput = $('sb-scene-heading-input');
   if (headingInput) {
-    headingInput.onchange = async () => {
-      const activeShots = allScenes.filter(s => s.scene_number === activeSceneNum);
-      if (activeShots.length > 0) {
-        // Update first shot and then update local cache for the rest
-        await window.updateShotField(activeShots[0].id, 'scene_heading', headingInput.value);
-        renderActiveSceneShots();
-      }
+    let headingTimer = null;
+    headingInput.oninput = () => {
+      if (headingTimer) clearTimeout(headingTimer);
+      headingTimer = setTimeout(async () => {
+        const activeShots = allScenes.filter(s => s.scene_number === activeSceneNum);
+        if (activeShots.length > 0) {
+          await window.updateShotField(activeShots[0].id, 'scene_heading', headingInput.value);
+          renderActiveSceneShots();
+        }
+      }, 1000);
     };
   }
 
